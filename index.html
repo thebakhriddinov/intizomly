@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intizomly — Har Kunlik Odatlar va Intizom Nazorati</title>
+  <meta name="description" content="Intizomly - har kunlik ishlarni va odatlarni nazorat qilish, streaklarni hisoblash va shaxsiy intizomni oshirish ilovasi.">
+  <meta name="theme-color" content="#0B0D0F">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="emerald">
+  <!-- Canvas for celebration confetti -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- DYNAMIC LIQUID BACKGROUND LAYER -->
+  <div class="liquid-bg-layer" aria-hidden="true">
+    <div class="liquid-blob liquid-blob-1"></div>
+    <div class="liquid-blob liquid-blob-2"></div>
+    <div class="liquid-blob liquid-blob-3"></div>
+    <div class="liquid-blob liquid-blob-4"></div>
+    <div class="liquid-mesh-overlay"></div>
+  </div>
+
+  <div class="app-layout">
+    <!-- DESKTOP SIDEBAR -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <div class="sidebar-top">
+        <div class="brand-logo" id="brand-logo" title="Intizomly Bosh Sahifasi">
+          <div class="logo-icon-wrapper">
+            <svg class="logo-svg" viewBox="0 0 32 32" fill="none">
+              <!-- Flame Base with Lime-Green Accent -->
+              <path d="M16 2C13.5 7.5 9 11.5 9 18C9 24.075 12.134 28 16 28C19.866 28 23 24.075 23 18C23 14 20.5 10 16 2Z" fill="#B6F36B"/>
+              <!-- Green Tick / Checkmark on top of the Flame -->
+              <path d="M11 18.5L14.5 22L21 14.5" stroke="#0B0D0F" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <span class="brand-name">Intizom<span class="accent-text">ly</span></span>
+            <span class="user-role-badge role-user" id="nav-user-role-badge">👤 ODDIY</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation links -->
+      <nav class="sidebar-nav">
+        <a href="#habits-section" class="sidebar-nav-item active" id="side-nav-habits">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+          <span>Kunlik Odatlar</span>
+        </a>
+        <a href="#week-strip-card" class="sidebar-nav-item" id="side-nav-week">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+          <span>Haftalik Reja</span>
+        </a>
+        <a href="#github-heatmap-card" class="sidebar-nav-item" id="side-nav-heatmap">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span>Intizom Xaritasi</span>
+        </a>
+        <button type="button" class="sidebar-nav-item" id="side-nav-notifs">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <span>Eslatmalar</span>
+          <span class="sidebar-badge" id="side-notif-count">2</span>
+        </button>
+        <button type="button" class="sidebar-nav-item hidden" id="side-admin-btn">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Admin Paneli</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Streak Card -->
+      <div class="sidebar-streak-card">
+        <div class="sidebar-streak-header">
+          <span class="streak-fire-anim">🔥</span>
+          <div class="sidebar-streak-info">
+            <span class="sidebar-streak-lbl">Joriy Streak</span>
+            <span class="sidebar-streak-num"><strong id="sidebar-streak-count">0</strong> kun ketma-ket</span>
+          </div>
+        </div>
+        <p class="sidebar-streak-desc">Odatlaringizni har kuni bajarib boring</p>
+      </div>
+
+      <!-- Sidebar User Footer -->
+      <div class="sidebar-user-footer">
+        <div class="sidebar-user-info" id="sidebar-user-profile-btn" role="button" tabindex="0" title="Profil va Sozlamalar">
+          <div class="avatar-circle" id="sidebar-avatar-circle">
+            <span id="sidebar-avatar-initials">AQ</span>
+          </div>
+          <div class="sidebar-user-details">
+            <span class="sidebar-user-name" id="sidebar-user-name">Alisher Qodirov</span>
+            <span class="sidebar-user-role-text" id="sidebar-user-role-text">Oddiy A'zo</span>
+          </div>
+        </div>
+        <button class="sidebar-logout-btn" id="sidebar-logout-btn" title="Chiqish / Almashtirish" aria-label="Chiqish">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN APP WRAPPER -->
+    <div class="app-main-wrapper">
+      <!-- TOP NAVIGATION BAR -->
+      <header class="app-header">
+        <div class="header-left">
+          <!-- Mobile Brand Logo -->
+          <div class="brand-logo mobile-only-brand" id="mobile-brand-logo" title="Intizomly Bosh Sahifasi">
+            <div class="logo-icon-wrapper">
+              <svg class="logo-svg" viewBox="0 0 32 32" fill="none">
+                <path d="M16 2C13.5 7.5 9 11.5 9 18C9 24.075 12.134 28 16 28C19.866 28 23 24.075 23 18C23 14 20.5 10 16 2Z" fill="#B6F36B"/>
+                <path d="M11 18.5L14.5 22L21 14.5" stroke="#0B0D0F" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="brand-name">Intizom<span class="accent-text">ly</span></span>
+          </div>
+
+          <!-- Global Streak Indicator in Header -->
+          <div class="header-streak-badge" id="header-streak-badge" title="Joriy umumiy streak">
+            <span class="streak-fire-anim">🔥</span>
+            <span class="streak-text"><strong id="header-streak-count">0</strong> kun ketma-ket</span>
+          </div>
+        </div>
+
+        <!-- Center Date Control Bar -->
+        <div class="header-center date-navigator">
+          <button class="date-nav-btn" id="prev-day-btn" title="Oldingi kun" aria-label="Oldingi kun">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <div class="date-display" id="date-display-btn" title="Sanani tanlash">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span id="current-date-text">Bugun, 24-Oktyabr</span>
+            <span class="today-indicator-tag" id="today-indicator-tag">BUGUN</span>
+          </div>
+          <button class="date-nav-btn" id="next-day-btn" title="Keyingi kun" aria-label="Keyingi kun">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+          <button class="reset-today-btn" id="jump-today-btn" title="Bugungi kunga o'tish">Bugunga qaytish</button>
+        </div>
+
+        <!-- Header Right Actions: Admin Button, Notifications, Avatar & Auth -->
+        <div class="header-right">
+          <!-- Admin Panel Button (Visible ONLY to Admin) -->
+          <button class="admin-panel-btn hidden" id="admin-panel-nav-btn" title="Admin Boshqaruv Markazi">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            <span>Admin Paneli</span>
+          </button>
+
+          <!-- Appearance Mode (Light / Dark) Quick Toggle Button -->
+          <button class="icon-action-btn appearance-toggle-btn" id="btn-appearance-toggle" title="Ko'rinishni almashtirish (Yorug' / Qorong'i)" aria-label="Ko'rinish rejimi">
+            <svg class="sun-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="moon-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+
+          <!-- Notification Bell Button -->
+          <button class="icon-action-btn" id="notif-bell-btn" title="Eslatmalar va bildirishnomalar" aria-label="Bildirishnomalar">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="notification-badge" id="notif-badge-count">2</span>
+          </button>
+
+          <!-- User Avatar Circle (Dumaloqcha) -->
+          <div class="user-avatar-trigger" id="avatar-trigger-btn" title="Profil va Sozlamalar" role="button" tabindex="0">
+            <div class="avatar-circle" id="nav-avatar-circle">
+              <span id="nav-avatar-initials">AQ</span>
+              <img id="nav-avatar-img" class="avatar-photo hidden" alt="Avatar" />
+            </div>
+            <span class="avatar-online-dot"></span>
+          </div>
+
+          <!-- Quick Switch / Logout Button -->
+          <button class="icon-action-btn" id="btn-quick-switch-user" title="Foydalanuvchini almashtirish / Chiqish" aria-label="Chiqish">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          </button>
+        </div>
+      </header>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <main class="app-main">
+      <!-- 7-DAY MINI CALENDAR / STRIP -->
+      <section class="week-strip-card">
+        <div class="week-strip-header">
+          <div class="week-strip-title">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            <span>Haftalik Intizom Ko'rinishi</span>
+          </div>
+          <div class="week-completion-info" id="week-completion-info">
+            Haftalik samaradorlik: <span class="highlight-val" id="week-pct-text">85%</span>
+          </div>
+        </div>
+        <div class="week-days-container" id="week-days-strip">
+          <!-- Dynamically populated 7 days -->
+        </div>
+      </section>
+
+      <!-- STATS OVERVIEW CARDS -->
+      <section class="stats-grid">
+        <!-- Daily Progress Card -->
+        <div class="stat-card stat-progress">
+          <div class="stat-card-inner">
+            <div class="stat-info">
+              <span class="stat-label">Bugungi Natija</span>
+              <div class="stat-huge-number"><span id="stat-completed-count">0</span><span class="stat-denom">/<span id="stat-total-count">0</span></span></div>
+              <p class="stat-subtext" id="stat-progress-subtext">Kunlik vazifalar boshlanmoqda</p>
+            </div>
+            <div class="circular-progress-wrap">
+              <svg class="progress-ring" width="84" height="84">
+                <circle class="progress-ring-bg" stroke="rgba(255,255,255,0.08)" stroke-width="8" fill="transparent" r="34" cx="42" cy="42"/>
+                <circle class="progress-ring-fill" id="stat-circle-fill" stroke="var(--primary)" stroke-width="8" stroke-dasharray="213.6" stroke-dashoffset="213.6" stroke-linecap="round" fill="transparent" r="34" cx="42" cy="42"/>
+              </svg>
+              <span class="progress-ring-pct" id="stat-circle-pct">0%</span>
+            </div>
+          </div>
+          <div class="stat-progress-bar-container">
+            <div class="stat-progress-bar-fill" id="stat-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Current Streak Card -->
+        <div class="stat-card stat-streak">
+          <div class="stat-icon-glow fire-glow">
+            <span>🔥</span>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Joriy Streak</span>
+            <div class="stat-huge-number"><span id="stat-current-streak">0</span> <span class="stat-unit">kun</span></div>
+            <p class="stat-subtext" id="stat-streak-msg">Intizomni davom ettiring!</p>
+          </div>
+          <div class="stat-mini-pill">
+            <span>Eng yuqori: <strong id="stat-best-streak">0</strong> kun</span>
+          </div>
+        </div>
+
+        <!-- Total Completed Actions -->
+        <div class="stat-card stat-total">
+          <div class="stat-icon-glow check-glow">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">Jami Bajarilgan Odatlar</span>
+            <div class="stat-huge-number"><span id="stat-total-done">0</span> <span class="stat-unit">marta</span></div>
+            <p class="stat-subtext">Barcha kunlar davomida</p>
+          </div>
+          <div class="stat-mini-pill">
+            <span id="stat-level-text">🏆 1-Darajali Intizomchi</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- GITHUB STYLE DISCIPLINE CONTRIBUTION HEATMAP SECTION -->
+      <section class="github-heatmap-card" id="github-heatmap-card">
+        <div class="heatmap-header">
+          <div class="heatmap-title-wrap">
+            <div class="github-icon-badge">
+              <svg viewBox="0 0 16 16" width="18" height="18" fill="currentColor">
+                <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 class="heatmap-heading">Kunlik Intizom Xaritasi <span class="badge-github">GitHub Uslubi</span></h2>
+              <p class="heatmap-subheading" id="heatmap-summary-text">So'nggi 70 kun davomida bajarilgan ishlar intensivligi</p>
+            </div>
+          </div>
+
+          <!-- Color Intensity Legend -->
+          <div class="heatmap-legend">
+            <span class="legend-lbl">Kam</span>
+            <span class="gh-legend-box gh-lvl-0" title="0 ta bajarildi"></span>
+            <span class="gh-legend-box gh-lvl-1" title="1-25% bajarildi"></span>
+            <span class="gh-legend-box gh-lvl-2" title="26-50% bajarildi"></span>
+            <span class="gh-legend-box gh-lvl-3" title="51-75% bajarildi"></span>
+            <span class="gh-legend-box gh-lvl-4" title="76-100% bajarildi"></span>
+            <span class="legend-lbl">Ko'p</span>
+          </div>
+        </div>
+
+        <!-- Heatmap Grid -->
+        <div class="heatmap-container">
+          <div class="heatmap-weekdays-col">
+            <span>Dush</span>
+            <span>Chor</span>
+            <span>Juma</span>
+          </div>
+          <div class="heatmap-scroll-area">
+            <div class="heatmap-months-row" id="heatmap-months-row">
+              <!-- Dynamically populated month labels -->
+            </div>
+            <div class="github-squares-grid" id="github-squares-grid">
+              <!-- Dynamically rendered green contribution squares -->
+            </div>
+          </div>
+        </div>
+
+        <div class="heatmap-footer-info">
+          <span id="heatmap-total-active-days">💡 Har bir yashil katak — siz bajargan intizomli kuningiz. Kunni ko'rish uchun katakni bosing.</span>
+        </div>
+      </section>
+
+      <!-- HABITS MANAGEMENT SECTION -->
+      <section class="habits-section" id="habits-section">
+        <!-- Control & Filter Bar -->
+        <div class="habits-toolbar">
+          <div class="toolbar-left">
+            <h1 class="section-title">Kunlik Odatlar Ro'yxati</h1>
+            <p class="section-subtitle">Har bitta amal sizni kuchliroq qiladi</p>
+          </div>
+
+          <div class="toolbar-right">
+            <!-- Search Input -->
+            <div class="search-input-wrapper">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="habit-search-input" placeholder="Odatlarni qidirish..." autocomplete="off">
+            </div>
+
+            <!-- Add Habit Button -->
+            <button class="primary-btn" id="open-add-habit-btn">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Yangi Odat Qo'shish</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="filter-chips-row">
+          <button class="filter-chip active" data-filter="all">Barchasi (<span id="count-filter-all">0</span>)</button>
+          <button class="filter-chip" data-filter="pending">Bajarilmaganlar (<span id="count-filter-pending">0</span>)</button>
+          <button class="filter-chip" data-filter="completed">Bajarilganlar (<span id="count-filter-completed">0</span>)</button>
+          <div class="filter-chip-divider"></div>
+          <button class="filter-chip cat-chip" data-category="all">Barcha toifalar</button>
+          <button class="filter-chip cat-chip" data-category="Sog'liq">Sog'liq 🍏</button>
+          <button class="filter-chip cat-chip" data-category="O'qish">O'qish 📖</button>
+          <button class="filter-chip cat-chip" data-category="Sport">Sport 🏃‍♂️</button>
+          <button class="filter-chip cat-chip" data-category="Rivojlanish">Rivojlanish 🧠</button>
+          <button class="filter-chip cat-chip" data-category="Tartib">Tartib ⏰</button>
+        </div>
+
+        <!-- Habits List Container -->
+        <div class="habits-grid" id="habits-list-container">
+          <!-- Dynamic Habit Cards Rendered Here -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state-view hidden" id="empty-habits-view">
+          <div class="empty-icon-box">📋</div>
+          <h3 class="empty-title">Odatlar topilmadi</h3>
+          <p class="empty-text">Ushbu kunga yangi odat qo'shing yoki qidiruv filtrini tozalang.</p>
+          <button class="secondary-btn" id="empty-add-btn">+ Yangi Odat Qo'shish</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p><strong>Intizomly</strong> — Intizom qat'iyatdan, natija esa har kunlik odatdan tug'iladi.</p>
+        <div class="footer-links">
+          <button class="link-btn" id="footer-notifications-link">Bildirishnomalar sozlamasi</button>
+          <span>•</span>
+          <button class="link-btn" id="footer-profile-link">Profil ma'lumotlari</button>
+          <span>•</span>
+          <button class="link-btn" id="footer-admin-link">Admin paneli</button>
+        </div>
+      </div>
+    </footer>
+    </div> <!-- .app-main-wrapper -->
+  </div> <!-- .app-layout -->
+
+  <!-- MOBILE BOTTOM NAVIGATION BAR -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Mobil navigatsiya">
+    <button class="mob-nav-btn active" id="mob-nav-habits" title="Odatlar">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+      <span>Odatlar</span>
+    </button>
+    <button class="mob-nav-btn" id="mob-nav-heatmap" title="Intizom Xaritasi">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+      <span>Xarita</span>
+    </button>
+    <button class="mob-nav-btn" id="mob-nav-notifs" title="Eslatmalar">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+      <span>Eslatmalar</span>
+    </button>
+    <button class="mob-nav-btn" id="mob-nav-profile" title="Profil">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span>Profil</span>
+    </button>
+  </nav>
+
+  <!-- ==================== MODALS & DRAWERS ==================== -->
+
+  <!-- 1. AUTH GATEWAY MODAL (KIRISH VA RO'YXATDAN O'TISH) -->
+  <div class="modal-overlay hidden" id="auth-modal">
+    <div class="modal-card auth-modal-card">
+      <div class="auth-header-visual">
+        <div class="logo-icon-wrapper large-logo">
+          <svg class="logo-svg" viewBox="0 0 32 32" fill="none">
+            <path d="M16 2C13.5 7.5 9 11.5 9 18C9 24.075 12.134 28 16 28C19.866 28 23 24.075 23 18C23 14 20.5 10 16 2Z" fill="#10B981"/>
+            <path d="M11 18.5L14.5 22L21 14.5" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h2 class="auth-title">Intizom<span class="accent-text">ly</span> ga Xush Kelibsiz</h2>
+        <p class="auth-subtitle">Kunlik intizom, odatlar nazorati va streak tizimi</p>
+      </div>
+
+      <!-- Auth Tabs: Kirish / Ro'yxatdan o'tish -->
+      <div class="auth-tabs-nav">
+        <button class="auth-tab-btn active" id="auth-tab-login-btn">Tizimga Kirish</button>
+        <button class="auth-tab-btn" id="auth-tab-register-btn">Yangi Akkaunt</button>
+      </div>
+
+      <div class="modal-body auth-body">
+        <!-- 1-Click Fast Demo Testing Accounts -->
+        <div class="quick-demo-accounts">
+          <span class="quick-demo-label">Tezkor Sinov Uchun (1-Chertish bilan):</span>
+          <div class="demo-btns-grid">
+            <button type="button" class="demo-user-btn demo-admin-btn" data-demo-role="admin">
+              <span class="demo-badge">🛡️ ADMIN</span>
+              <span class="demo-name">Bakhriddinoff</span>
+            </button>
+            <button type="button" class="demo-user-btn demo-premium-btn" data-demo-role="premium">
+              <span class="demo-badge">⚡ PRO</span>
+              <span class="demo-name">Malika Karimova</span>
+            </button>
+            <button type="button" class="demo-user-btn demo-free-btn" data-demo-role="user">
+              <span class="demo-badge">👤 ODDIY</span>
+              <span class="demo-name">Alisher Qodirov</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="auth-divider"><span>yoki email orqali</span></div>
+
+        <!-- LOGIN FORM -->
+        <form id="auth-login-form" class="modal-form">
+          <div class="form-group">
+            <label for="login-email-input">Email Manzili</label>
+            <input type="email" id="login-email-input" class="form-control" placeholder="bakhriddinoff01@gmail.com" required>
+          </div>
+          <div class="form-group">
+            <label for="login-password-input">Parol</label>
+            <input type="password" id="login-password-input" class="form-control" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="primary-btn w-100" id="btn-submit-login">
+            Kirish
+          </button>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form id="auth-register-form" class="modal-form hidden">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="reg-firstname-input">Ism</label>
+              <input type="text" id="reg-firstname-input" class="form-control" placeholder="Jasur" required>
+            </div>
+            <div class="form-group">
+              <label for="reg-lastname-input">Familiya</label>
+              <input type="text" id="reg-lastname-input" class="form-control" placeholder="Sobirov" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-email-input">Email Manzili</label>
+            <input type="email" id="reg-email-input" class="form-control" placeholder="jasur@example.com" required>
+          </div>
+          <div class="form-group">
+            <label for="reg-password-input">Parol</label>
+            <input type="password" id="reg-password-input" class="form-control" placeholder="Kamida 6 ta belgi" required>
+          </div>
+          <button type="submit" class="primary-btn w-100" id="btn-submit-register">
+            Yangi Akkaunt Ochish
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. ADMIN CONTROL PANEL MODAL -->
+  <div class="modal-overlay hidden" id="admin-panel-modal">
+    <div class="modal-card admin-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge admin-badge-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <div>
+            <h2 class="modal-title">Admin Boshqaruv Markazi</h2>
+            <p class="modal-desc">Foydalanuvchilar ro'yxati, PRO berish va tizim statistikasi</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="close-admin-panel-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Admin KPI Stats -->
+        <div class="admin-kpi-grid">
+          <div class="admin-kpi-card">
+            <span class="kpi-lbl">Jami Foydalanuvchilar</span>
+            <span class="kpi-num" id="admin-kpi-total-users">0</span>
+          </div>
+          <div class="admin-kpi-card">
+            <span class="kpi-lbl">⚡ PRO A'zolar</span>
+            <span class="kpi-num text-amber" id="admin-kpi-premium-users">0</span>
+          </div>
+          <div class="admin-kpi-card">
+            <span class="kpi-lbl">👤 Oddiy A'zolar</span>
+            <span class="kpi-num text-blue" id="admin-kpi-free-users">0</span>
+          </div>
+          <div class="admin-kpi-card">
+            <span class="kpi-lbl">Jami Bajarilgan Odatlar</span>
+            <span class="kpi-num text-emerald" id="admin-kpi-habits-done">0</span>
+          </div>
+        </div>
+
+        <!-- Add User Accordion / Form -->
+        <div class="admin-subcard">
+          <div class="admin-subcard-header">
+            <h4>+ Yangi Foydalanuvchi Qo'shish</h4>
+          </div>
+          <form id="admin-add-user-form" class="admin-add-form">
+            <div class="form-row-3">
+              <input type="text" id="admin-new-firstname" class="form-control" placeholder="Ism" required>
+              <input type="text" id="admin-new-lastname" class="form-control" placeholder="Familiya" required>
+              <input type="email" id="admin-new-email" class="form-control" placeholder="Email" required>
+            </div>
+            <div class="form-row-3 mt-2">
+              <input type="password" id="admin-new-password" class="form-control" placeholder="Parol" required>
+              <select id="admin-new-role" class="form-control">
+                <option value="user">Oddiy A'zo (User)</option>
+                <option value="premium">⚡ PRO A'zo</option>
+                <option value="admin">🛡️ Admin</option>
+              </select>
+              <button type="submit" class="primary-btn">Qo'shish</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Users Management Table -->
+        <div class="admin-subcard">
+          <div class="admin-subcard-header">
+            <h4>Foydalanuvchilar Boshqaruvi va PRO Taqsimoti</h4>
+            <span class="text-hint">Istalgan foydalanuvchiga 1 ta chertish bilan PRO bering yoki bekor qiling</span>
+          </div>
+          <div class="admin-table-wrapper">
+            <table class="admin-users-table">
+              <thead>
+                <tr>
+                  <th>Foydalanuvchi</th>
+                  <th>Email</th>
+                  <th>Hozirgi Roli</th>
+                  <th>Sana</th>
+                  <th>Amallar</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-tbody">
+                <!-- Dynamically loaded user rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Broadcast Notification Form -->
+        <div class="admin-subcard">
+          <div class="admin-subcard-header">
+            <h4>📢 Barcha Foydalanuvchilarga Xabarnoma Yuborish</h4>
+            <span class="text-hint">Tizimdagi har bir foydalanuvchi ekraniga zudlik bilan eslatma xabari boradi</span>
+          </div>
+          <form id="admin-broadcast-form" class="broadcast-form">
+            <div class="form-row-2">
+              <input type="text" id="admin-broadcast-title" class="form-control" placeholder="Sarlavha (Masalan: Yangi tanlov!)" required>
+              <input type="text" id="admin-broadcast-message" class="form-control" placeholder="Xabar matni..." required>
+            </div>
+            <button type="submit" class="secondary-btn mt-2">Yuborish 🚀</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. NOTIFICATIONS CENTER DRAWER / MODAL -->
+  <div class="modal-overlay hidden" id="notifications-modal">
+    <div class="modal-card drawer-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge notif-badge-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          </div>
+          <div>
+            <h2 class="modal-title">Eslatmalar va Bildirishnomalar</h2>
+            <p class="modal-desc">Har kuni belgilangan soatda telefon va brauzerga avtomatik eslatmalar</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="close-notifications-btn" aria-label="Yopish">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Native Browser & Mobile Notification Banner -->
+        <div class="browser-perm-box" id="browser-perm-box">
+          <div class="perm-info">
+            <span class="perm-title">📱 Telefonga va Brauzerga Xabarnoma</span>
+            <span class="perm-desc" id="perm-status-text">Har kuni aynan belgilangan vaqtda telefoningizga tebranish (vibration) va xabar boradi</span>
+          </div>
+          <div class="perm-actions">
+            <button class="btn-subtle" id="request-perm-btn">Ruxsat Berish</button>
+            <button class="btn-accent-sm" id="btn-test-mobile-push">Telefonda Sinash 📲</button>
+          </div>
+        </div>
+
+        <div class="section-actions-row">
+          <span class="list-section-heading">Kunlik Faol Eslatmalar Ro'yxati</span>
+          <button class="btn-accent-sm" id="btn-add-custom-notif">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Yangi Eslatma Qo'shish
+          </button>
+        </div>
+
+        <!-- Reminders List -->
+        <div class="notifications-list" id="notifications-list-container">
+          <!-- Dynamic Notification Cards -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. ADD CUSTOM NOTIFICATION MODAL -->
+  <div class="modal-overlay hidden" id="add-notif-modal">
+    <div class="modal-card small-modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="notif-modal-title">Yangi Bildirishnoma Qo'shish</h3>
+        <button class="modal-close-btn" id="close-add-notif-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <form id="add-notif-form" class="modal-form">
+        <div class="form-group">
+          <label for="notif-title-input">Eslatma Sarlavhasi</label>
+          <input type="text" id="notif-title-input" class="form-control" placeholder="Masalan: Shakar nazorati yoki Kitob mutolaasi" required>
+        </div>
+
+        <div class="form-group">
+          <label for="notif-message-input">Bildirishnoma Xabari / Savoli</label>
+          <input type="text" id="notif-message-input" class="form-control" placeholder="Masalan: Bugun shakar iste'mol qildingizmi? 🚫🍬" required>
+          <span class="form-hint">Aynan belgilangan soatda telefon ekranida ushbu savol ko'rinadi</span>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="notif-time-input">Har Kuni Eslatish Vaqti</label>
+            <input type="time" id="notif-time-input" class="form-control" value="20:00" required>
+          </div>
+          <div class="form-group">
+            <label for="notif-category-select">Toifa</label>
+            <select id="notif-category-select" class="form-control">
+              <option value="Sog'liq">Sog'liq 🍏</option>
+              <option value="O'qish">O'qish 📖</option>
+              <option value="Sport">Sport 🏃‍♂️</option>
+              <option value="Tartib">Tartib ⏰</option>
+              <option value="Kundalik">Kundalik vazifa 🎯</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="secondary-btn" id="cancel-notif-btn">Bekor qilish</button>
+          <button type="submit" class="primary-btn" id="save-notif-btn">Eslatmani Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. PROFILE & SETTINGS MODAL (TABS: DEFAULT PROFIL, THEN SETTINGS) -->
+  <div class="modal-overlay hidden" id="profile-settings-modal">
+    <div class="modal-card profile-settings-card">
+      <div class="modal-header">
+        <div class="tabs-header-nav">
+          <!-- Default tab: PROFIL -->
+          <button class="modal-tab-btn active" id="tab-btn-profile" data-tab="tab-profile">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            <span>Foydalanuvchi Profili</span>
+          </button>
+          <!-- Switch tab: SETTINGS -->
+          <button class="modal-tab-btn" id="tab-btn-settings" data-tab="tab-settings">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span>Sozlamalar</span>
+          </button>
+        </div>
+        <button class="modal-close-btn" id="close-profile-modal-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- TAB 1: PROFIL (DEFAULT VIEW) -->
+        <div class="tab-pane active" id="tab-profile">
+          <form id="profile-form" class="profile-form">
+            <div class="profile-avatar-header">
+              <div class="big-avatar-wrapper">
+                <div class="big-avatar-circle" id="profile-big-avatar">
+                  <span id="profile-avatar-initials">AQ</span>
+                  <img id="profile-avatar-img" class="avatar-photo hidden" alt="Profil rasmi" />
+                </div>
+                <button type="button" class="avatar-change-btn" id="btn-change-avatar-color" title="Avatar rangini o'zgartirish">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="m4.93 4.93 4.24 4.24"></path><path d="m14.83 9.17 4.24-4.24"></path><path d="m14.83 14.83 4.24 4.24"></path><path d="m9.17 14.83-4.24 4.24"></path></svg>
+                </button>
+              </div>
+              <div class="profile-header-info">
+                <div class="profile-name-row">
+                  <h3 class="profile-display-name" id="profile-display-fullname">Alisher Qodirov</h3>
+                  <span class="user-role-badge role-user" id="profile-role-badge">👤 ODDIY</span>
+                </div>
+                <span class="profile-display-email" id="profile-display-email-text">oddiy@intizomly.uz</span>
+                <span class="profile-status-badge">Faol Intizomchi</span>
+              </div>
+            </div>
+
+            <!-- Profile Fields: Ism, Familya, Email, Password -->
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="prof-firstname-input">Ism</label>
+                <input type="text" id="prof-firstname-input" class="form-control" value="Alisher" required>
+              </div>
+              <div class="form-group">
+                <label for="prof-lastname-input">Familiya</label>
+                <input type="text" id="prof-lastname-input" class="form-control" value="Qodirov" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="prof-email-input">Email Manzili</label>
+              <input type="email" id="prof-email-input" class="form-control" value="oddiy@intizomly.uz" required>
+            </div>
+
+            <!-- Password with Show/Hide toggle -->
+            <div class="form-group">
+              <label for="prof-password-input">Parol</label>
+              <div class="password-input-group">
+                <input type="password" id="prof-password-input" class="form-control" value="user123" required>
+                <button type="button" class="btn-toggle-password" id="btn-toggle-password" title="Parolni ko'rsatish/yashirish" aria-label="Parolni ko'rsatish yoki yashirish">
+                  <!-- Eye Icon -->
+                  <svg id="eye-icon-show" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                  <!-- Eye Off Icon -->
+                  <svg id="eye-icon-hide" class="hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                </button>
+              </div>
+              <span class="form-hint">Parol ma'lumotlaringiz xavfsizligi va profilni boshqarish uchun</span>
+            </div>
+
+            <!-- Profile Stats Mini Badges -->
+            <div class="profile-stats-strip">
+              <div class="prof-stat-box">
+                <span class="prof-stat-num" id="prof-stat-joined">2026</span>
+                <span class="prof-stat-lbl">Yildan beri faol</span>
+              </div>
+              <div class="prof-stat-box">
+                <span class="prof-stat-num" id="prof-stat-total-done">0</span>
+                <span class="prof-stat-lbl">Bajarilgan odatlar</span>
+              </div>
+              <div class="prof-stat-box">
+                <span class="prof-stat-num" id="prof-stat-streak">0</span>
+                <span class="prof-stat-lbl">Eng uzun streak</span>
+              </div>
+            </div>
+
+            <div class="form-actions profile-actions">
+              <button type="button" class="btn-subtle" id="btn-profile-logout">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Chiqish
+              </button>
+              <button type="submit" class="primary-btn" id="btn-save-profile">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                Profilni Saqlash
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- TAB 2: SOZLAMALAR (SETTINGS) -->
+        <div class="tab-pane hidden" id="tab-settings">
+          <div class="settings-content">
+            <!-- Appearance: Light / Dark / System Segmented Control -->
+            <div class="settings-group">
+              <div class="settings-group-header-row">
+                <div>
+                  <h4 class="settings-group-title">Ko'rinish Rejimi (Appearance)</h4>
+                  <p class="settings-group-desc">Yorug', Qorong'i yoki Qurilma tizimiga moslashtirish</p>
+                </div>
+              </div>
+              <div class="ios-segmented-control" id="appearance-segmented-control">
+                <button type="button" class="segmented-btn" data-appearance-val="light">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                  <span>Yorug'</span>
+                </button>
+                <button type="button" class="segmented-btn" data-appearance-val="dark">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                  <span>Qorong'i</span>
+                </button>
+                <button type="button" class="segmented-btn active" data-appearance-val="system">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                  <span>Tizim</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Theme Selection: Free vs Premium -->
+            <div class="settings-group">
+              <div class="settings-group-header-row">
+                <div>
+                  <h4 class="settings-group-title">Mavzu va Dizayn</h4>
+                  <p class="settings-group-desc">PRO foydalanuvchilar barcha eksklyuziv mavzulardan foydalanishi mumkin</p>
+                </div>
+              </div>
+
+              <div class="theme-picker-grid">
+                <!-- Theme 1: Emerald Green (Yashil Olov) -->
+                <button type="button" class="theme-option-card active" data-set-theme="emerald">
+                  <div class="theme-swatch swatch-emerald"></div>
+                  <span class="theme-title">Zangori Zumrad</span>
+                  <span class="theme-sub">Asosiy Yashil</span>
+                </button>
+
+                <!-- Theme 2: Violet -->
+                <button type="button" class="theme-option-card" data-set-theme="violet">
+                  <div class="theme-swatch swatch-violet"></div>
+                  <span class="theme-title">To'q Binafsha</span>
+                  <span class="theme-sub">Standart</span>
+                </button>
+
+                <!-- Theme 3: Deep OLED True Black -->
+                <button type="button" class="theme-option-card" data-set-theme="oled">
+                  <div class="theme-swatch swatch-oled"></div>
+                  <span class="theme-title">Chuqur OLED</span>
+                  <span class="theme-badge-premium">⚡ PRO</span>
+                </button>
+
+                <!-- Theme 4: Cyber Neon -->
+                <button type="button" class="theme-option-card" data-set-theme="cyber">
+                  <div class="theme-swatch swatch-cyber"></div>
+                  <span class="theme-title">Kiber Neon</span>
+                  <span class="theme-badge-premium">⚡ PRO</span>
+                </button>
+
+                <!-- Theme 5: Gold Luxury -->
+                <button type="button" class="theme-option-card" data-set-theme="gold">
+                  <div class="theme-swatch swatch-gold"></div>
+                  <span class="theme-title">Oltin Midnight</span>
+                  <span class="theme-badge-premium">⚡ PRO</span>
+                </button>
+
+                <!-- Theme 6: Light Mode -->
+                <button type="button" class="theme-option-card" data-set-theme="light">
+                  <div class="theme-swatch swatch-light"></div>
+                  <span class="theme-title">Yorug' Kun</span>
+                  <span class="theme-sub">Oqimli</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Toggles: Sound, Animations, Notifications -->
+            <div class="settings-group">
+              <h4 class="settings-group-title">Tizim va Bildirishnomalar</h4>
+              
+              <div class="setting-toggle-row">
+                <div class="toggle-text">
+                  <span class="toggle-title">Ovozli effektlar (Chime & Fanfare)</span>
+                  <span class="toggle-sub">Odat bajarilganda yoqimli ovoz eshitiladi</span>
+                </div>
+                <label class="switch-control">
+                  <input type="checkbox" id="setting-sound-toggle" checked>
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-toggle-row">
+                <div class="toggle-text">
+                  <span class="toggle-title">Konfetti va yutuq animatsiyalari</span>
+                  <span class="toggle-sub">Barcha kunlik rejalar bajarilganda nishonlash</span>
+                </div>
+                <label class="switch-control">
+                  <input type="checkbox" id="setting-confetti-toggle" checked>
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+
+              <div class="setting-toggle-row">
+                <div class="toggle-text">
+                  <span class="toggle-title">Brauzer va telefon eslatmalari</span>
+                  <span class="toggle-sub">Vaqti kelganda telefon ekranida eslatma chiqadi</span>
+                </div>
+                <label class="switch-control">
+                  <input type="checkbox" id="setting-browser-notif-toggle" checked>
+                  <span class="switch-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Data Management: Export, Import, Reset -->
+            <div class="settings-group">
+              <h4 class="settings-group-title">Ma'lumotlar Boshqaruvi</h4>
+              <p class="settings-group-desc">Intizom tarixingiz xavfsiz saqlanishi uchun zaxira nusxa oling</p>
+              
+              <div class="data-actions-row">
+                <button type="button" class="btn-subtle" id="btn-export-data">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  Eksport (JSON)
+                </button>
+                <label class="btn-subtle file-upload-label">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  Import Qilish
+                  <input type="file" id="import-file-input" accept=".json" style="display:none;">
+                </label>
+                <button type="button" class="btn-danger-outline" id="btn-reset-data">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  Qayta Boshlash
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. ADD / EDIT HABIT MODAL -->
+  <div class="modal-overlay hidden" id="habit-modal">
+    <div class="modal-card habit-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon-badge habit-badge-icon">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          </div>
+          <div>
+            <h2 class="modal-title" id="habit-modal-title">Yangi Odat Qo'shish</h2>
+            <p class="modal-desc" id="habit-modal-subtitle">Har kuni bajariladigan yangi intizomli amalni belgilang</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="close-habit-modal-btn">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <form id="habit-form" class="modal-form">
+        <input type="hidden" id="habit-id-input" value="">
+
+        <!-- Emoji & Title in row -->
+        <div class="form-row-emoji-title">
+          <div class="emoji-picker-container">
+            <label>Belgi</label>
+            <button type="button" class="selected-emoji-btn" id="selected-emoji-display" title="Emojini tanlash">🚫🍬</button>
+            <input type="hidden" id="habit-emoji-input" value="🚫🍬">
+          </div>
+          <div class="form-group flex-1">
+            <label for="habit-title-input">Odat Nomi</label>
+            <input type="text" id="habit-title-input" class="form-control" placeholder="Masalan: Shakar iste'mol qilmaslik" required>
+          </div>
+        </div>
+
+        <!-- Emoji Quick Picker Drawer -->
+        <div class="emoji-picker-drawer hidden" id="emoji-picker-drawer">
+          <div class="emoji-grid" id="emoji-options-grid">
+            <button type="button" class="emoji-btn" data-emoji="🚫🍬">🚫🍬</button>
+            <button type="button" class="emoji-btn" data-emoji="📖">📖</button>
+            <button type="button" class="emoji-btn" data-emoji="💧">💧</button>
+            <button type="button" class="emoji-btn" data-emoji="🏃‍♂️">🏃‍♂️</button>
+            <button type="button" class="emoji-btn" data-emoji="⏰">⏰</button>
+            <button type="button" class="emoji-btn" data-emoji="🧠">🧠</button>
+            <button type="button" class="emoji-btn" data-emoji="🧘">🧘</button>
+            <button type="button" class="emoji-btn" data-emoji="🥗">🥗</button>
+            <button type="button" class="emoji-btn" data-emoji="💻">💻</button>
+            <button type="button" class="emoji-btn" data-emoji="🎯">🎯</button>
+            <button type="button" class="emoji-btn" data-emoji="💪">💪</button>
+            <button type="button" class="emoji-btn" data-emoji="🚴">🚴</button>
+            <button type="button" class="emoji-btn" data-emoji="💤">💤</button>
+            <button type="button" class="emoji-btn" data-emoji="📝">📝</button>
+            <button type="button" class="emoji-btn" data-emoji="🍎">🍎</button>
+            <button type="button" class="emoji-btn" data-emoji="🚫📱">🚫📱</button>
+            <button type="button" class="emoji-btn" data-emoji="☀️">☀️</button>
+            <button type="button" class="emoji-btn" data-emoji="☕">☕</button>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label for="habit-desc-input">Tavsif yoki Maqsad</label>
+          <input type="text" id="habit-desc-input" class="form-control" placeholder="Masalan: Kun davomida shirinlik va shakarli ichimliklar umuman ichilmaydi">
+        </div>
+
+        <!-- Category & Target -->
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="habit-category-select">Toifa</label>
+            <select id="habit-category-select" class="form-control">
+              <option value="Sog'liq">Sog'liq 🍏</option>
+              <option value="O'qish">O'qish 📖</option>
+              <option value="Sport">Sport 🏃‍♂️</option>
+              <option value="Rivojlanish">Rivojlanish 🧠</option>
+              <option value="Tartib">Tartib ⏰</option>
+              <option value="Kundalik">Kundalik vazifa 🎯</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="habit-target-input">Kunlik Me'yor / O'lchov</label>
+            <input type="text" id="habit-target-input" class="form-control" placeholder="Masalan: 20 bet, 2 litr, 1 marta" value="1 marta">
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="button" class="secondary-btn" id="cancel-habit-btn">Bekor qilish</button>
+          <button type="submit" class="primary-btn" id="save-habit-btn">Odatni Saqlash</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOP IPHONE DYNAMIC ISLAND / SMS NOTIFICATION CONTAINER -->
+  <div class="ios-notification-container" id="ios-notification-container"></div>
+
+  <!-- 7. TOAST NOTIFICATION CONTAINER -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- SCRIPTS -->
+  <script src="js/audio.js"></script>
+  <script src="js/confetti.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
