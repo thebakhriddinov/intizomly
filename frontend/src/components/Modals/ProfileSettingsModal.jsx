@@ -13,6 +13,7 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
   const [savingProfile, setSavingProfile] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +26,7 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
     if (currentUser) {
       setFirstName(currentUser.firstName || '');
       setLastName(currentUser.lastName || '');
+      setPhone(currentUser.phone || '');
       setEmail(currentUser.email || '');
       setPassword(currentUser.password || '');
     }
@@ -36,7 +38,7 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
     e.preventDefault();
     setSavingProfile(true);
     try {
-      await updateProfile({ firstName, lastName, email, password });
+      await updateProfile({ firstName, lastName, phone, email, password });
       addToast("Profil saqlandi! 👤", `${firstName} ${lastName}`, "success");
     } catch (err) {
       addToast("Xatolik", err.message || "Profilni saqlab bo'lmadi", "warning");
@@ -111,7 +113,7 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
                     <span className="user-role-badge role-user">{t('roleUser')}</span>
                   )}
                 </div>
-                <p className="profile-display-email">{currentUser?.email || 'oddiy@intizomly.uz'}</p>
+                <p className="profile-display-email">📞 {currentUser?.phone || (currentUser?.email && !currentUser.email.includes('@phone.intizomly.uz') ? currentUser.email : '70 126 5759')}</p>
               </div>
             </div>
 
@@ -156,12 +158,13 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
             </div>
 
             <div className="form-group">
-              <label>{t('profileEmail')}</label>
+              <label>Telefon Raqam</label>
               <input
-                type="email"
+                type="tel"
                 className="form-control"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Masalan: 70 126 5759 yoki 90 123 4567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 required
               />
             </div>

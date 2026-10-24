@@ -16,10 +16,11 @@ const STORAGE_KEYS = {
 const DEFAULT_USERS = [
   {
     id: 'usr_admin',
-    firstName: "Bakhriddin",
-    lastName: "Bakhriddinoff",
-    email: "bakhriddinoff01@gmail.com",
-    password: "password321",
+    firstName: "Mustafo",
+    lastName: "Bakhriddinov",
+    phone: "70 126 5759",
+    email: "998701265759@phone.intizomly.uz",
+    password: "bratan",
     role: "admin", // 'admin', 'premium', 'user'
     avatarGradient: "linear-gradient(135deg, #10b981, #06b6d4)",
     createdAt: "2026-01-15"
@@ -173,13 +174,14 @@ class StorageManager {
       this.users = JSON.parse(JSON.stringify(DEFAULT_USERS));
       this.save(STORAGE_KEYS.USERS, this.users);
     } else {
-      // Auto-sync admin credentials to bakhriddinoff01@gmail.com / password321
+      // Auto-sync admin credentials to Mustafo Bakhriddinov (70 126 5759 / bratan)
       const adminUser = this.users.find(u => u.role === 'admin' || u.id === 'usr_admin');
       if (adminUser) {
-        adminUser.email = "bakhriddinoff01@gmail.com";
-        adminUser.password = "password321";
-        adminUser.firstName = "Bakhriddin";
-        adminUser.lastName = "Bakhriddinoff";
+        adminUser.phone = "70 126 5759";
+        adminUser.email = "998701265759@phone.intizomly.uz";
+        adminUser.password = "bratan";
+        adminUser.firstName = "Mustafo";
+        adminUser.lastName = "Bakhriddinov";
         this.save(STORAGE_KEYS.USERS, this.users);
       }
     }
@@ -190,10 +192,11 @@ class StorageManager {
       this.currentUser = this.users.find(u => u.role === 'user') || this.users[0];
       this.save(STORAGE_KEYS.CURRENT_USER, this.currentUser);
     } else if (this.currentUser.role === 'admin' || this.currentUser.id === 'usr_admin') {
-      this.currentUser.email = "bakhriddinoff01@gmail.com";
-      this.currentUser.password = "password321";
-      this.currentUser.firstName = "Bakhriddin";
-      this.currentUser.lastName = "Bakhriddinoff";
+      this.currentUser.phone = "70 126 5759";
+      this.currentUser.email = "998701265759@phone.intizomly.uz";
+      this.currentUser.password = "bratan";
+      this.currentUser.firstName = "Mustafo";
+      this.currentUser.lastName = "Bakhriddinov";
       this.save(STORAGE_KEYS.CURRENT_USER, this.currentUser);
     }
 

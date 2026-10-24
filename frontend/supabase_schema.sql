@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- Intizomly — Supabase Database Schema & Row Level Security (RLS)
--- Ushbu fayl nusxasini Supabase Dashboard -> SQL Editor sahifasida ishga tushiring
+-- Ushbu faylni Supabase Dashboard -> SQL Editor sahifasida ishga tushiring
 -- ==============================================================================
 
 -- 1. EXTENSIONS
@@ -14,17 +14,22 @@ BEGIN
   END IF;
 END $$;
 
--- 3. PROFILES TABLE (auth.users bilan bog'langan profil jadvali)
+-- 3. PROFILES TABLE (auth.users bilan bog'langan profil jadvali - Telefon va Ism/Familya)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   first_name TEXT NOT NULL,
   last_name TEXT DEFAULT '',
-  email TEXT NOT NULL,
+  phone TEXT,
+  email TEXT,
   role user_role DEFAULT 'user' NOT NULL,
   avatar_gradient TEXT DEFAULT 'linear-gradient(135deg, #10b981, #3b82f6)',
   created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
+
+-- Agar jadval allaqachon mavjud bo'lsa, phone ustunini qo'shish va emailni ixtiyoriy qilish
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.profiles ALTER COLUMN email DROP NOT NULL;
 
 -- 4. USER SETTINGS TABLE (Foydalanuvchi sozlamalari, tema, til va h.k.)
 CREATE TABLE IF NOT EXISTS public.user_settings (
@@ -77,7 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_habits_user_id ON public.habits(user_id);
 CREATE INDEX IF NOT EXISTS idx_completions_user_date ON public.habit_completions(user_id, date_key);
 CREATE INDEX IF NOT EXISTS idx_completions_habit_id ON public.habit_completions(habit_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
-CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_phone ON public.profiles(phone);
 
 -- ==============================================================================
 -- SECURITY HELPER FUNCTIONS (RLS rekursiyasini oldini olish uchun)
@@ -97,6 +102,7 @@ $$;
 
 -- ==============================================================================
 -- AUTOMATIC PROFILE & DEFAULT HABITS TRIGGER ON SIGNUP
+-- Mustafo Bakhriddinov (Admin: 70 126 5759 / bratan)
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
@@ -107,27 +113,36 @@ AS $$
 DECLARE
   new_first_name TEXT;
   new_last_name TEXT;
+  new_phone TEXT;
   assigned_role user_role := 'user';
 BEGIN
   new_first_name := COALESCE(NEW.raw_user_meta_data->>'first_name', split_part(NEW.email, '@', 1));
   new_last_name := COALESCE(NEW.raw_user_meta_data->>'last_name', '');
+  new_phone := COALESCE(NEW.raw_user_meta_data->>'phone', split_part(NEW.email, '@', 1));
 
-  -- Agar email bakhriddinoff01@gmail.com bo'lsa, avtomatik admin qilish
-  IF NEW.email = 'bakhriddinoff01@gmail.com' THEN
+  -- Mustafo Bakhriddinov (Admin: 70 126 5759) avtomatik aniqlanadi
+  IF new_phone LIKE '%701265759%' OR NEW.email LIKE '%701265759%' OR NEW.email = 'bakhriddinoff01@gmail.com' THEN
     assigned_role := 'admin';
+    new_first_name := 'Mustafo';
+    new_last_name := 'Bakhriddinov';
   END IF;
 
-  -- 1. Create Profile
-  INSERT INTO public.profiles (id, first_name, last_name, email, role)
+  -- 1. Create or Update Profile
+  INSERT INTO public.profiles (id, first_name, last_name, phone, email, role)
   VALUES (
     NEW.id,
     new_first_name,
     new_last_name,
+    new_phone,
     NEW.email,
     assigned_role
   )
   ON CONFLICT (id) DO UPDATE SET
+    first_name = EXCLUDED.first_name,
+    last_name = EXCLUDED.last_name,
+    phone = EXCLUDED.phone,
     email = EXCLUDED.email,
+    role = CASE WHEN EXCLUDED.role = 'admin' THEN 'admin' ELSE profiles.role END,
     updated_at = timezone('utc'::text, now());
 
   -- 2. Create User Settings

@@ -1,4 +1,34 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+// Phone helpers for Supabase Auth mapping
+export function normalizePhone(rawPhone) {
+  if (!rawPhone) return '';
+  let digits = String(rawPhone).replace(/\D/g, '');
+  if (digits.length === 9) {
+    digits = '998' + digits;
+  }
+  return digits;
+}
+
+export function phoneToAuthEmail(phone) {
+  const digits = normalizePhone(phone);
+  return `${digits}@phone.intizomly.uz`;
+}
+
+export function formatPhoneNumber(rawPhone) {
+  const digits = normalizePhone(rawPhone);
+  if (digits.length === 12 && digits.startsWith('998')) {
+    const code = digits.slice(3, 5);
+    const p1 = digits.slice(5, 8);
+    const p2 = digits.slice(8, 10);
+    const p3 = digits.slice(10, 12);
+    return `+998 (${code}) ${p1}-${p2}-${p3}`;
+  }
+  return rawPhone || '';
+}
+
+export function isAdminPhone(phone) {
+  const digits = normalizePhone(phone);
+  return digits.endsWith('701265759');
+}
 
 export const supabaseService = {
   isConfigured: () => isSupabaseConfigured && !!supabase,
@@ -6,17 +36,22 @@ export const supabaseService = {
   // ============================================================================
   // AUTHENTICATION
   // ============================================================================
-  async signUp({ email, password, firstName, lastName }) {
+  async signUp({ phone, email, password, firstName, lastName }) {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPhone = normalizePhone(phone);
+    const cleanEmail = email && email.includes('@') ? email.trim().toLowerCase() : phoneToAuthEmail(phone || cleanPhone);
+    const cleanFirstName = (firstName || '').trim();
+    const cleanLastName = (lastName || '').trim();
+
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
-      password: password.trim(),
+      password: (password || '').trim(),
       options: {
         data: {
-          first_name: (firstName || '').trim(),
-          last_name: (lastName || '').trim()
+          first_name: cleanFirstName,
+          last_name: cleanLastName,
+          phone: cleanPhone || phone || ''
         }
       }
     });
@@ -25,13 +60,19 @@ export const supabaseService = {
     return data;
   },
 
-  async signIn({ email, password }) {
+  async signIn({ phone, email, password }) {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
-    const cleanEmail = (email || '').trim().toLowerCase();
+    let authIdentifier = '';
+    if (phone) {
+      authIdentifier = phoneToAuthEmail(phone);
+    } else if (email) {
+      authIdentifier = email.includes('@') ? email.trim().toLowerCase() : phoneToAuthEmail(email);
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: cleanEmail,
-      password: password.trim()
+      email: authIdentifier,
+      password: (password || '').trim()
     });
 
     if (error) throw error;
@@ -78,7 +119,7 @@ export const supabaseService = {
     return data ? this.normalizeProfile(data) : null;
   },
 
-  async updateProfile(userId, { firstName, lastName, avatarGradient }) {
+  async updateProfile(userId, { firstName, lastName, phone, email, avatarGradient }) {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
     const payload = {
@@ -86,6 +127,8 @@ export const supabaseService = {
     };
     if (firstName !== undefined) payload.first_name = firstName.trim();
     if (lastName !== undefined) payload.last_name = lastName.trim();
+    if (phone !== undefined) payload.phone = normalizePhone(phone) || phone;
+    if (email !== undefined) payload.email = email.trim();
     if (avatarGradient !== undefined) payload.avatar_gradient = avatarGradient;
 
     const { data, error } = await supabase
@@ -101,10 +144,12 @@ export const supabaseService = {
 
   normalizeProfile(raw) {
     if (!raw) return null;
+    const phone = raw.phone || (raw.email && raw.email.includes('@phone.intizomly.uz') ? raw.email.replace('@phone.intizomly.uz', '') : '') || '';
     return {
       id: raw.id,
       firstName: raw.first_name || '',
       lastName: raw.last_name || '',
+      phone: phone,
       email: raw.email || '',
       role: raw.role || 'user',
       avatarGradient: raw.avatar_gradient || 'linear-gradient(135deg, #10b981, #3b82f6)',

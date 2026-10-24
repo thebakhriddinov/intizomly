@@ -4,30 +4,30 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export function AuthModal({ isOpen, onClose, isAuthGate = false }) {
-  const { login, register, supabaseStatus } = useAuth();
+  const { login, register } = useAuth();
   const { addToast } = useHabits();
   const { t } = useLanguage();
 
   const [authTab, setAuthTab] = useState('login'); // 'login' or 'register'
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
   const [regFirstName, setRegFirstName] = useState('');
   const [regLastName, setRegLastName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
+  const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
 
   if (!isOpen) return null;
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!loginEmail.trim() || !loginPassword.trim()) return;
+    if (!loginPhone.trim() || !loginPassword.trim()) return;
 
     setIsSubmitting(true);
     try {
-      const res = await login(loginEmail, loginPassword);
+      const res = await login(loginPhone, loginPassword);
       if (res.success) {
         addToast(t('toastWelcome'), `${res.user.firstName} (${(res.user.role || 'user').toUpperCase()})`, "success");
         if (onClose) onClose();
@@ -43,23 +43,19 @@ export function AuthModal({ isOpen, onClose, isAuthGate = false }) {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!regEmail.trim() || !regPassword.trim() || !regFirstName.trim()) return;
+    if (!regPhone.trim() || !regPassword.trim() || !regFirstName.trim()) return;
 
     setIsSubmitting(true);
     try {
       const res = await register({
         firstName: regFirstName,
         lastName: regLastName,
-        email: regEmail,
+        phone: regPhone,
         password: regPassword
       });
 
       if (res.success) {
-        if (res.needsEmailConfirmation) {
-          addToast("Tasdiqlash xabari 📩", res.message, "info", 8000);
-        } else {
-          addToast(t('toastWelcome'), `${res.user.firstName}!`, "success");
-        }
+        addToast(t('toastWelcome'), `${res.user.firstName}!`, "success");
         if (onClose) onClose();
       } else {
         addToast("Xatolik", res.message, "warning");
@@ -69,11 +65,6 @@ export function AuthModal({ isOpen, onClose, isAuthGate = false }) {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const fillAdminCredentials = () => {
-    setLoginEmail('bakhriddinoff01@gmail.com');
-    setLoginPassword('password321');
   };
 
   return (
@@ -137,43 +128,16 @@ export function AuthModal({ isOpen, onClose, isAuthGate = false }) {
         <div className="modal-body">
           {authTab === 'login' ? (
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {/* Quick Admin fill button */}
-              <div style={{
-                padding: '10px 12px',
-                background: 'var(--bg-secondary)',
-                borderRadius: '12px',
-                border: '1px solid var(--border-subtle)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '8px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '18px' }}>🛡️</span>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>Admin hisobi</span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>bakhriddinoff01@gmail.com</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="secondary-btn"
-                  onClick={fillAdminCredentials}
-                  style={{ padding: '4px 10px', fontSize: '11.5px', height: 'auto' }}
-                >
-                  To'ldirish
-                </button>
-              </div>
-
               <div className="form-group">
-                <label>Email Manzil</label>
+                <label>Telefon Raqam</label>
                 <input
-                  type="email"
+                  type="tel"
                   className="form-control"
-                  placeholder="emailingizni kiriting..."
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder="Masalan: 70 126 5759 yoki 90 123 4567"
+                  value={loginPhone}
+                  onChange={(e) => setLoginPhone(e.target.value)}
                   required
+                  autoFocus
                 />
               </div>
 
@@ -249,13 +213,13 @@ export function AuthModal({ isOpen, onClose, isAuthGate = false }) {
               </div>
 
               <div className="form-group">
-                <label>Email Manzil *</label>
+                <label>Telefon Raqam *</label>
                 <input
-                  type="email"
+                  type="tel"
                   className="form-control"
-                  placeholder="masalan: siz@gmail.com"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
+                  placeholder="Masalan: 70 126 5759 yoki 90 123 4567"
+                  value={regPhone}
+                  onChange={(e) => setRegPhone(e.target.value)}
                   required
                 />
               </div>

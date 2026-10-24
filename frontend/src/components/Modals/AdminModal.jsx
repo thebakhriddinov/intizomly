@@ -12,7 +12,7 @@ export function AdminModal({ isOpen, onClose }) {
 
   const [newFirstName, setNewFirstName] = useState('');
   const [newLastName, setNewLastName] = useState('');
-  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('user');
 
@@ -29,12 +29,12 @@ export function AdminModal({ isOpen, onClose }) {
 
   const adminStats = storage.getAdminStats();
 
-  const handleAddUser = (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault();
-    const res = adminAddUser({
+    const res = await adminAddUser({
       firstName: newFirstName,
       lastName: newLastName,
-      email: newEmail,
+      phone: newPhone,
       password: newPassword,
       role: newRole
     });
@@ -42,7 +42,7 @@ export function AdminModal({ isOpen, onClose }) {
     if (res.success) {
       setNewFirstName('');
       setNewLastName('');
-      setNewEmail('');
+      setNewPhone('');
       setNewPassword('');
       addToast("Foydalanuvchi qo'shildi! ✅", `${newFirstName} (${newRole.toUpperCase()})`, "success");
     } else {
@@ -174,11 +174,11 @@ export function AdminModal({ isOpen, onClose }) {
 
               <div className="form-row-2" style={{ marginTop: '8px' }}>
                 <input
-                  type="email"
+                  type="tel"
                   className="form-control"
-                  placeholder="Email Manzil *"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="Telefon Raqam (masalan: 90 123 4567) *"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
                   required
                 />
                 <input
@@ -211,7 +211,7 @@ export function AdminModal({ isOpen, onClose }) {
                 <thead>
                   <tr>
                     <th>Foydalanuvchi</th>
-                    <th>Email</th>
+                    <th>Telefon / Email</th>
                     <th>Rol</th>
                     <th>Qo'shilgan</th>
                     <th>Amallar</th>
@@ -246,7 +246,7 @@ export function AdminModal({ isOpen, onClose }) {
                             <strong>{u.firstName} {u.lastName}</strong>
                           </div>
                         </td>
-                        <td>{u.email}</td>
+                        <td>{u.phone || (u.email && !u.email.includes('@phone.intizomly.uz') ? u.email : '70 126 5759')}</td>
                         <td>
                           {isAdm ? (
                             <span className="user-role-badge role-admin">🛡️ ADMIN</span>
