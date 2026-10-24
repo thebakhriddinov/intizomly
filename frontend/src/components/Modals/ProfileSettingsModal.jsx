@@ -4,8 +4,8 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 
-export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', onOpenAuth }) {
-  const { currentUser, isPremium, isAdmin, updateProfile } = useAuth();
+export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', onOpenAuth, onOpenUpgrade }) {
+  const { currentUser, isPremium, isAdmin, updateProfile, logout } = useAuth();
   const { settings, updateSettings, dateKey, history, habits, addToast } = useHabits();
   const { t, lang, setLanguage } = useLanguage();
 
@@ -47,7 +47,10 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
 
   const handleThemeSelect = (themeName) => {
     if (!isPremium && themeName !== 'emerald') {
-      alert("Ushbu rangli suyuq mavzu faqat PRO a'zolar uchun ochiq! PRO rejimga o'tish uchun adminga murojaat qiling yoki Malika Karimova (PRO) akkauntiga kiring.");
+      if (onOpenUpgrade) {
+        onClose();
+        onOpenUpgrade();
+      }
       return;
     }
     updateSettings({ theme: themeName });
@@ -188,17 +191,33 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
               </div>
             </div>
 
-            <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '8px' }}>
-              <button
-                type="button"
-                className="btn-subtle"
-                onClick={() => {
-                  onClose();
-                  onOpenAuth();
-                }}
-              >
-                Akkauntni almashtirish
-              </button>
+            <div className="form-actions" style={{ justifyContent: 'space-between', marginTop: '12px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn-subtle"
+                  style={{ color: 'var(--error, #ef4444)' }}
+                  onClick={() => {
+                    onClose();
+                    logout();
+                  }}
+                >
+                  Chiqish (Logout)
+                </button>
+                {!isPremium && (
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={() => {
+                      onClose();
+                      if (onOpenUpgrade) onOpenUpgrade();
+                    }}
+                    style={{ borderColor: 'var(--amber)', color: 'var(--amber)' }}
+                  >
+                    ⚡ PRO ($10)
+                  </button>
+                )}
+              </div>
               <button type="submit" className="primary-btn" disabled={savingProfile}>
                 {savingProfile ? "Saqlanmoqda..." : t('saveProfileBtn')}
               </button>

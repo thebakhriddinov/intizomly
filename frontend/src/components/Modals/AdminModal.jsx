@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -6,7 +6,7 @@ import { storage } from '../../utils/storage';
 import { supabaseService } from '../../services/supabaseService';
 
 export function AdminModal({ isOpen, onClose }) {
-  const { currentUser, users, adminToggleUserRole, adminDeleteUser, adminAddUser } = useAuth();
+  const { currentUser, users, adminToggleUserRole, adminDeleteUser, adminAddUser, refreshUsers } = useAuth();
   const { triggerBanner, addToast } = useHabits();
   const { t } = useLanguage();
 
@@ -18,6 +18,12 @@ export function AdminModal({ isOpen, onClose }) {
 
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastMessage, setBroadcastMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen && refreshUsers) {
+      refreshUsers();
+    }
+  }, [isOpen, refreshUsers]);
 
   if (!isOpen) return null;
 

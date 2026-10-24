@@ -5,14 +5,14 @@ import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 import { DateNavigator } from '../Dashboard/DateNavigator';
 
-function HeaderComponent({ onOpenProfile, onOpenAdmin, onOpenAuth }) {
+function HeaderComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrade }) {
   const {
     jumpToday,
     settings,
     updateSettings,
     triggerBanner
   } = useHabits();
-  const { currentUser, isAdmin } = useAuth();
+  const { currentUser, isAdmin, isPremium } = useAuth();
   const { t, lang } = useLanguage();
 
   const streak = storage.getGlobalStreak();
@@ -60,6 +60,25 @@ function HeaderComponent({ onOpenProfile, onOpenAdmin, onOpenAuth }) {
 
       {/* Header Right Actions */}
       <div className="header-right">
+        {!isPremium && (
+          <button
+            type="button"
+            className="primary-btn"
+            onClick={onOpenUpgrade}
+            style={{
+              background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+              color: '#fff',
+              border: 'none',
+              padding: '5px 12px',
+              fontSize: '11.5px',
+              fontWeight: 700,
+              borderRadius: '20px'
+            }}
+          >
+            ⚡ PRO ($10)
+          </button>
+        )}
+
         {isAdmin && (
           <button
             type="button"

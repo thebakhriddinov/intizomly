@@ -4,7 +4,7 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 
-function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth }) {
+function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrade }) {
   const { currentUser, isAdmin, isPremium, logout } = useAuth();
   const { jumpToday, triggerBanner } = useHabits();
   const { t, lang } = useLanguage();
@@ -25,7 +25,7 @@ function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth }) {
 
   const initials = currentUser
     ? `${currentUser.firstName?.[0] || 'U'}${currentUser.lastName?.[0] || ''}`.toUpperCase()
-    : 'AQ';
+    : 'U';
 
   return (
     <aside className="app-sidebar">
@@ -99,6 +99,32 @@ function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth }) {
         </div>
       </div>
 
+      {/* Upgrade to PRO button if not premium */}
+      {!isPremium && (
+        <div style={{ padding: '0 var(--space-4) 10px var(--space-4)' }}>
+          <button
+            type="button"
+            className="primary-btn w-100"
+            onClick={onOpenUpgrade}
+            style={{
+              background: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+              color: '#fff',
+              border: 'none',
+              padding: '8px 12px',
+              fontSize: '12px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              borderRadius: '12px'
+            }}
+          >
+            <span>⚡ PRO ga o'tish ($10)</span>
+          </button>
+        </div>
+      )}
+
       {/* Sidebar User Footer */}
       <div className="sidebar-user-footer">
         <div
@@ -113,7 +139,7 @@ function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth }) {
           </div>
           <div className="sidebar-user-details">
             <span className="sidebar-user-name">
-              {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Alisher Qodirov'}
+              {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Foydalanuvchi'}
             </span>
             <span className="sidebar-user-role-text">{roleText}</span>
           </div>
@@ -122,8 +148,8 @@ function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth }) {
         <button
           type="button"
           className="sidebar-logout-btn"
-          onClick={onOpenAuth}
-          title={t('authLoginTitle') + ' / ' + t('navLogout')}
+          onClick={logout}
+          title={t('navLogout')}
           aria-label={t('navLogout')}
         >
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
