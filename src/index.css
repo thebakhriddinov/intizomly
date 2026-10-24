@@ -804,6 +804,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   box-shadow: var(--shadow-subtle);
 }
 
+.mobile-date-bar {
+  display: none;
+}
+
 .date-nav-btn {
   background: transparent;
   border: none;
@@ -2947,17 +2951,225 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   }
 }
 
-@media (max-width: 640px) {
-  .date-navigator {
-    padding: 2px 4px;
+@media (max-width: 768px) {
+  /* 1. Phone Header: ONLY Logo and Streak */
+  .app-header {
+    padding: 0 var(--space-4);
+    height: 58px;
   }
 
-  .date-display span#current-date-text {
+  .header-left {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+  .mobile-only-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .header-streak-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 4px 12px;
+    background: var(--bg-surface-elevated);
+    border: 1px solid var(--border-hover);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Remove date from phone header */
+  .app-header .desktop-date-nav,
+  .app-header .date-navigator {
+    display: none !important;
+  }
+
+  /* Hide header right actions on phone so header has ONLY logo and streak */
+  .app-header .header-right {
+    display: none !important;
+  }
+
+  /* 2. Mobile Date Navigator Bar (moved to top of dashboard content) */
+  .mobile-date-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-card);
+    backdrop-filter: blur(28px) saturate(200%);
+    -webkit-backdrop-filter: blur(28px) saturate(200%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 10px 14px;
+    box-shadow: var(--shadow-card);
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: var(--space-1);
+  }
+
+  .mobile-date-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.35) 50%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .mobile-date-bar .date-display {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0 4px;
+    font-size: 13.5px;
+    font-weight: 650;
+    color: var(--text-primary);
+    cursor: pointer;
+    min-width: 0;
+  }
+
+  .mobile-date-bar .date-display .current-date-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mobile-date-bar .date-nav-btn {
+    width: 36px;
+    height: 36px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    flex-shrink: 0;
+    transition: all var(--transition-fast);
+  }
+
+  .mobile-date-bar .date-nav-btn:hover,
+  .mobile-date-bar .date-nav-btn:active {
+    background: var(--bg-surface-elevated);
+    border-color: var(--primary-accent);
+    color: var(--primary-accent);
+    transform: scale(1.06);
+  }
+
+  .mobile-date-bar .styled-reset-today-btn {
+    flex-shrink: 0;
+    padding: 5px 11px;
+    font-size: 11px;
+  }
+
+  /* 3. Intizom Xaritasi (Heatmap) - Larger on Mobile */
+  .github-heatmap-card {
+    padding: var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .heatmap-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .heatmap-title-wrap {
+    width: 100%;
+  }
+
+  .heatmap-heading {
+    font-size: 16px;
+  }
+
+  .badge-github {
+    font-size: 10.5px;
+  }
+
+  .heatmap-legend {
+    align-self: flex-start;
     font-size: 12px;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-subtle);
   }
 
-  .reset-today-btn {
-    display: none;
+  .gh-legend-box {
+    width: 15px;
+    height: 15px;
+    border-radius: 4px;
+  }
+
+  .heatmap-container {
+    gap: 10px;
+    padding-bottom: 8px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .heatmap-weekdays-col {
+    padding-top: 22px;
+    font-size: 11px;
+    font-weight: 600;
+    justify-content: space-between;
+    height: 156px;
+    flex-shrink: 0;
+  }
+
+  .heatmap-scroll-area {
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .heatmap-months-row {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 4px;
+    color: var(--text-secondary);
+  }
+
+  /* 18px squares on mobile (50% larger than 12px desktop) */
+  .github-squares-grid {
+    grid-template-rows: repeat(7, 18px);
+    grid-auto-columns: 18px;
+    gap: 5px;
+  }
+
+  .gh-square {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+  }
+
+  .gh-square:hover,
+  .gh-square:active {
+    transform: scale(1.35);
+    z-index: 10;
+  }
+
+  .gh-square.is-current-selected {
+    outline: 2.5px solid var(--text-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 12px var(--primary-accent);
+  }
+
+  .heatmap-footer-info {
+    font-size: 12.5px;
+    line-height: 1.4;
   }
 
   .habits-grid {

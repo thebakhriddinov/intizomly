@@ -6,6 +6,7 @@ import { LiquidBackground } from './components/Background/LiquidBackground';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
 import { MobileBottomNav } from './components/Layout/MobileBottomNav';
+import { DateNavigator } from './components/Dashboard/DateNavigator';
 import { WeekStrip } from './components/Dashboard/WeekStrip';
 import { StatsOverview } from './components/Dashboard/StatsOverview';
 import { Heatmap } from './components/Dashboard/Heatmap';
@@ -111,6 +112,8 @@ export function App() {
           />
 
           <main className="app-main">
+            {/* Mobile Date Navigator (Visible only on mobile/phone screens) */}
+            <DateNavigator className="mobile-date-bar" />
             <WeekStrip />
             <StatsOverview />
             <Heatmap />
