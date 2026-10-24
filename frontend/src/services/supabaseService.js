@@ -1,3 +1,5 @@
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
 // Phone helpers for Supabase Auth mapping
 export function normalizePhone(rawPhone) {
   if (!rawPhone) return '';
