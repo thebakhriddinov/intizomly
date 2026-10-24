@@ -4,13 +4,6 @@ import { isSupabaseConfigured, getSupabaseConfigStatus } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
-const checkIsAdmin = (user, profile) => {
-  if (profile?.role === 'admin') return true;
-  const email = (user?.email || '').toLowerCase();
-  const phone = (profile?.phone || user?.user_metadata?.phone || '').replace(/\D/g, '');
-  return phone.endsWith('701265759') || email.includes('701265759') || email === 'bakhriddinoff01@gmail.com';
-};
-
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [users, setUsers] = useState([]);
@@ -31,26 +24,21 @@ export function AuthProvider({ children }) {
         const session = await supabaseService.getSession();
         if (session?.user) {
           const profile = await supabaseService.getProfile(session.user.id);
-          const isAdm = checkIsAdmin(session.user, profile);
           if (profile) {
             setCurrentUser({
               ...profile,
-              role: isAdm ? 'admin' : (profile.role || 'user'),
-              firstName: isAdm ? 'Mustafo' : profile.firstName,
-              lastName: isAdm ? 'Bakhriddinov' : profile.lastName,
-              phone: isAdm ? (profile.phone || '70 126 5759') : profile.phone,
               isSupabaseUser: true
             });
           } else {
-            // Profile trigger fallback
+            // Profile fallback with standard user role
             setCurrentUser({
               id: session.user.id,
-              firstName: isAdm ? 'Mustafo' : (session.user.user_metadata?.first_name || 'Foydalanuvchi'),
-              lastName: isAdm ? 'Bakhriddinov' : (session.user.user_metadata?.last_name || ''),
-              phone: isAdm ? '70 126 5759' : (session.user.user_metadata?.phone || ''),
+              firstName: session.user.user_metadata?.first_name || 'Foydalanuvchi',
+              lastName: session.user.user_metadata?.last_name || '',
+              phone: session.user.user_metadata?.phone || '',
               email: session.user.email,
-              role: isAdm ? 'admin' : 'user',
-              avatarGradient: isAdm ? 'linear-gradient(135deg, #10b981, #06b6d4)' : 'linear-gradient(135deg, #10b981, #3b82f6)',
+              role: 'user',
+              avatarGradient: 'linear-gradient(135deg, #10b981, #3b82f6)',
               createdAt: new Date().toISOString().split('T')[0],
               isSupabaseUser: true
             });
@@ -70,25 +58,20 @@ export function AuthProvider({ children }) {
         const { data } = supabaseService.onAuthStateChange(async (event, session) => {
           if (event === 'SIGNED_IN' && session?.user) {
             const profile = await supabaseService.getProfile(session.user.id);
-            const isAdm = checkIsAdmin(session.user, profile);
             if (profile) {
               setCurrentUser({
                 ...profile,
-                role: isAdm ? 'admin' : (profile.role || 'user'),
-                firstName: isAdm ? 'Mustafo' : profile.firstName,
-                lastName: isAdm ? 'Bakhriddinov' : profile.lastName,
-                phone: isAdm ? (profile.phone || '70 126 5759') : profile.phone,
                 isSupabaseUser: true
               });
             } else {
               setCurrentUser({
                 id: session.user.id,
-                firstName: isAdm ? 'Mustafo' : (session.user.user_metadata?.first_name || 'Foydalanuvchi'),
-                lastName: isAdm ? 'Bakhriddinov' : (session.user.user_metadata?.last_name || ''),
-                phone: isAdm ? '70 126 5759' : (session.user.user_metadata?.phone || ''),
+                firstName: session.user.user_metadata?.first_name || 'Foydalanuvchi',
+                lastName: session.user.user_metadata?.last_name || '',
+                phone: session.user.user_metadata?.phone || '',
                 email: session.user.email,
-                role: isAdm ? 'admin' : 'user',
-                avatarGradient: isAdm ? 'linear-gradient(135deg, #10b981, #06b6d4)' : 'linear-gradient(135deg, #10b981, #3b82f6)',
+                role: 'user',
+                avatarGradient: 'linear-gradient(135deg, #10b981, #3b82f6)',
                 createdAt: new Date().toISOString().split('T')[0],
                 isSupabaseUser: true
               });
@@ -123,69 +106,28 @@ export function AuthProvider({ children }) {
     }
   }, [currentUser]);
 
-  // Login: Support Admin (70 126 5759 / bratan) and Users via Phone/Password
-  const login = useCallback(async (identifier, password) => {
-    const rawInput = (identifier || '').trim();
-    const cleanPass = (password || '').trim();
-
+  // Login: Both Admin and Regular Users authenticate via Phone/Password with Supabase Auth
+  const login = useCallback(async (phone, password) => {
     if (!isSupabaseConfigured) {
       return { success: false, message: "Supabase kalitlari topilmadi!" };
     }
 
-    const digits = rawInput.replace(/\D/g, '');
-    const isAdminCandidate = digits.endsWith('701265759') || rawInput.toLowerCase() === 'bakhriddinoff01@gmail.com';
-
     try {
-      let authData;
-      try {
-        authData = await supabaseService.signIn({
-          phone: rawInput.includes('@') ? undefined : rawInput,
-          email: rawInput.includes('@') ? rawInput : undefined,
-          password: cleanPass
-        });
-      } catch (signInErr) {
-        // If Admin (70 126 5759 / bratan) is logging in and not yet registered in Supabase Auth, auto-create account!
-        if (isAdminCandidate && cleanPass === 'bratan') {
-          try {
-            authData = await supabaseService.signUp({
-              phone: '70 126 5759',
-              password: 'bratan',
-              firstName: 'Mustafo',
-              lastName: 'Bakhriddinov'
-            });
-            authData = await supabaseService.signIn({
-              phone: '70 126 5759',
-              password: 'bratan'
-            });
-          } catch (signUpErr) {
-            console.warn('[Auth] Admin auto-create error:', signUpErr);
-            throw signInErr;
-          }
-        } else {
-          throw signInErr;
-        }
-      }
+      const authData = await supabaseService.signIn({ phone, password });
 
       if (authData?.user) {
         let profile = await supabaseService.getProfile(authData.user.id);
-        const isAdm = isAdminCandidate || profile?.role === 'admin';
-
         if (!profile) {
           profile = {
             id: authData.user.id,
-            firstName: isAdm ? 'Mustafo' : (authData.user.user_metadata?.first_name || 'Foydalanuvchi'),
-            lastName: isAdm ? 'Bakhriddinov' : (authData.user.user_metadata?.last_name || ''),
-            phone: isAdm ? '70 126 5759' : (authData.user.user_metadata?.phone || rawInput),
+            firstName: authData.user.user_metadata?.first_name || 'Foydalanuvchi',
+            lastName: authData.user.user_metadata?.last_name || '',
+            phone: authData.user.user_metadata?.phone || phone,
             email: authData.user.email,
-            role: isAdm ? 'admin' : 'user',
-            avatarGradient: isAdm ? 'linear-gradient(135deg, #10b981, #06b6d4)' : 'linear-gradient(135deg, #10b981, #3b82f6)',
+            role: 'user',
+            avatarGradient: 'linear-gradient(135deg, #10b981, #3b82f6)',
             createdAt: new Date().toISOString().split('T')[0]
           };
-        } else if (isAdm && profile.role !== 'admin') {
-          profile.role = 'admin';
-          profile.firstName = 'Mustafo';
-          profile.lastName = 'Bakhriddinov';
-          profile.phone = '70 126 5759';
         }
 
         const loggedInUser = {
@@ -202,9 +144,7 @@ export function AuthProvider({ children }) {
     } catch (supaErr) {
       return {
         success: false,
-        message: supaErr.message === 'Invalid login credentials'
-          ? "Telefon raqam yoki parol noto'g'ri kiritildi!"
-          : (supaErr.message || "Kirishda xatolik yuz berdi")
+        message: supaErr.message || "Kirishda xatolik yuz berdi"
       };
     }
   }, []);
@@ -220,56 +160,51 @@ export function AuthProvider({ children }) {
     setCurrentUser(null);
   }, []);
 
-  // Register: New Account with Phone, First Name, Last Name, and Password
-  const register = useCallback(async (data) => {
-    const { firstName, lastName, phone, email, password } = data;
-    const cleanPhone = (phone || '').trim();
-    const cleanFirst = (firstName || '').trim();
-    const cleanLast = (lastName || '').trim();
-    const cleanPass = (password || '').trim();
-
+  // Register: New Regular User Account (Always role = 'user')
+  const register = useCallback(async ({ firstName, lastName, phone, password }) => {
     if (!isSupabaseConfigured) {
       return { success: false, message: "Supabase kalitlari topilmadi!" };
     }
 
-    const digits = cleanPhone.replace(/\D/g, '');
-    const isAdm = digits.endsWith('701265759');
-
     try {
-      const authData = await supabaseService.signUp({
-        phone: cleanPhone,
-        email: email,
-        password: cleanPass,
-        firstName: isAdm ? 'Mustafo' : cleanFirst,
-        lastName: isAdm ? 'Bakhriddinov' : cleanLast
-      });
+      const authData = await supabaseService.signUp({ firstName, lastName, phone, password });
 
       if (authData?.user) {
-        if (authData.user.identities && authData.user.identities.length === 0) {
-          return {
-            success: false,
-            message: "Ushbu telefon raqam bilan avval ro'yxatdan o'tilgan!"
+        // Auto-login to establish session immediately
+        let userProfile = null;
+        try {
+          const signInRes = await supabaseService.signIn({ phone, password });
+          if (signInRes?.user) {
+            userProfile = await supabaseService.getProfile(signInRes.user.id);
+          }
+        } catch (signInErr) {
+          console.warn('[Auth] Auto-sign in notice:', signInErr);
+        }
+
+        if (!userProfile) {
+          userProfile = {
+            id: authData.user.id,
+            firstName: (firstName || '').trim(),
+            lastName: (lastName || '').trim(),
+            phone: (phone || '').trim(),
+            email: authData.user.email,
+            role: 'user',
+            avatarGradient: 'linear-gradient(135deg, #10b981, #3b82f6)',
+            createdAt: new Date().toISOString().split('T')[0]
           };
         }
 
-        const newUser = {
-          id: authData.user.id,
-          firstName: isAdm ? 'Mustafo' : cleanFirst,
-          lastName: isAdm ? 'Bakhriddinov' : cleanLast,
-          phone: cleanPhone,
-          email: authData.user.email,
-          role: isAdm ? 'admin' : 'user',
-          avatarGradient: isAdm ? 'linear-gradient(135deg, #10b981, #06b6d4)' : 'linear-gradient(135deg, #10b981, #3b82f6)',
-          createdAt: new Date().toISOString().split('T')[0],
+        const loggedInUser = {
+          ...userProfile,
           isSupabaseUser: true
         };
 
-        setCurrentUser(newUser);
+        setCurrentUser(loggedInUser);
         setIsSupabaseActive(true);
 
         return {
           success: true,
-          user: newUser,
+          user: loggedInUser,
           message: "Muvaffaqiyatli ro'yxatdan o'tdingiz!"
         };
       }
@@ -277,9 +212,7 @@ export function AuthProvider({ children }) {
     } catch (supaErr) {
       return {
         success: false,
-        message: supaErr.message === 'User already registered'
-          ? "Ushbu telefon raqam bilan avval ro'yxatdan o'tilgan!"
-          : (supaErr.message || "Ro'yxatdan o'tishda xatolik yuz berdi")
+        message: supaErr.message || "Ro'yxatdan o'tishda xatolik yuz berdi"
       };
     }
   }, []);

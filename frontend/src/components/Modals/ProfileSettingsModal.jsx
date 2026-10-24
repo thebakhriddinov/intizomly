@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
+import { validateUzbekPhone } from '../../utils/phone';
 
 export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', onOpenAuth, onOpenUpgrade }) {
   const { currentUser, isPremium, isAdmin, updateProfile, logout } = useAuth();
@@ -36,6 +37,14 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
+    if (phone) {
+      const v = validateUzbekPhone(phone);
+      if (!v.isValid) {
+        addToast("Xatolik", v.message, "warning");
+        return;
+      }
+    }
+
     setSavingProfile(true);
     try {
       await updateProfile({ firstName, lastName, phone, email, password });

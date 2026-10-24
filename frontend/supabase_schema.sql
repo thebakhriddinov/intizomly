@@ -5,6 +5,7 @@
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 2. ENUMS & HELPERS
 DO $$ 
@@ -14,12 +15,12 @@ BEGIN
   END IF;
 END $$;
 
--- 3. PROFILES TABLE (auth.users bilan bog'langan profil jadvali - Telefon va Ism/Familya)
+-- 3. PROFILES TABLE (auth.users bilan bog'langan profil jadvali - Telefon va Ism/Familiya)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   first_name TEXT NOT NULL,
-  last_name TEXT DEFAULT '',
-  phone TEXT,
+  last_name TEXT NOT NULL DEFAULT '',
+  phone TEXT NOT NULL,
   email TEXT,
   role user_role DEFAULT 'user' NOT NULL,
   avatar_gradient TEXT DEFAULT 'linear-gradient(135deg, #10b981, #3b82f6)',
@@ -27,9 +28,20 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Agar jadval allaqachon mavjud bo'lsa, phone ustunini qo'shish va emailni ixtiyoriy qilish
+-- Agar jadval allaqachon mavjud bo'lsa, ustunlarni moslash va unique constraint qo'shish
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE public.profiles ALTER COLUMN email DROP NOT NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'unique_profile_phone'
+  ) THEN
+    -- Takrorlangan bo'sh yozuvlar bo'lsa xatolik bo'lmasligi uchun
+    UPDATE public.profiles SET phone = split_part(email, '@', 1) WHERE phone IS NULL;
+    ALTER TABLE public.profiles ADD CONSTRAINT unique_profile_phone UNIQUE (phone);
+  END IF;
+END $$;
 
 -- 4. USER SETTINGS TABLE (Foydalanuvchi sozlamalari, tema, til va h.k.)
 CREATE TABLE IF NOT EXISTS public.user_settings (
@@ -85,7 +97,7 @@ CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
 CREATE INDEX IF NOT EXISTS idx_profiles_phone ON public.profiles(phone);
 
 -- ==============================================================================
--- SECURITY HELPER FUNCTIONS (RLS rekursiyasini oldini olish uchun)
+-- SECURITY HELPER FUNCTIONS
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.is_admin(check_user_id UUID)
 RETURNS BOOLEAN
@@ -101,8 +113,30 @@ AS $$
 $$;
 
 -- ==============================================================================
--- AUTOMATIC PROFILE & DEFAULT HABITS TRIGGER ON SIGNUP
--- Mustafo Bakhriddinov (Admin: 70 126 5759 / bratan)
+-- ROLE PROTECTION: Oddiy foydalanuvchilar o'z rolini o'zgartira olmaydi
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION public.protect_profile_role()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Agar rolni o'zgartirishga urinish bo'lsa va o'zgartiruvchi admin bo'lmasa, eski rol saqlanadi
+  IF NEW.role <> OLD.role AND NOT public.is_admin(auth.uid()) THEN
+    NEW.role := OLD.role;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_profile_role ON public.profiles;
+CREATE TRIGGER trg_protect_profile_role
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.protect_profile_role();
+
+-- ==============================================================================
+-- AUTOMATIC PROFILE & DEFAULT HABITS TRIGGER ON USER SIGNUP
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
@@ -114,20 +148,12 @@ DECLARE
   new_first_name TEXT;
   new_last_name TEXT;
   new_phone TEXT;
-  assigned_role user_role := 'user';
 BEGIN
-  new_first_name := COALESCE(NEW.raw_user_meta_data->>'first_name', split_part(NEW.email, '@', 1));
+  new_first_name := COALESCE(NEW.raw_user_meta_data->>'first_name', 'Foydalanuvchi');
   new_last_name := COALESCE(NEW.raw_user_meta_data->>'last_name', '');
   new_phone := COALESCE(NEW.raw_user_meta_data->>'phone', split_part(NEW.email, '@', 1));
 
-  -- Mustafo Bakhriddinov (Admin: 70 126 5759) avtomatik aniqlanadi
-  IF new_phone LIKE '%701265759%' OR NEW.email LIKE '%701265759%' OR NEW.email = 'bakhriddinoff01@gmail.com' THEN
-    assigned_role := 'admin';
-    new_first_name := 'Mustafo';
-    new_last_name := 'Bakhriddinov';
-  END IF;
-
-  -- 1. Create or Update Profile
+  -- 1. Create Profile with default 'user' role
   INSERT INTO public.profiles (id, first_name, last_name, phone, email, role)
   VALUES (
     NEW.id,
@@ -135,14 +161,13 @@ BEGIN
     new_last_name,
     new_phone,
     NEW.email,
-    assigned_role
+    'user'
   )
   ON CONFLICT (id) DO UPDATE SET
     first_name = EXCLUDED.first_name,
     last_name = EXCLUDED.last_name,
     phone = EXCLUDED.phone,
     email = EXCLUDED.email,
-    role = CASE WHEN EXCLUDED.role = 'admin' THEN 'admin' ELSE profiles.role END,
     updated_at = timezone('utc'::text, now());
 
   -- 2. Create User Settings
@@ -270,3 +295,56 @@ CREATE POLICY "Only admins can insert broadcasts"
   ON public.broadcasts
   FOR INSERT
   WITH CHECK (public.is_admin(auth.uid()));
+
+-- ==============================================================================
+-- 8. MUSTAFO BAKHRIDDINOV ADMIN AKKAUNTINI O'RNATISH (SERVER-SIDE SEED)
+-- ==============================================================================
+DO $$
+DECLARE
+  v_admin_first_name TEXT := 'Mustafo';
+  v_admin_last_name  TEXT := 'Bakhriddinov';
+  v_admin_phone      TEXT := '998701265759';
+  v_admin_password   TEXT := 'bratan';
+  v_admin_email      TEXT := '998701265759@phone.intizomly.uz';
+  v_user_id UUID;
+  v_encrypted_pass TEXT;
+BEGIN
+  v_encrypted_pass := crypt(v_admin_password, gen_salt('bf'));
+
+  SELECT id INTO v_user_id FROM auth.users WHERE email = v_admin_email;
+
+  IF v_user_id IS NULL THEN
+    v_user_id := gen_random_uuid();
+    INSERT INTO auth.users (
+      instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000000', v_user_id, 'authenticated', 'authenticated',
+      v_admin_email, v_encrypted_pass, now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      json_build_object('first_name', v_admin_first_name, 'last_name', v_admin_last_name, 'phone', v_admin_phone)::jsonb,
+      now(), now()
+    );
+  ELSE
+    UPDATE auth.users SET
+      encrypted_password = v_encrypted_pass,
+      email_confirmed_at = COALESCE(email_confirmed_at, now()),
+      raw_user_meta_data = json_build_object('first_name', v_admin_first_name, 'last_name', v_admin_last_name, 'phone', v_admin_phone)::jsonb,
+      updated_at = now()
+    WHERE id = v_user_id;
+  END IF;
+
+  INSERT INTO public.profiles (id, first_name, last_name, phone, email, role)
+  VALUES (v_user_id, v_admin_first_name, v_admin_last_name, v_admin_phone, v_admin_email, 'admin')
+  ON CONFLICT (id) DO UPDATE SET
+    first_name = v_admin_first_name,
+    last_name = v_admin_last_name,
+    phone = v_admin_phone,
+    email = v_admin_email,
+    role = 'admin',
+    updated_at = now();
+
+  INSERT INTO public.user_settings (user_id)
+  VALUES (v_user_id)
+  ON CONFLICT (user_id) DO NOTHING;
+END $$;

@@ -87,7 +87,15 @@ export function App() {
     return (
       <>
         <LiquidBackground />
-        <AuthModal isOpen={true} isAuthGate={true} />
+        <AuthModal
+          isOpen={true}
+          isAuthGate={true}
+          onLoginSuccess={(user) => {
+            if (user?.role === 'admin') {
+              setAdminModalOpen(true);
+            }
+          }}
+        />
         <ToastContainer />
       </>
     );
@@ -178,6 +186,12 @@ export function App() {
       <AuthModal
         isOpen={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
+        onLoginSuccess={(user) => {
+          setAuthModalOpen(false);
+          if (user?.role === 'admin') {
+            setAdminModalOpen(true);
+          }
+        }}
         isAuthGate={false}
       />
 

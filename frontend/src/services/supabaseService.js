@@ -1,36 +1,8 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { validateUzbekPhone, formatUzbekPhone, phoneToAuthEmail } from '../utils/phone';
 
-// Phone helpers for Supabase Auth mapping
-export function normalizePhone(rawPhone) {
-  if (!rawPhone) return '';
-  let digits = String(rawPhone).replace(/\D/g, '');
-  if (digits.length === 9) {
-    digits = '998' + digits;
-  }
-  return digits;
-}
-
-export function phoneToAuthEmail(phone) {
-  const digits = normalizePhone(phone);
-  return `${digits}@phone.intizomly.uz`;
-}
-
-export function formatPhoneNumber(rawPhone) {
-  const digits = normalizePhone(rawPhone);
-  if (digits.length === 12 && digits.startsWith('998')) {
-    const code = digits.slice(3, 5);
-    const p1 = digits.slice(5, 8);
-    const p2 = digits.slice(8, 10);
-    const p3 = digits.slice(10, 12);
-    return `+998 (${code}) ${p1}-${p2}-${p3}`;
-  }
-  return rawPhone || '';
-}
-
-export function isAdminPhone(phone) {
-  const digits = normalizePhone(phone);
-  return digits.endsWith('701265759');
-}
+// Re-export phone helpers for convenience
+export { validateUzbekPhone, formatUzbekPhone, phoneToAuthEmail };
 
 export const supabaseService = {
   isConfigured: () => isSupabaseConfigured && !!supabase,
@@ -38,46 +10,84 @@ export const supabaseService = {
   // ============================================================================
   // AUTHENTICATION
   // ============================================================================
-  async signUp({ phone, email, password, firstName, lastName }) {
+  async signUp({ phone, password, firstName, lastName }) {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
-    const cleanPhone = normalizePhone(phone);
-    const cleanEmail = email && email.includes('@') ? email.trim().toLowerCase() : phoneToAuthEmail(phone || cleanPhone);
-    const cleanFirstName = (firstName || '').trim();
-    const cleanLastName = (lastName || '').trim();
+    const cleanFirst = (firstName || '').trim();
+    const cleanLast = (lastName || '').trim();
+    if (!cleanFirst) throw new Error("Iltimos, ismingizni kiriting");
+    if (!cleanLast) throw new Error("Iltimos, familiyangizni kiriting");
+
+    const phoneValidation = validateUzbekPhone(phone);
+    if (!phoneValidation.isValid) {
+      throw new Error(phoneValidation.message);
+    }
+
+    const cleanPass = (password || '').trim();
+    if (!cleanPass || cleanPass.length < 6) {
+      throw new Error("Parol kamida 6 ta belgidan iborat bo'lishi kerak");
+    }
+
+    const cleanEmail = phoneToAuthEmail(phoneValidation.normalized);
 
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
-      password: (password || '').trim(),
+      password: cleanPass,
       options: {
         data: {
-          first_name: cleanFirstName,
-          last_name: cleanLastName,
-          phone: cleanPhone || phone || ''
+          first_name: cleanFirst,
+          last_name: cleanLast,
+          phone: phoneValidation.normalized
         }
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('rate limit')) {
+        throw new Error(
+          "Supabase email cheklovi (rate limit) yuz berdi. Iltimos, Supabase Dashboard -> Authentication -> Providers -> Email bo'limidan 'Confirm email' sozlamasini o'chiring."
+        );
+      }
+      if (msg.includes('already registered') || msg.includes('user already exists')) {
+        throw new Error("Ushbu telefon raqam bilan allaqachon ro'yxatdan o'tilgan!");
+      }
+      throw new Error(error.message || "Ro'yxatdan o'tishda xatolik yuz berdi");
+    }
+
+    // Supabase returns user with empty identities when email is already taken but email confirm is enabled
+    if (data?.user?.identities && data.user.identities.length === 0) {
+      throw new Error("Ushbu telefon raqam bilan allaqachon ro'yxatdan o'tilgan!");
+    }
+
     return data;
   },
 
-  async signIn({ phone, email, password }) {
+  async signIn({ phone, password }) {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
-    let authIdentifier = '';
-    if (phone) {
-      authIdentifier = phoneToAuthEmail(phone);
-    } else if (email) {
-      authIdentifier = email.includes('@') ? email.trim().toLowerCase() : phoneToAuthEmail(email);
+    const phoneValidation = validateUzbekPhone(phone);
+    if (!phoneValidation.isValid) {
+      throw new Error(phoneValidation.message);
     }
+
+    const cleanPass = (password || '').trim();
+    if (!cleanPass) throw new Error("Parolni kiriting");
+
+    const authIdentifier = phoneToAuthEmail(phoneValidation.normalized);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email: authIdentifier,
-      password: (password || '').trim()
+      password: cleanPass
     });
 
-    if (error) throw error;
+    if (error) {
+      if (error.message === 'Invalid login credentials') {
+        throw new Error("Telefon raqam yoki parol noto'g'ri kiritildi!");
+      }
+      throw new Error(error.message || "Kirishda xatolik yuz berdi");
+    }
+
     return data;
   },
 
@@ -129,7 +139,10 @@ export const supabaseService = {
     };
     if (firstName !== undefined) payload.first_name = firstName.trim();
     if (lastName !== undefined) payload.last_name = lastName.trim();
-    if (phone !== undefined) payload.phone = normalizePhone(phone) || phone;
+    if (phone !== undefined) {
+      const v = validateUzbekPhone(phone);
+      payload.phone = v.isValid ? v.normalized : phone;
+    }
     if (email !== undefined) payload.email = email.trim();
     if (avatarGradient !== undefined) payload.avatar_gradient = avatarGradient;
 

@@ -4,6 +4,7 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 import { supabaseService } from '../../services/supabaseService';
+import { validateUzbekPhone } from '../../utils/phone';
 
 export function AdminModal({ isOpen, onClose }) {
   const { currentUser, users, adminToggleUserRole, adminDeleteUser, adminAddUser, refreshUsers } = useAuth();
@@ -25,17 +26,23 @@ export function AdminModal({ isOpen, onClose }) {
     }
   }, [isOpen, refreshUsers]);
 
-  if (!isOpen) return null;
+  if (!isOpen || currentUser?.role !== 'admin') return null;
 
   const adminStats = storage.getAdminStats();
 
   const handleAddUser = async (e) => {
     e.preventDefault();
+    const v = validateUzbekPhone(newPhone);
+    if (!v.isValid) {
+      addToast("Xatolik", v.message, "warning");
+      return;
+    }
+
     const res = await adminAddUser({
-      firstName: newFirstName,
-      lastName: newLastName,
-      phone: newPhone,
-      password: newPassword,
+      firstName: newFirstName.trim(),
+      lastName: newLastName.trim(),
+      phone: v.normalized,
+      password: newPassword.trim(),
       role: newRole
     });
 
