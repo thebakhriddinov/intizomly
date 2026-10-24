@@ -32,45 +32,6 @@ export function App() {
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
-  // Global Liquid Water Ripple Effect on Pointer Down
-  useEffect(() => {
-    const handlePointerDown = (e) => {
-      const target = e.target.closest(
-        'button, .habit-card, .stat-card, .week-strip-card, .github-heatmap-card, ' +
-        '.week-day-cell, .filter-chip, .sidebar-nav-item, .mob-nav-btn, .segmented-btn, ' +
-        '.demo-user-btn, .theme-option-card, .admin-kpi-card, .brand-logo, .avatar-circle, .gh-square, .styled-reset-today-btn'
-      );
-      if (!target) return;
-
-      const style = window.getComputedStyle(target);
-      if (style.position === 'static') {
-        target.style.position = 'relative';
-      }
-
-      const rect = target.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const size = Math.max(rect.width, rect.height) * 2;
-
-      const ripple = document.createElement('span');
-      ripple.className = 'liquid-ripple-drop';
-      ripple.style.width = `${size}px`;
-      ripple.style.height = `${size}px`;
-      ripple.style.left = `${x}px`;
-      ripple.style.top = `${y}px`;
-
-      target.appendChild(ripple);
-      setTimeout(() => {
-        ripple.remove();
-      }, 700);
-    };
-
-    document.addEventListener('pointerdown', handlePointerDown, { passive: true });
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-    };
-  }, []);
-
   const handleOpenAddHabit = () => {
     setHabitToEdit(null);
     setHabitModalOpen(true);
