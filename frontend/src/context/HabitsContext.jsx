@@ -2,25 +2,108 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { storage } from '../utils/storage';
 import { audioManager } from '../utils/audio';
 import { fireCelebrationConfetti } from '../utils/confetti';
+import { useAuth } from './AuthContext';
+import { supabaseService } from '../services/supabaseService';
 
 const HabitsContext = createContext(null);
 
 export function HabitsProvider({ children }) {
+  const { currentUser } = useAuth();
+
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [habits, setHabits] = useState(() => storage.getHabits());
   const [history, setHistory] = useState(() => storage.getHistory());
   const [settings, setSettings] = useState(() => storage.getSettings());
+  const [loading, setLoading] = useState(false);
   const [bannerNotif, setBannerNotif] = useState(null);
   const [toasts, setToasts] = useState([]);
+
+  // Keep storage in sync with active habits and history for stats and streak engines
+  useEffect(() => {
+    storage.habits = habits;
+    storage.history = history;
+  }, [habits, history]);
+
+  // Sync data whenever currentUser changes (Supabase Cloud vs Local Demo)
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadUserData() {
+      if (!currentUser?.isSupabaseUser) {
+        // Local Demo or Guest user
+        setHabits([...storage.getHabits()]);
+        setHistory({ ...storage.getHistory() });
+        setSettings({ ...storage.getSettings() });
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const [cloudHabits, cloudCompletions, cloudSettings] = await Promise.all([
+          supabaseService.getHabits(currentUser.id),
+          supabaseService.getCompletions(currentUser.id),
+          supabaseService.getSettings(currentUser.id)
+        ]);
+
+        if (!isMounted) return;
+
+        // If user has habits in cloud, use them
+        if (cloudHabits && cloudHabits.length > 0) {
+          setHabits(cloudHabits);
+          storage.habits = cloudHabits;
+        } else {
+          // If fresh user with no habits, auto-seed starter habits into Supabase
+          try {
+            const initialHabits = [
+              { title: "Shakar iste'mol qilmaslik", emoji: '🚫🍬', description: "Kun davomida qo'shimcha shakar va shirinliklardan butunlay voz kechish", category: "Sog'liq", target: "Kun bo'yi toza" },
+              { title: "Kitob o'qish (20 bet)", emoji: '📖', description: "Shaxsiy rivojlanish yoki badiiy adabiyotdan kamida 20 bet mutolaa qilish", category: "O'qish", target: "20 bet" },
+              { title: "Kamida 2 litr toza suv ichish", emoji: '💧', description: "Har 1.5 - 2 soatda 1 stakan toza suv ichib, ichki organizmni tetik saqlash", category: "Sog'liq", target: "2 litr" },
+              { title: "30 daqiqa jismoniy mashq", emoji: '🏃‍♂️', description: "Ertalabki yugurish yoki gimnastika mashqlari", category: "Sport", target: "30 daqiqa" },
+              { title: "Ertalab 06:30 da uyg'onish", emoji: '⏰', description: "Kunning barakali qismini qo'ldan boy bermaslik", category: "Tartib", target: "06:30 da" }
+            ];
+
+            const createdList = [];
+            for (const h of initialHabits) {
+              const created = await supabaseService.createHabit(currentUser.id, h);
+              createdList.push(created);
+            }
+            if (isMounted) {
+              setHabits(createdList);
+              storage.habits = createdList;
+            }
+          } catch (seedErr) {
+            console.warn('[Habits] Seed starter habits warning:', seedErr);
+            setHabits([]);
+          }
+        }
+
+        if (cloudCompletions) {
+          setHistory(cloudCompletions);
+          storage.history = cloudCompletions;
+        }
+
+        if (cloudSettings) {
+          setSettings(cloudSettings);
+        }
+      } catch (err) {
+        console.error('[Habits] Failed to load data from Supabase:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    loadUserData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id, currentUser?.isSupabaseUser]);
 
   // Sync settings with audio manager and HTML document appearance/theme
   useEffect(() => {
     audioManager.setEnabled(settings.soundEnabled !== false);
-    
-    // Apply theme
     document.body.setAttribute('data-theme', settings.theme || 'emerald');
 
-    // Apply appearance
     if (settings.appearance === 'system') {
       document.documentElement.removeAttribute('data-appearance');
     } else {
@@ -85,19 +168,36 @@ export function HabitsProvider({ children }) {
     setBannerNotif(null);
   }, []);
 
-  const toggleHabit = useCallback((habitId) => {
-    const beforeStats = storage.getDayStats(dateKey);
-    const newState = storage.toggleHabit(dateKey, habitId);
+  // ==================== HABITS CRUD & TOGGLE ====================
 
-    // Refresh history
-    setHistory({ ...storage.getHistory() });
+  const toggleHabit = useCallback(async (habitId) => {
+    const isCurrentlyDone = !!(history[dateKey] && history[dateKey][habitId]);
+    const newState = !isCurrentlyDone;
 
+    // Optimistic UI update
+    const updatedHistory = { ...history };
+    if (!updatedHistory[dateKey]) {
+      updatedHistory[dateKey] = {};
+    }
+
+    if (newState) {
+      updatedHistory[dateKey] = { ...updatedHistory[dateKey], [habitId]: true };
+    } else {
+      const dayMap = { ...updatedHistory[dateKey] };
+      delete dayMap[habitId];
+      updatedHistory[dateKey] = dayMap;
+    }
+
+    setHistory(updatedHistory);
+    storage.history = updatedHistory;
+
+    // Play sounds & feedback
     if (newState) {
       audioManager.playCheck();
       addToast("Bajarildi! 🎉", "Ajoyib intizom!", "success", 2000);
 
       const afterStats = storage.getDayStats(dateKey);
-      if (afterStats.completed === afterStats.total && beforeStats.completed < beforeStats.total) {
+      if (afterStats.total > 0 && afterStats.completed === afterStats.total) {
         if (settings.confettiEnabled !== false) {
           fireCelebrationConfetti();
         }
@@ -107,25 +207,96 @@ export function HabitsProvider({ children }) {
     } else {
       audioManager.playUncheck();
     }
-  }, [dateKey, settings.confettiEnabled, addToast]);
 
-  const addHabit = useCallback((habitData) => {
+    // Sync with Supabase if active
+    if (currentUser?.isSupabaseUser) {
+      try {
+        await supabaseService.toggleCompletion(currentUser.id, habitId, dateKey, isCurrentlyDone);
+      } catch (err) {
+        console.error('[Habits] Toggle error on Supabase:', err);
+        // Rollback on error
+        setHistory(history);
+        storage.history = history;
+        addToast("Xatolik", "Server bilan sinxronlashda xatolik yuz berdi", "warning");
+      }
+    } else {
+      storage.save(storage.constructor.STORAGE_KEYS?.HISTORY || 'intizomly_history_v2', updatedHistory);
+    }
+  }, [history, dateKey, settings.confettiEnabled, addToast, currentUser]);
+
+  const addHabit = useCallback(async (habitData) => {
+    if (currentUser?.isSupabaseUser) {
+      try {
+        const created = await supabaseService.createHabit(currentUser.id, habitData);
+        setHabits(prev => [...prev, created]);
+        storage.habits = [...habits, created];
+        addToast("Odat qo'shildi! 🎯", created.title, "success");
+        return created;
+      } catch (err) {
+        console.error('[Habits] Failed to create habit in Supabase:', err);
+        addToast("Xatolik", err.message || "Odatni qo'shib bo'lmadi", "warning");
+        throw err;
+      }
+    }
+
     const created = storage.addHabit(habitData);
     setHabits([...storage.getHabits()]);
     addToast("Odat qo'shildi! 🎯", created.title, "success");
     return created;
-  }, [addToast]);
+  }, [currentUser, habits, addToast]);
 
-  const updateHabit = useCallback((id, habitData) => {
+  const updateHabit = useCallback(async (id, habitData) => {
+    if (currentUser?.isSupabaseUser) {
+      try {
+        const updated = await supabaseService.updateHabit(id, habitData);
+        setHabits(prev => prev.map(h => (h.id === id ? updated : h)));
+        storage.habits = habits.map(h => (h.id === id ? updated : h));
+        addToast("Odat yangilandi! ✍️", updated.title, "success");
+        return updated;
+      } catch (err) {
+        console.error('[Habits] Failed to update habit in Supabase:', err);
+        addToast("Xatolik", err.message || "Odatni yangilab bo'lmadi", "warning");
+        throw err;
+      }
+    }
+
     const updated = storage.updateHabit(id, habitData);
     setHabits([...storage.getHabits()]);
     addToast("Odat yangilandi! ✍️", updated.title, "success");
     return updated;
-  }, [addToast]);
+  }, [currentUser, habits, addToast]);
 
-  const deleteHabit = useCallback((id) => {
-    const habit = storage.getHabitById(id);
+  const deleteHabit = useCallback(async (id) => {
+    const habit = habits.find(h => h.id === id) || storage.getHabitById(id);
     if (!habit) return false;
+
+    if (currentUser?.isSupabaseUser) {
+      try {
+        await supabaseService.deleteHabit(id);
+        setHabits(prev => prev.filter(h => h.id !== id));
+        storage.habits = habits.filter(h => h.id !== id);
+
+        // Clean up history
+        const updatedHistory = { ...history };
+        Object.keys(updatedHistory).forEach(dKey => {
+          if (updatedHistory[dKey][id]) {
+            const copy = { ...updatedHistory[dKey] };
+            delete copy[id];
+            updatedHistory[dKey] = copy;
+          }
+        });
+        setHistory(updatedHistory);
+        storage.history = updatedHistory;
+
+        addToast("Odat o'chirildi", habit.title, "info");
+        return true;
+      } catch (err) {
+        console.error('[Habits] Failed to delete habit in Supabase:', err);
+        addToast("Xatolik", err.message || "Odatni o'chirib bo'lmadi", "warning");
+        return false;
+      }
+    }
+
     const ok = storage.deleteHabit(id);
     if (ok) {
       setHabits([...storage.getHabits()]);
@@ -133,13 +304,23 @@ export function HabitsProvider({ children }) {
       addToast("Odat o'chirildi", habit.title, "info");
     }
     return ok;
-  }, [addToast]);
+  }, [currentUser, habits, history, addToast]);
 
-  const updateSettings = useCallback((updates) => {
-    const saved = storage.saveSettings(updates);
-    setSettings({ ...saved });
-    return saved;
-  }, []);
+  const updateSettings = useCallback(async (updates) => {
+    const merged = { ...settings, ...updates };
+    setSettings(merged);
+
+    if (currentUser?.isSupabaseUser) {
+      try {
+        await supabaseService.updateSettings(currentUser.id, updates);
+      } catch (err) {
+        console.warn('[Habits] Save settings to Supabase warning:', err);
+      }
+    }
+
+    storage.saveSettings(updates);
+    return merged;
+  }, [currentUser, settings]);
 
   return (
     <HabitsContext.Provider value={{
@@ -151,6 +332,7 @@ export function HabitsProvider({ children }) {
       jumpToday,
       habits,
       history,
+      loading,
       toggleHabit,
       addHabit,
       updateHabit,

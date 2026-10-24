@@ -1987,7 +1987,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   transition: color var(--transition-fast);
 }
 
-.mob-nav-btn:hover, .mob-nav-btn.active {
+.mob-nav-btn.active {
   color: var(--primary-accent);
 }
 
@@ -3058,12 +3058,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
     transition: all var(--transition-fast);
   }
 
-  .mobile-date-bar .date-nav-btn:hover,
   .mobile-date-bar .date-nav-btn:active {
     background: var(--bg-surface-elevated);
     border-color: var(--primary-accent);
     color: var(--primary-accent);
-    transform: scale(1.06);
+    transform: scale(0.96);
   }
 
   .mobile-date-bar .styled-reset-today-btn {
@@ -3155,10 +3154,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
     border-radius: 5px;
   }
 
-  .gh-square:hover,
   .gh-square:active {
-    transform: scale(1.35);
-    z-index: 10;
+    transform: scale(1.15);
   }
 
   .gh-square.is-current-selected {
@@ -3280,3 +3277,252 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 button, [role="button"], .habit-checkbox-btn, .filter-chip, .week-day-cell, .gh-square {
   touch-action: manipulation;
 }
+
+/* ==============================================================================
+   SUPABASE INTEGRATION & ENV WARNING BANNER
+   ============================================================================== */
+.env-warning-banner {
+  margin: 12px var(--space-4) 0 var(--space-4);
+  padding: 10px 16px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-lg, 16px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.env-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.env-banner-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.env-banner-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.env-banner-text code {
+  background: var(--bg-surface-elevated, rgba(255, 255, 255, 0.1));
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  color: var(--amber, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.env-banner-guide-btn {
+  padding: 4px 12px;
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--amber, #f59e0b);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.env-banner-guide-btn:hover {
+  background: rgba(245, 158, 11, 0.25);
+  transform: translateY(-1px);
+}
+
+.env-banner-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.env-banner-close-btn:hover {
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .env-warning-banner {
+    margin: 8px 12px 0 12px;
+    padding: 8px 12px;
+  }
+  .env-banner-content {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .env-banner-text {
+    font-size: 12px;
+  }
+}
+
+/* ==============================================================================
+   15. COMPLETE HOVER ELIMINATION ON TABLETS & PHONES (TOUCH DEVICES)
+   Completely removes sticky hover states, transforms, glowing shadows, and
+   border highlights on tablets, smartphones, and all touch screens.
+   ============================================================================== */
+@media (hover: none), (pointer: coarse), (max-width: 1024px) {
+  /* 1. Remove touch tap flash highlight in mobile browsers */
+  *,
+  *::before,
+  *::after {
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  /* 2. Cards & Containers: No lift, no scale, no sticky hover shadows */
+  .habit-card:hover,
+  .stat-card:hover,
+  .week-strip-card:hover,
+  .github-heatmap-card:hover,
+  .admin-kpi-card:hover,
+  .theme-option-card:hover {
+    transform: none !important;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+    border-color: var(--border-subtle) !important;
+    filter: none !important;
+  }
+
+  .theme-option-card:hover:not(.active) {
+    box-shadow: none !important;
+    border-color: var(--border-subtle) !important;
+  }
+
+  .admin-kpi-card:hover {
+    box-shadow: none !important;
+    border-color: var(--border-subtle) !important;
+  }
+
+  /* 3. Heatmap Squares & Week Cells: No sticky enlargement or sticky hover */
+  .gh-square:hover:not(.is-current-selected) {
+    transform: none !important;
+    outline: none !important;
+    z-index: 1 !important;
+  }
+
+  .week-day-cell:hover:not(.active-selected) {
+    transform: none !important;
+    background: var(--bg-secondary) !important;
+    border-color: transparent !important;
+  }
+
+  /* 4. Filter Chips & Segmented Controls */
+  .filter-chip:hover:not(.active) {
+    transform: none !important;
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-subtle) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  .segmented-btn:hover:not(.active) {
+    transform: none !important;
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+  }
+
+  /* 5. Buttons, Actions, Links & Icons */
+  .primary-btn:hover,
+  .secondary-btn:hover,
+  .btn-subtle:hover,
+  .icon-action-btn:hover,
+  .action-icon-btn:hover,
+  .date-nav-btn:hover,
+  .reset-today-btn:hover,
+  .styled-reset-today-btn:hover,
+  .admin-panel-btn:hover,
+  .sidebar-nav-item:hover,
+  .sidebar-logout-btn:hover,
+  .demo-user-btn:hover,
+  .link-btn:hover,
+  .modal-close-btn:hover,
+  .modal-tab-btn:hover:not(.active),
+  .auth-tab-btn:hover:not(.active),
+  .env-banner-guide-btn:hover,
+  .env-banner-close-btn:hover,
+  .habit-checkbox-btn:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  .styled-reset-today-btn:hover svg {
+    transform: none !important;
+  }
+
+  .primary-btn:hover {
+    background: var(--primary-accent) !important;
+    color: #0b0d0f !important;
+  }
+
+  .secondary-btn:hover {
+    background: var(--bg-surface-elevated) !important;
+    border-color: var(--border-subtle) !important;
+  }
+
+  .date-nav-btn:hover {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .icon-action-btn:hover {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-subtle) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  .action-icon-btn:hover {
+    background: transparent !important;
+    color: var(--text-muted) !important;
+  }
+
+  .action-icon-btn.delete-btn:hover {
+    background: transparent !important;
+    color: var(--text-muted) !important;
+  }
+
+  .brand-logo:hover {
+    transform: none !important;
+  }
+
+  .user-avatar-trigger:hover .avatar-circle {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  .mob-nav-btn:hover:not(.active) {
+    color: var(--text-muted) !important;
+  }
+
+  .mob-nav-btn:hover:not(.active) svg {
+    color: var(--text-muted) !important;
+  }
+
+  /* 6. Clean Active Tap Feedback (only while actively pressed, no sticky state) */
+  button:active,
+  .primary-btn:active,
+  .secondary-btn:active,
+  .habit-card:active,
+  .filter-chip:active,
+  .date-nav-btn:active,
+  .mob-nav-btn:active {
+    transform: scale(0.98) !important;
+    transition: transform 0.08s ease !important;
+  }
+}
+
+

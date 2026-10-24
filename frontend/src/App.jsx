@@ -17,6 +17,7 @@ import { AdminModal } from './components/Modals/AdminModal';
 import { AuthModal } from './components/Modals/AuthModal';
 import { DynamicIslandBanner } from './components/Feedback/DynamicIslandBanner';
 import { ToastContainer } from './components/Feedback/ToastContainer';
+import { EnvWarningBanner } from './components/Feedback/EnvWarningBanner';
 
 export function App() {
   const { t } = useLanguage();
@@ -110,6 +111,8 @@ export function App() {
             onOpenAdmin={() => setAdminModalOpen(true)}
             onOpenAuth={() => setAuthModalOpen(true)}
           />
+
+          <EnvWarningBanner />
 
           <main className="app-main">
             {/* Mobile Date Navigator (Visible only on mobile/phone screens) */}

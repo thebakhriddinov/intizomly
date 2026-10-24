@@ -5,7 +5,7 @@ import { storage } from '../../utils/storage';
 import { HabitCard } from './HabitCard';
 
 function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
-  const { habits, dateKey, history, deleteHabit } = useHabits();
+  const { habits, dateKey, history, deleteHabit, loading } = useHabits();
   const { t } = useLanguage();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -137,7 +137,19 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
       </div>
 
       {/* Habits Grid */}
-      {filteredHabits.length > 0 ? (
+      {loading ? (
+        <div className="empty-state-view" style={{ minHeight: '180px' }}>
+          <div style={{
+            width: '36px',
+            height: '36px',
+            border: '3px solid rgba(182, 243, 107, 0.2)',
+            borderTopColor: '#B6F36B',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite'
+          }}></div>
+          <p className="empty-text" style={{ marginTop: '12px' }}>Odatlar yuklanmoqda...</p>
+        </div>
+      ) : filteredHabits.length > 0 ? (
         <div className="habits-grid">
           {filteredHabits.map(h => (
             <HabitCard

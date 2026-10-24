@@ -35,31 +35,39 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
     setShowEmojiPicker(false);
   }, [habitToEdit, isOpen]);
 
+  const [submitting, setSubmitting] = useState(false);
+
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || submitting) return;
 
-    if (habitToEdit) {
-      updateHabit(habitToEdit.id, {
-        title,
-        description,
-        category,
-        target,
-        emoji
-      });
-    } else {
-      addHabit({
-        title,
-        description,
-        category,
-        target,
-        emoji
-      });
+    setSubmitting(true);
+    try {
+      if (habitToEdit) {
+        await updateHabit(habitToEdit.id, {
+          title,
+          description,
+          category,
+          target,
+          emoji
+        });
+      } else {
+        await addHabit({
+          title,
+          description,
+          category,
+          target,
+          emoji
+        });
+      }
+      onClose();
+    } catch (err) {
+      console.error('[HabitModal] Submit error:', err);
+    } finally {
+      setSubmitting(false);
     }
-
-    onClose();
   };
 
   return (
@@ -204,8 +212,8 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
             <button type="button" className="btn-subtle" onClick={onClose}>
               Bekor qilish
             </button>
-            <button type="submit" className="primary-btn">
-              {habitToEdit ? "Odatni Yangilash" : "Odatni Qo'shish"}
+            <button type="submit" className="primary-btn" disabled={submitting}>
+              {submitting ? "Saqlanmoqda..." : (habitToEdit ? "Odatni Yangilash" : "Odatni Qo'shish")}
             </button>
           </div>
         </form>

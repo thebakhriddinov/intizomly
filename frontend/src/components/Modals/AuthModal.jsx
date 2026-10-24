@@ -4,11 +4,13 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export function AuthModal({ isOpen, onClose }) {
-  const { login, loginById, register } = useAuth();
+  const { login, loginById, register, isSupabaseActive, supabaseStatus } = useAuth();
   const { addToast } = useHabits();
   const { t } = useLanguage();
 
   const [authTab, setAuthTab] = useState('login'); // 'login' or 'register'
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
@@ -19,31 +21,49 @@ export function AuthModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const res = login(loginEmail, loginPassword);
-    if (res.success) {
-      addToast(t('toastWelcome'), `${res.user.firstName} (${res.user.role.toUpperCase()})`, "success");
-      onClose();
-    } else {
-      addToast("Xatolik", res.message, "warning");
+    setIsSubmitting(true);
+    try {
+      const res = await login(loginEmail, loginPassword);
+      if (res.success) {
+        addToast(t('toastWelcome'), `${res.user.firstName} (${(res.user.role || 'user').toUpperCase()})`, "success");
+        onClose();
+      } else {
+        addToast("Xatolik", res.message, "warning");
+      }
+    } catch (err) {
+      addToast("Xatolik", err.message || "Kirishda xatolik yuz berdi", "warning");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    const res = register({
-      firstName: regFirstName,
-      lastName: regLastName,
-      email: regEmail,
-      password: regPassword
-    });
+    setIsSubmitting(true);
+    try {
+      const res = await register({
+        firstName: regFirstName,
+        lastName: regLastName,
+        email: regEmail,
+        password: regPassword
+      });
 
-    if (res.success) {
-      addToast(t('toastWelcome'), `${res.user.firstName}!`, "success");
-      onClose();
-    } else {
-      addToast("Xatolik", res.message, "warning");
+      if (res.success) {
+        if (res.needsEmailConfirmation) {
+          addToast("Tasdiqlash xabari 📩", res.message, "info", 8000);
+        } else {
+          addToast(t('toastWelcome'), `${res.user.firstName}!`, "success");
+        }
+        onClose();
+      } else {
+        addToast("Xatolik", res.message, "warning");
+      }
+    } catch (err) {
+      addToast("Xatolik", err.message || "Ro'yxatdan o'tishda xatolik", "warning");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -67,6 +87,40 @@ export function AuthModal({ isOpen, onClose }) {
           </div>
           <h3 className="auth-title">Intizomly</h3>
           <p className="auth-subtitle">Har kunlik intizom, odatlar va maqsadlar nazorati</p>
+
+          {/* Supabase Status Pill */}
+          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
+            {supabaseStatus?.isConfigured ? (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  color: '#10b981',
+                  border: '1px solid rgba(16, 185, 129, 0.3)'
+                }}
+              >
+                🟢 Supabase Cloud faol
+              </span>
+            ) : (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  color: 'var(--amber, #f59e0b)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)'
+                }}
+                title=".env.local faylida Supabase kalitlarini kiriting"
+              >
+                ⚡ Offline / Demo rejim
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Tab switch */}
@@ -122,7 +176,7 @@ export function AuthModal({ isOpen, onClose }) {
           </div>
 
           <div className="auth-divider">
-            <span>yoki email orqali</span>
+            <span>{supabaseStatus?.isConfigured ? "yoki Supabase hisobingiz orqali" : "yoki yangi hisob yaratish"}</span>
           </div>
 
           {authTab === 'login' ? (
@@ -152,8 +206,12 @@ export function AuthModal({ isOpen, onClose }) {
               </div>
 
               <div className="form-actions" style={{ marginTop: '6px' }}>
-                <button type="submit" className="primary-btn w-100">
-                  {t('loginBtn')}
+                <button
+                  type="submit"
+                  className="primary-btn w-100"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Kutilmoqda..." : t('loginBtn')}
                 </button>
               </div>
             </form>
@@ -209,8 +267,12 @@ export function AuthModal({ isOpen, onClose }) {
               </div>
 
               <div className="form-actions" style={{ marginTop: '6px' }}>
-                <button type="submit" className="primary-btn w-100">
-                  {t('registerBtn')}
+                <button
+                  type="submit"
+                  className="primary-btn w-100"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Kutilmoqda..." : t('registerBtn')}
                 </button>
               </div>
             </form>

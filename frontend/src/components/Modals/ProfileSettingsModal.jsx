@@ -6,10 +6,11 @@ import { storage } from '../../utils/storage';
 
 export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', onOpenAuth }) {
   const { currentUser, isPremium, isAdmin, updateProfile } = useAuth();
-  const { settings, updateSettings, dateKey, history, habits } = useHabits();
+  const { settings, updateSettings, dateKey, history, habits, addToast } = useHabits();
   const { t, lang, setLanguage } = useLanguage();
 
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -31,9 +32,17 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
 
   if (!isOpen) return null;
 
-  const handleProfileSubmit = (e) => {
+  const handleProfileSubmit = async (e) => {
     e.preventDefault();
-    updateProfile({ firstName, lastName, email, password });
+    setSavingProfile(true);
+    try {
+      await updateProfile({ firstName, lastName, email, password });
+      addToast("Profil saqlandi! 👤", `${firstName} ${lastName}`, "success");
+    } catch (err) {
+      addToast("Xatolik", err.message || "Profilni saqlab bo'lmadi", "warning");
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleThemeSelect = (themeName) => {
@@ -190,8 +199,8 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
               >
                 Akkauntni almashtirish
               </button>
-              <button type="submit" className="primary-btn">
-                {t('saveProfileBtn')}
+              <button type="submit" className="primary-btn" disabled={savingProfile}>
+                {savingProfile ? "Saqlanmoqda..." : t('saveProfileBtn')}
               </button>
             </div>
           </form>

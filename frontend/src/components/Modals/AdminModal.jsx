@@ -3,9 +3,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
+import { supabaseService } from '../../services/supabaseService';
 
 export function AdminModal({ isOpen, onClose }) {
-  const { users, adminToggleUserRole, adminDeleteUser, adminAddUser } = useAuth();
+  const { currentUser, users, adminToggleUserRole, adminDeleteUser, adminAddUser } = useAuth();
   const { triggerBanner, addToast } = useHabits();
   const { t } = useLanguage();
 
@@ -43,12 +44,21 @@ export function AdminModal({ isOpen, onClose }) {
     }
   };
 
-  const handleBroadcast = (e) => {
+  const handleBroadcast = async (e) => {
     e.preventDefault();
     if (!broadcastTitle.trim()) return;
 
     triggerBanner(`📢 [Admin] ${broadcastTitle}`, broadcastMessage || "Barcha a'zolar uchun muhim xabar!");
     addToast("Bildirishnoma yuborildi! 🚀", broadcastTitle, "success");
+
+    if (supabaseService.isConfigured() && currentUser?.id) {
+      try {
+        await supabaseService.createBroadcast(currentUser.id, broadcastTitle, broadcastMessage);
+      } catch (err) {
+        console.warn('[Admin] Broadcast Supabase save warning:', err);
+      }
+    }
+
     setBroadcastTitle('');
     setBroadcastMessage('');
   };
