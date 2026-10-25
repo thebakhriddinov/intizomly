@@ -198,15 +198,13 @@
 }
 
 html {
-  height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   padding: 0;
   background-color: var(--bg-app);
@@ -215,10 +213,7 @@ body {
   font-size: 15px;
   line-height: 1.48;
   letter-spacing: -0.015em;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
+  overflow-x: clip;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -226,7 +221,8 @@ body {
 }
 
 #root {
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -440,10 +436,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   z-index: 1;
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   background-color: var(--bg-app);
-  overflow-x: clip;
 }
 
 .app-main-wrapper {
@@ -2915,7 +2911,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   .app-layout {
     display: flex;
     flex-direction: column;
-    min-height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
     width: 100%;
     grid-template-columns: none;
   }
@@ -2931,12 +2928,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   .app-main {
     width: 100%;
     padding: var(--space-4);
-    padding-bottom: calc(105px + env(safe-area-inset-bottom, 24px)) !important;
-    touch-action: pan-y;
+    padding-bottom: calc(115px + env(safe-area-inset-bottom, 24px)) !important;
   }
 
   .app-footer {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom, 24px));
+    padding-bottom: calc(105px + env(safe-area-inset-bottom, 24px));
   }
 
   .stats-grid {
@@ -3258,7 +3254,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 .challenge-main-card,
 .profile-hero-card,
 .badge-card {
-  touch-action: pan-y;
   transform: translate3d(0, 0, 0);
 }
 
@@ -3353,10 +3348,10 @@ button, .habit-checkbox-btn, .filter-chip, .week-day-cell, .gh-square, a, input 
     contain-intrinsic-size: 170px;
   }
 
-  /* Smooth inertia scrolling */
-  body, html, .app-main-wrapper, .heatmap-container {
+  /* Smooth inertia scrolling only on horizontal containers */
+  .heatmap-container {
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
+    overscroll-behavior-x: contain;
   }
 }
 
@@ -3894,7 +3889,7 @@ button, .habit-checkbox-btn, .filter-chip, .week-day-cell, .gh-square, a, input 
   border-radius: 32px;
   box-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
   z-index: 1000;
-  touch-action: pan-y;
+  touch-action: none;
   user-select: none;
   padding: 4px;
   align-items: center;
