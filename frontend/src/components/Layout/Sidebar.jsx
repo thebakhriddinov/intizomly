@@ -25,7 +25,7 @@ function SidebarComponent({
     ? <span className="user-role-badge role-admin">{t('roleAdmin')}</span>
     : isPremium
     ? <span className="user-role-badge role-premium">{t('rolePremium')}</span>
-    : <span className="user-role-badge role-user">{t('roleUser')}</span>;
+    : null;
 
   const roleText = isAdmin
     ? t('roleAdminDesc')

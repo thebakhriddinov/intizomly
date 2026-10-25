@@ -46,7 +46,7 @@ function HeaderComponent({ onSelectTab, onOpenProfile, onOpenAdmin, onOpenAuth, 
       <div className="header-left">
         {/* Mobile brand logo */}
         <BrandLogo
-          size="sm"
+          size="md"
           onClick={() => {
             onSelectTab?.('home');
             jumpToday();

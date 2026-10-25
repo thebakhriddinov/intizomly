@@ -4,7 +4,17 @@ import { useHabits } from '../../context/HabitsContext';
 import { storage } from '../../utils/storage';
 import { reminderService } from '../../utils/reminderService';
 import { audioManager } from '../../utils/audio';
-import { IconAlarm, IconLightbulb, IconSilent, IconCategory, IconFocus } from '../Common/AppIcons';
+import {
+  IconAlarm,
+  IconLightbulb,
+  IconSilent,
+  IconCategory,
+  IconFocus,
+  IconBook,
+  IconCode,
+  IconEdit,
+  IconTrophy
+} from '../Common/AppIcons';
 
 const CATEGORIES = [
   { id: "Sog'liq", label: "Sog'liq", color: '#10B981' },
@@ -34,12 +44,19 @@ const FOCUS_PRESETS = [
 ];
 
 const FOCUS_SUBJECTS = [
-  "📚 Dars & Vazifa",
-  "💻 Dasturlash & Kod",
-  "📖 Kitob Mutolaasi",
-  "🎯 Chuqur Diqqat",
-  "✍️ Konspekt & Til"
+  { id: 'study', title: "Dars & Vazifa", type: 'book' },
+  { id: 'coding', title: "Dasturlash & Kod", type: 'code' },
+  { id: 'reading', title: "Kitob Mutolaasi", type: 'book' },
+  { id: 'deepwork', title: "Chuqur Diqqat", type: 'focus' },
+  { id: 'notes', title: "Konspekt & Til", type: 'edit' }
 ];
+
+function FocusSubjectIcon({ type, size = 15 }) {
+  if (type === 'code') return <IconCode size={size} />;
+  if (type === 'edit') return <IconEdit size={size} />;
+  if (type === 'focus') return <IconFocus size={size} />;
+  return <IconBook size={size} />;
+}
 
 function ReminderPageComponent() {
   const { t } = useLanguage();
@@ -53,7 +70,7 @@ function ReminderPageComponent() {
   const [focusDuration, setFocusDuration] = useState(20 * 60);
   const [focusTimeLeft, setFocusTimeLeft] = useState(20 * 60);
   const [isFocusRunning, setIsFocusRunning] = useState(false);
-  const [focusSubject, setFocusSubject] = useState("📚 Dars & Vazifa");
+  const [focusSubject, setFocusSubject] = useState("Dars & Vazifa");
   const [focusSessionCount, setFocusSessionCount] = useState(() => {
     try {
       const saved = localStorage.getItem('intizomly_focus_sessions');
@@ -380,12 +397,13 @@ function ReminderPageComponent() {
             <div className="focus-subjects-row">
               {FOCUS_SUBJECTS.map((subj) => (
                 <button
-                  key={subj}
+                  key={subj.id}
                   type="button"
-                  className={`focus-subject-chip ${focusSubject === subj ? 'active' : ''}`}
-                  onClick={() => setFocusSubject(subj)}
+                  className={`focus-subject-chip ${focusSubject === subj.title ? 'active' : ''}`}
+                  onClick={() => setFocusSubject(subj.title)}
                 >
-                  {subj}
+                  <FocusSubjectIcon type={subj.type} size={15} />
+                  <span>{subj.title}</span>
                 </button>
               ))}
             </div>
@@ -442,7 +460,8 @@ function ReminderPageComponent() {
                     </span>
                   ) : focusTimeLeft === 0 ? (
                     <span className="focus-pill-finished">
-                      🎉 Bajarildi!
+                      <IconTrophy size={13} color="#F59E0B" />
+                      <span>Bajarildi!</span>
                     </span>
                   ) : (
                     <span className="focus-pill-idle">
@@ -617,7 +636,9 @@ function ReminderPageComponent() {
           </div>
 
           <div className="focus-tip-banner">
-            <div className="focus-tip-icon">💡</div>
+            <div className="focus-tip-icon">
+              <IconLightbulb size={22} color="#F59E0B" />
+            </div>
             <div className="focus-tip-text">
               <strong>Oltin Intizom Qoidasi:</strong> Dars boshlanganda telefoningizni qo'ldan uzoqqa qo'ying. 20 daqiqa hech qanday ijtimoiy tarmoqlarsiz faqat bitta mavzuni o'rganish miyaning diqqat markazini 3 barobarga oshiradi.
             </div>

@@ -2,6 +2,7 @@ import React, { memo, useMemo } from 'react';
 import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
+import { IconFlame } from '../Common/AppIcons';
 
 function StatsOverviewComponent() {
   const { dateKey, history, habits } = useHabits();
@@ -94,7 +95,7 @@ function StatsOverviewComponent() {
       {/* 2. Current Streak Card (Dancing Fire Aura) */}
       <div className="stat-card stat-streak">
         <div className="stat-icon-glow fire-glow">
-          <span className="streak-fire-anim">🔥</span>
+          <IconFlame size={24} className="streak-fire-anim" />
         </div>
         <div className="stat-info">
           <span className="stat-label">{t('streakLabel')}</span>

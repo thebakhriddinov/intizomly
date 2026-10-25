@@ -2,6 +2,7 @@ import React, { memo, useMemo, useState } from 'react';
 import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
+import { IconCalendar, IconGrid } from '../Common/AppIcons';
 
 const MONTH_NAMES_UZ = [
   'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
@@ -207,14 +208,16 @@ function HeatmapComponent() {
               className={`view-toggle-btn ${viewMode === 'month' ? 'active' : ''}`}
               onClick={() => setViewMode('month')}
             >
-              📅 {lang === 'ru' ? 'По месяцам' : lang === 'en' ? 'Monthly' : "Oylik"}
+              <IconCalendar size={14} />
+              <span>{lang === 'ru' ? 'По месяцам' : lang === 'en' ? 'Monthly' : "Oylik"}</span>
             </button>
             <button
               type="button"
               className={`view-toggle-btn ${viewMode === 'streak70' ? 'active' : ''}`}
               onClick={() => setViewMode('streak70')}
             >
-              📊 70 {lang === 'ru' ? 'дней' : lang === 'en' ? 'days' : "kun"}
+              <IconGrid size={14} />
+              <span>70 {lang === 'ru' ? 'дней' : lang === 'en' ? 'days' : "kun"}</span>
             </button>
           </div>
 
