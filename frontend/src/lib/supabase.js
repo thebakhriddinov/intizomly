@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Supabase Production Credentials & Environment Fallbacks
+const DEFAULT_SUPABASE_URL = 'https://zeixsiogmznsngwqfedd.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_ir9uyEbjniRkBlSUdlE6uw_LpvZaez9';
+
+const envUrl = import.meta.env.VITE_SUPABASE_URL;
+const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Check if credentials are properly set and not dummy placeholders
 const isValidUrl = (url) => {
@@ -22,6 +26,9 @@ const isValidKey = (key) => {
     !trimmed.includes('your-anon-publishable-key')
   );
 };
+
+const supabaseUrl = (isValidUrl(envUrl) ? envUrl : DEFAULT_SUPABASE_URL).trim();
+const supabaseAnonKey = (isValidKey(envKey) ? envKey : DEFAULT_SUPABASE_ANON_KEY).trim();
 
 export const isSupabaseConfigured = isValidUrl(supabaseUrl) && isValidKey(supabaseAnonKey);
 
