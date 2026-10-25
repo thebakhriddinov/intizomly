@@ -171,28 +171,33 @@ export function HabitsProvider({ children }) {
   // ==================== HABITS CRUD & TOGGLE ====================
 
   const toggleHabit = useCallback(async (habitId) => {
-    const isCurrentlyDone = !!(history[dateKey] && history[dateKey][habitId]);
-    const newState = !isCurrentlyDone;
+    let newState = false;
+    let isCurrentlyDone = false;
 
-    // Optimistic UI update
-    const updatedHistory = { ...history };
-    if (!updatedHistory[dateKey]) {
-      updatedHistory[dateKey] = {};
-    }
+    // Optimistic UI update using functional state updater for rock-solid stability
+    setHistory(prevHistory => {
+      isCurrentlyDone = !!(prevHistory[dateKey] && prevHistory[dateKey][habitId]);
+      newState = !isCurrentlyDone;
 
-    if (newState) {
-      updatedHistory[dateKey] = { ...updatedHistory[dateKey], [habitId]: true };
-    } else {
-      const dayMap = { ...updatedHistory[dateKey] };
-      delete dayMap[habitId];
-      updatedHistory[dateKey] = dayMap;
-    }
+      const updatedHistory = { ...prevHistory };
+      if (!updatedHistory[dateKey]) {
+        updatedHistory[dateKey] = {};
+      }
 
-    setHistory(updatedHistory);
-    storage.history = updatedHistory;
+      if (newState) {
+        updatedHistory[dateKey] = { ...updatedHistory[dateKey], [habitId]: true };
+      } else {
+        const dayMap = { ...updatedHistory[dateKey] };
+        delete dayMap[habitId];
+        updatedHistory[dateKey] = dayMap;
+      }
+
+      storage.history = updatedHistory;
+      return updatedHistory;
+    });
 
     // Play sounds & feedback
-    if (newState) {
+    if (!isCurrentlyDone) {
       audioManager.playCheck();
       addToast("Bajarildi! 🎉", "Ajoyib intizom!", "success", 2000);
 
@@ -215,21 +220,30 @@ export function HabitsProvider({ children }) {
       } catch (err) {
         console.error('[Habits] Toggle error on Supabase:', err);
         // Rollback on error
-        setHistory(history);
-        storage.history = history;
+        setHistory(prev => {
+          const rolledBack = { ...prev };
+          if (isCurrentlyDone) {
+            if (!rolledBack[dateKey]) rolledBack[dateKey] = {};
+            rolledBack[dateKey][habitId] = true;
+          } else if (rolledBack[dateKey]) {
+            delete rolledBack[dateKey][habitId];
+          }
+          storage.history = rolledBack;
+          return rolledBack;
+        });
         addToast("Xatolik", "Server bilan sinxronlashda xatolik yuz berdi", "warning");
       }
     } else {
-      storage.save(storage.constructor.STORAGE_KEYS?.HISTORY || 'intizomly_history_v2', updatedHistory);
+      storage.save(storage.constructor.STORAGE_KEYS?.HISTORY || 'intizomly_history_v2', storage.history);
     }
-  }, [history, dateKey, settings.confettiEnabled, addToast, currentUser]);
+  }, [dateKey, settings.confettiEnabled, addToast, currentUser]);
 
   const addHabit = useCallback(async (habitData) => {
     if (currentUser?.isSupabaseUser) {
       try {
         const created = await supabaseService.createHabit(currentUser.id, habitData);
         setHabits(prev => [...prev, created]);
-        storage.habits = [...habits, created];
+        storage.habits = [...storage.habits, created];
         addToast("Odat qo'shildi! 🎯", created.title, "success");
         return created;
       } catch (err) {
@@ -243,14 +257,14 @@ export function HabitsProvider({ children }) {
     setHabits([...storage.getHabits()]);
     addToast("Odat qo'shildi! 🎯", created.title, "success");
     return created;
-  }, [currentUser, habits, addToast]);
+  }, [currentUser, addToast]);
 
   const updateHabit = useCallback(async (id, habitData) => {
     if (currentUser?.isSupabaseUser) {
       try {
         const updated = await supabaseService.updateHabit(id, habitData);
         setHabits(prev => prev.map(h => (h.id === id ? updated : h)));
-        storage.habits = habits.map(h => (h.id === id ? updated : h));
+        storage.habits = storage.habits.map(h => (h.id === id ? updated : h));
         addToast("Odat yangilandi! ✍️", updated.title, "success");
         return updated;
       } catch (err) {
@@ -264,29 +278,31 @@ export function HabitsProvider({ children }) {
     setHabits([...storage.getHabits()]);
     addToast("Odat yangilandi! ✍️", updated.title, "success");
     return updated;
-  }, [currentUser, habits, addToast]);
+  }, [currentUser, addToast]);
 
   const deleteHabit = useCallback(async (id) => {
-    const habit = habits.find(h => h.id === id) || storage.getHabitById(id);
+    const habit = storage.habits.find(h => h.id === id) || storage.getHabitById(id);
     if (!habit) return false;
 
     if (currentUser?.isSupabaseUser) {
       try {
         await supabaseService.deleteHabit(id);
         setHabits(prev => prev.filter(h => h.id !== id));
-        storage.habits = habits.filter(h => h.id !== id);
+        storage.habits = storage.habits.filter(h => h.id !== id);
 
         // Clean up history
-        const updatedHistory = { ...history };
-        Object.keys(updatedHistory).forEach(dKey => {
-          if (updatedHistory[dKey][id]) {
-            const copy = { ...updatedHistory[dKey] };
-            delete copy[id];
-            updatedHistory[dKey] = copy;
-          }
+        setHistory(prev => {
+          const updatedHistory = { ...prev };
+          Object.keys(updatedHistory).forEach(dKey => {
+            if (updatedHistory[dKey][id]) {
+              const copy = { ...updatedHistory[dKey] };
+              delete copy[id];
+              updatedHistory[dKey] = copy;
+            }
+          });
+          storage.history = updatedHistory;
+          return updatedHistory;
         });
-        setHistory(updatedHistory);
-        storage.history = updatedHistory;
 
         addToast("Odat o'chirildi", habit.title, "info");
         return true;
@@ -304,11 +320,14 @@ export function HabitsProvider({ children }) {
       addToast("Odat o'chirildi", habit.title, "info");
     }
     return ok;
-  }, [currentUser, habits, history, addToast]);
+  }, [currentUser, addToast]);
 
   const updateSettings = useCallback(async (updates) => {
-    const merged = { ...settings, ...updates };
-    setSettings(merged);
+    setSettings(prev => {
+      const merged = { ...prev, ...updates };
+      storage.saveSettings(updates);
+      return merged;
+    });
 
     if (currentUser?.isSupabaseUser) {
       try {
@@ -317,35 +336,55 @@ export function HabitsProvider({ children }) {
         console.warn('[Habits] Save settings to Supabase warning:', err);
       }
     }
+  }, [currentUser]);
 
-    storage.saveSettings(updates);
-    return merged;
-  }, [currentUser, settings]);
+  const contextValue = useMemo(() => ({
+    currentDate,
+    setCurrentDate,
+    dateKey,
+    isToday,
+    shiftDate,
+    jumpToday,
+    habits,
+    history,
+    loading,
+    toggleHabit,
+    addHabit,
+    updateHabit,
+    deleteHabit,
+    settings,
+    updateSettings,
+    bannerNotif,
+    triggerBanner,
+    dismissBanner,
+    toasts,
+    addToast,
+    removeToast
+  }), [
+    currentDate,
+    dateKey,
+    isToday,
+    shiftDate,
+    jumpToday,
+    habits,
+    history,
+    loading,
+    toggleHabit,
+    addHabit,
+    updateHabit,
+    deleteHabit,
+    settings,
+    updateSettings,
+    bannerNotif,
+    triggerBanner,
+    dismissBanner,
+    toasts,
+    addToast,
+    removeToast
+  ]);
 
   return (
-    <HabitsContext.Provider value={{
-      currentDate,
-      setCurrentDate,
-      dateKey,
-      isToday,
-      shiftDate,
-      jumpToday,
-      habits,
-      history,
-      loading,
-      toggleHabit,
-      addHabit,
-      updateHabit,
-      deleteHabit,
-      settings,
-      updateSettings,
-      bannerNotif,
-      triggerBanner,
-      dismissBanner,
-      toasts,
-      addToast,
-      removeToast
-    }}>
+    <HabitsContext.Provider value={contextValue}>
       {children}
     </HabitsContext.Provider>
   );

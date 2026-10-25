@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { useHabits } from '../../context/HabitsContext';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -10,12 +10,15 @@ function HeaderComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrade
     jumpToday,
     settings,
     updateSettings,
-    triggerBanner
+    history,
+    habits
   } = useHabits();
   const { currentUser, isAdmin, isPremium } = useAuth();
   const { t, lang } = useLanguage();
 
-  const streak = storage.getGlobalStreak();
+  const streak = useMemo(() => {
+    return storage.getGlobalStreak();
+  }, [history, habits]);
 
   const toggleAppearance = () => {
     const cur = settings.appearance || 'system';

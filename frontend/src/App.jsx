@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, lazy, Suspense } from 'react';
 import { useAuth } from './context/AuthContext';
-import { useHabits } from './context/HabitsContext';
 import { useLanguage } from './context/LanguageContext';
 import { LiquidBackground } from './components/Background/LiquidBackground';
 import { Header } from './components/Layout/Header';
@@ -11,14 +10,16 @@ import { WeekStrip } from './components/Dashboard/WeekStrip';
 import { StatsOverview } from './components/Dashboard/StatsOverview';
 import { Heatmap } from './components/Dashboard/Heatmap';
 import { HabitList } from './components/Dashboard/HabitList';
-import { HabitModal } from './components/Modals/HabitModal';
-import { ProfileSettingsModal } from './components/Modals/ProfileSettingsModal';
-import { AdminModal } from './components/Modals/AdminModal';
-import { AuthModal } from './components/Modals/AuthModal';
-import { UpgradeModal } from './components/Modals/UpgradeModal';
 import { DynamicIslandBanner } from './components/Feedback/DynamicIslandBanner';
 import { ToastContainer } from './components/Feedback/ToastContainer';
 import { EnvWarningBanner } from './components/Feedback/EnvWarningBanner';
+
+// Code-split modals so they don't bloat the initial mobile download
+const HabitModal = lazy(() => import('./components/Modals/HabitModal').then(m => ({ default: m.HabitModal })));
+const ProfileSettingsModal = lazy(() => import('./components/Modals/ProfileSettingsModal').then(m => ({ default: m.ProfileSettingsModal })));
+const AdminModal = lazy(() => import('./components/Modals/AdminModal').then(m => ({ default: m.AdminModal })));
+const AuthModal = lazy(() => import('./components/Modals/AuthModal').then(m => ({ default: m.AuthModal })));
+const UpgradeModal = lazy(() => import('./components/Modals/UpgradeModal').then(m => ({ default: m.UpgradeModal })));
 
 export function App() {
   const { t } = useLanguage();
@@ -35,29 +36,29 @@ export function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
-  const handleOpenAddHabit = () => {
+  const handleOpenAddHabit = useCallback(() => {
     setHabitToEdit(null);
     setHabitModalOpen(true);
-  };
+  }, []);
 
-  const handleEditHabit = (habit) => {
+  const handleEditHabit = useCallback((habit) => {
     setHabitToEdit(habit);
     setHabitModalOpen(true);
-  };
+  }, []);
 
-  const handleOpenProfile = () => {
+  const handleOpenProfile = useCallback(() => {
     setProfileInitialTab('profile');
     setProfileModalOpen(true);
-  };
+  }, []);
 
-  const handleOpenSettings = () => {
+  const handleOpenSettings = useCallback(() => {
     setProfileInitialTab('settings');
     setProfileModalOpen(true);
-  };
+  }, []);
 
-  const handleOpenUpgrade = () => {
+  const handleOpenUpgrade = useCallback(() => {
     setUpgradeModalOpen(true);
-  };
+  }, []);
 
   // 1. Initial Auth Loading Screen
   if (authLoading) {
@@ -87,15 +88,17 @@ export function App() {
     return (
       <>
         <LiquidBackground />
-        <AuthModal
-          isOpen={true}
-          isAuthGate={true}
-          onLoginSuccess={(user) => {
-            if (user?.role === 'admin') {
-              setAdminModalOpen(true);
-            }
-          }}
-        />
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={true}
+            isAuthGate={true}
+            onLoginSuccess={(user) => {
+              if (user?.role === 'admin') {
+                setAdminModalOpen(true);
+              }
+            }}
+          />
+        </Suspense>
         <ToastContainer />
       </>
     );
@@ -160,45 +163,57 @@ export function App() {
       {/* 5. Mobile Bottom Navigation */}
       <MobileBottomNav onOpenProfile={handleOpenProfile} />
 
-      {/* 6. Modals */}
-      <HabitModal
-        isOpen={habitModalOpen}
-        onClose={() => setHabitModalOpen(false)}
-        habitToEdit={habitToEdit}
-      />
+      {/* 6. Lazy-Loaded Modals with Zero-Overhead when closed */}
+      <Suspense fallback={null}>
+        {habitModalOpen && (
+          <HabitModal
+            isOpen={habitModalOpen}
+            onClose={() => setHabitModalOpen(false)}
+            habitToEdit={habitToEdit}
+          />
+        )}
 
-      <ProfileSettingsModal
-        isOpen={profileModalOpen}
-        onClose={() => setProfileModalOpen(false)}
-        initialTab={profileInitialTab}
-        onOpenAuth={() => {
-          setProfileModalOpen(false);
-          setAuthModalOpen(true);
-        }}
-        onOpenUpgrade={handleOpenUpgrade}
-      />
+        {profileModalOpen && (
+          <ProfileSettingsModal
+            isOpen={profileModalOpen}
+            onClose={() => setProfileModalOpen(false)}
+            initialTab={profileInitialTab}
+            onOpenAuth={() => {
+              setProfileModalOpen(false);
+              setAuthModalOpen(true);
+            }}
+            onOpenUpgrade={handleOpenUpgrade}
+          />
+        )}
 
-      <AdminModal
-        isOpen={adminModalOpen}
-        onClose={() => setAdminModalOpen(false)}
-      />
+        {adminModalOpen && (
+          <AdminModal
+            isOpen={adminModalOpen}
+            onClose={() => setAdminModalOpen(false)}
+          />
+        )}
 
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onLoginSuccess={(user) => {
-          setAuthModalOpen(false);
-          if (user?.role === 'admin') {
-            setAdminModalOpen(true);
-          }
-        }}
-        isAuthGate={false}
-      />
+        {authModalOpen && (
+          <AuthModal
+            isOpen={authModalOpen}
+            onClose={() => setAuthModalOpen(false)}
+            onLoginSuccess={(user) => {
+              setAuthModalOpen(false);
+              if (user?.role === 'admin') {
+                setAdminModalOpen(true);
+              }
+            }}
+            isAuthGate={false}
+          />
+        )}
 
-      <UpgradeModal
-        isOpen={upgradeModalOpen}
-        onClose={() => setUpgradeModalOpen(false)}
-      />
+        {upgradeModalOpen && (
+          <UpgradeModal
+            isOpen={upgradeModalOpen}
+            onClose={() => setUpgradeModalOpen(false)}
+          />
+        )}
+      </Suspense>
 
       {/* 7. Feedback Elements */}
       <DynamicIslandBanner />

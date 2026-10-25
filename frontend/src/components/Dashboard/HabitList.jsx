@@ -57,13 +57,13 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
     return Array.from(set);
   }, [habits]);
 
-  const handleDelete = (id) => {
-    const h = storage.getHabitById(id);
+  const handleDelete = React.useCallback((id) => {
+    const h = storage.habits.find(item => item.id === id) || storage.getHabitById(id);
     if (!h) return;
     if (confirm(`"${h.title}" odatini o'chirishni tasdiqlaysizmi?`)) {
       deleteHabit(id);
     }
-  };
+  }, [deleteHabit]);
 
   return (
     <section className="habits-section" id="habits-section">

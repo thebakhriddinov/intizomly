@@ -3,17 +3,19 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 
+const SHORT_MONTHS_UZ = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
+const SHORT_MONTHS_RU = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+const SHORT_MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 function HeatmapComponent() {
-  const { currentDate, setCurrentDate, dateKey, history, habits } = useHabits();
+  const { dateKey, history, habits, setCurrentDate } = useHabits();
   const { t, lang } = useLanguage();
 
-  const shortMonthsUz = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek'];
-  const shortMonthsRu = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
-  const shortMonthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const shortMonths = lang === 'ru' ? shortMonthsRu : lang === 'en' ? shortMonthsEn : shortMonthsUz;
+  const shortMonths = lang === 'ru' ? SHORT_MONTHS_RU : lang === 'en' ? SHORT_MONTHS_EN : SHORT_MONTHS_UZ;
 
   const { squares, monthLabels, activeDaysCount, totalCompletionsInPeriod } = useMemo(() => {
     const today = new Date();
+    const todayKey = storage.formatDateKey(today);
     const sqList = [];
     const monthsSet = new Set();
     let activeDays = 0;
@@ -24,7 +26,7 @@ function HeatmapComponent() {
       d.setDate(d.getDate() - i);
       const dKey = storage.formatDateKey(d);
       const isSelected = dKey === dateKey;
-      const isFuture = d > today && dKey !== storage.formatDateKey(today);
+      const isFuture = d > today && dKey !== todayKey;
 
       const stats = storage.getDayStats(dKey);
       if (stats.completed > 0 && !isFuture) {
@@ -58,7 +60,7 @@ function HeatmapComponent() {
       activeDaysCount: activeDays,
       totalCompletionsInPeriod: totalDone
     };
-  }, [dateKey, history, habits, shortMonths]);
+  }, [dateKey, history, habits, lang]);
 
   return (
     <section className="github-heatmap-card" id="github-heatmap-card">

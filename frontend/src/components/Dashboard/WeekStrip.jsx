@@ -3,18 +3,18 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 
+const SHORT_DAYS_UZ = ['Yak', 'Dush', 'Sesh', 'Chor', 'Pay', 'Juma', 'Shan'];
+const SHORT_DAYS_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+const SHORT_DAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 function WeekStripComponent() {
-  const { currentDate, setCurrentDate, dateKey, history } = useHabits();
+  const { currentDate, setCurrentDate, dateKey, history, habits } = useHabits();
   const { t, lang } = useLanguage();
 
-  const shortDaysUz = ['Yak', 'Dush', 'Sesh', 'Chor', 'Pay', 'Juma', 'Shan'];
-  const shortDaysRu = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-  const shortDaysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-  const shortDays = lang === 'ru' ? shortDaysRu : lang === 'en' ? shortDaysEn : shortDaysUz;
-  const today = new Date();
+  const shortDays = lang === 'ru' ? SHORT_DAYS_RU : lang === 'en' ? SHORT_DAYS_EN : SHORT_DAYS_UZ;
 
   const { days, completedDaysCount } = useMemo(() => {
+    const today = new Date();
     const list = [];
     let completedCount = 0;
 
@@ -50,7 +50,7 @@ function WeekStripComponent() {
     }
 
     return { days: list, completedDaysCount: completedCount };
-  }, [currentDate, dateKey, history, shortDays]);
+  }, [currentDate, dateKey, history, habits, lang]);
 
   const weekPct = Math.round((completedDaysCount / 7) * 100);
 

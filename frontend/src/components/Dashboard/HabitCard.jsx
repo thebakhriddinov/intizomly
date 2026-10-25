@@ -5,23 +5,21 @@ import { storage } from '../../utils/storage';
 function HabitCardComponent({ habit, onEdit, onDelete }) {
   const { dateKey, history, toggleHabit } = useHabits();
 
-  const isCompleted = useMemo(() => {
-    return storage.isHabitCompleted(dateKey, habit.id);
-  }, [dateKey, history, habit.id]);
+  // Instant O(1) completion lookup
+  const isCompleted = !!(history[dateKey] && history[dateKey][habit.id]);
 
   const streak = useMemo(() => {
     return storage.getHabitStreak(habit.id);
   }, [history, habit.id]);
 
-  // Generate 7-day mini history dots
+  // Generate 7-day mini history dots with minimal date allocations
   const miniDots = useMemo(() => {
-    const today = new Date();
+    const now = Date.now();
     const dots = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
+      const d = new Date(now - i * 86400000);
       const dKey = storage.formatDateKey(d);
-      const done = storage.isHabitCompleted(dKey, habit.id);
+      const done = !!(history[dKey] && history[dKey][habit.id]);
       dots.push({ dateKey: dKey, isDone: done, isToday: i === 0 });
     }
     return dots;

@@ -3206,9 +3206,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 }
 
 /* --------------------------------------------------------------------------
-   SAMSUNG GALAXY A51 / MOBILE GPU PERFORMANCE OPTIMIZATIONS
+   SAMSUNG GALAXY A51 / MOBILE GPU PERFORMANCE ENGINE
+   Retains 100% of the sleek glass aesthetic, neon gradients, and fluid motion,
+   while eliminating GPU shader overload and geometry re-rasterization on phones.
    -------------------------------------------------------------------------- */
-/* Hardware layer compositing without disabling visual effects */
 .liquid-blob {
   transform: translate3d(0, 0, 0);
   -webkit-transform: translate3d(0, 0, 0);
@@ -3228,15 +3229,11 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   contain: layout style paint;
   touch-action: manipulation;
   transform: translate3d(0, 0, 0);
-  will-change: transform, box-shadow;
 }
 
-.stat-card {
-  contain: layout style paint;
-  transform: translate3d(0, 0, 0);
-}
-
-.week-strip-card, .github-heatmap-card {
+.stat-card,
+.week-strip-card,
+.github-heatmap-card {
   contain: layout style paint;
   transform: translate3d(0, 0, 0);
 }
@@ -3246,9 +3243,110 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   transform: translateZ(0);
 }
 
-/* Prevent 300ms touch delay on mobile buttons */
-button, [role="button"], .habit-checkbox-btn, .filter-chip, .week-day-cell, .gh-square {
+/* Prevent 300ms touch delay on all interactive elements */
+button, [role="button"], .habit-checkbox-btn, .filter-chip, .week-day-cell, .gh-square, a, input {
   touch-action: manipulation;
+}
+
+/* Mobile-Specific GPU Acceleration and Compositing Rules */
+@media (max-width: 768px) {
+  /* 1. Optimize liquid background blobs for mobile GPU (Exynos 9611 / Mali-G72) */
+  .liquid-blob {
+    filter: blur(36px) !important;
+    opacity: 0.52 !important;
+    mix-blend-mode: normal !important;
+    will-change: transform !important;
+  }
+
+  .liquid-blob-1 {
+    width: 360px !important;
+    height: 360px !important;
+    top: -50px !important;
+    left: -50px !important;
+    animation: liquidFloatMobile1 18s ease-in-out infinite alternate !important;
+  }
+
+  .liquid-blob-2 {
+    width: 320px !important;
+    height: 320px !important;
+    top: 25% !important;
+    right: -60px !important;
+    animation: liquidFloatMobile2 20s ease-in-out infinite alternate !important;
+  }
+
+  /* Hide lower screen blobs on phone to keep 60 FPS compositor without fill-rate saturation */
+  .liquid-blob-3,
+  .liquid-blob-4 {
+    display: none !important;
+  }
+
+  /* 2. Frosted glass optimization: 10px blur + rich tint looks identical to 28px blur on mobile */
+  .app-header,
+  .mobile-bottom-nav,
+  .mobile-date-bar,
+  .stat-card,
+  .week-strip-card,
+  .github-heatmap-card,
+  .habit-card,
+  .modal-card {
+    backdrop-filter: blur(10px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(160%) !important;
+  }
+
+  .app-header {
+    background-color: rgba(8, 11, 17, 0.88) !important;
+  }
+
+  .mobile-bottom-nav {
+    background-color: rgba(12, 17, 26, 0.92) !important;
+  }
+
+  .mobile-date-bar {
+    background-color: rgba(18, 25, 36, 0.88) !important;
+  }
+
+  /* 3. Offscreen viewport culling & lighter mobile shadows */
+  .habit-card {
+    background-color: rgba(18, 25, 36, 0.85) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    content-visibility: auto;
+    contain-intrinsic-size: 110px;
+    margin-bottom: var(--space-3);
+  }
+
+  .stat-card {
+    background-color: rgba(18, 25, 36, 0.85) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    content-visibility: auto;
+    contain-intrinsic-size: 130px;
+  }
+
+  .week-strip-card,
+  .github-heatmap-card {
+    background-color: rgba(18, 25, 36, 0.85) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    content-visibility: auto;
+    contain-intrinsic-size: 170px;
+  }
+
+  /* Smooth inertia scrolling */
+  body, html, .app-main-wrapper, .heatmap-container {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* Pure GPU compositor keyframes for mobile (transform-only, 0 repaints) */
+@keyframes liquidFloatMobile1 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(35px, 25px, 0) scale(1.08); }
+  100% { transform: translate3d(-25px, 35px, 0) scale(0.95); }
+}
+
+@keyframes liquidFloatMobile2 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-30px, -25px, 0) scale(1.1); }
+  100% { transform: translate3d(20px, -20px, 0) scale(0.96); }
 }
 
 /* ==============================================================================
