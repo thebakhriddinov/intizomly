@@ -4,6 +4,7 @@ import { audioManager } from '../utils/audio';
 import { fireCelebrationConfetti } from '../utils/confetti';
 import { useAuth } from './AuthContext';
 import { supabaseService } from '../services/supabaseService';
+import { reminderService } from '../utils/reminderService';
 
 const HabitsContext = createContext(null);
 
@@ -167,6 +168,17 @@ export function HabitsProvider({ children }) {
   const dismissBanner = useCallback(() => {
     setBannerNotif(null);
   }, []);
+
+  // Real-time background reminder runner
+  useEffect(() => {
+    reminderService.start(({ title, message }) => {
+      triggerBanner(title, message);
+    });
+
+    return () => {
+      reminderService.stop();
+    };
+  }, [triggerBanner]);
 
   // ==================== HABITS CRUD & TOGGLE ====================
 

@@ -3,14 +3,34 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useHabits } from '../../context/HabitsContext';
 import { storage, BADGES_CONFIG } from '../../utils/storage';
+import {
+  IconTrophy,
+  IconFlame,
+  IconShield,
+  IconSword,
+  IconCrown,
+  IconLightning,
+  IconDiamond,
+  IconSocialPlatform
+} from '../Common/AppIcons';
+
+function BadgeEmblem({ id, color, size = 28 }) {
+  if (id === 'badge_10') return <IconShield size={size} color={color} />;
+  if (id === 'badge_20') return <IconFlame size={size} />;
+  if (id === 'badge_50') return <IconSword size={size} color={color} />;
+  if (id === 'badge_70') return <IconCrown size={size} />;
+  if (id === 'badge_90') return <IconLightning size={size} color={color} />;
+  if (id === 'badge_100') return <IconDiamond size={size} color={color} />;
+  return <IconTrophy size={size} />;
+}
 
 const SOCIAL_PLATFORMS = [
-  { id: 'telegram', name: 'Telegram', icon: '✈️', prefix: 'https://t.me/' },
-  { id: 'instagram', name: 'Instagram', icon: '📸', prefix: 'https://instagram.com/' },
-  { id: 'youtube', name: 'YouTube', icon: '▶️', prefix: 'https://youtube.com/@' },
-  { id: 'x', name: 'X / Twitter', icon: '✖️', prefix: 'https://x.com/' },
-  { id: 'github', name: 'GitHub', icon: '🐙', prefix: 'https://github.com/' },
-  { id: 'linkedin', name: 'LinkedIn', icon: '💼', prefix: 'https://linkedin.com/in/' }
+  { id: 'telegram', name: 'Telegram', prefix: 'https://t.me/' },
+  { id: 'instagram', name: 'Instagram', prefix: 'https://instagram.com/' },
+  { id: 'github', name: 'GitHub', prefix: 'https://github.com/' },
+  { id: 'youtube', name: 'YouTube', prefix: 'https://youtube.com/@' },
+  { id: 'x', name: 'X / Twitter', prefix: 'https://x.com/' },
+  { id: 'linkedin', name: 'LinkedIn', prefix: 'https://linkedin.com/in/' }
 ];
 
 function ProfilePageComponent({ onOpenSettings }) {
@@ -355,7 +375,7 @@ function ProfilePageComponent({ onOpenSettings }) {
                   </div>
 
                   <div className="badge-icon-circle" style={{ borderColor: badge.color }}>
-                    <span className="badge-big-icon">{badge.icon}</span>
+                    <BadgeEmblem id={badge.id} color={badge.color} size={30} />
                   </div>
 
                   <h4 className="badge-title">{badge.title}</h4>
@@ -420,7 +440,9 @@ function ProfilePageComponent({ onOpenSettings }) {
                 return (
                   <div key={soc.id} className="social-link-card">
                     <div className="social-card-left">
-                      <span className="social-platform-icon">{soc.icon || '🔗'}</span>
+                      <div className="social-platform-icon-wrap">
+                        <IconSocialPlatform platform={soc.platform} size={22} />
+                      </div>
                       <div className="social-platform-info">
                         <span className="social-platform-name">{soc.label || soc.platform}</span>
                         <a

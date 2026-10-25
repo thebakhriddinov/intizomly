@@ -1,24 +1,38 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useHabits } from '../../context/HabitsContext';
 import { storage } from '../../utils/storage';
+import { audioManager } from '../../utils/audio';
+import {
+  IconTrophy,
+  IconMedal,
+  IconFlame,
+  IconNoSugar,
+  IconAlarm,
+  IconWater,
+  IconBook
+} from '../Common/AppIcons';
+
+// Helper to render high-end challenge vector emblem
+function ChallengeEmblem({ id, size = 26 }) {
+  if (id === 'ch_no_sugar') return <IconNoSugar size={size} />;
+  if (id === 'ch_early_birds') return <IconAlarm size={size} color="#F59E0B" />;
+  if (id === 'ch_water_master') return <IconWater size={size} color="#06B6D4" />;
+  if (id === 'ch_reading_club') return <IconBook size={size} color="#3B82F6" />;
+  return <IconTrophy size={size} />;
+}
 
 function RankingsPageComponent() {
-  const { currentUser } = useAuth();
-  const { t, lang } = useLanguage();
+  const { t } = useLanguage();
   const { triggerBanner } = useHabits();
 
   const [challenges, setChallenges] = useState([]);
-  const [selectedChallengeId, setSelectedChallengeId] = useState(null);
+  const [selectedChallengeId, setSelectedChallengeId] = useState('ch_no_sugar');
 
   const loadChallenges = useCallback(() => {
     const list = storage.getChallenges();
     setChallenges(list);
-    if (list.length > 0 && !selectedChallengeId) {
-      setSelectedChallengeId(list[0].id);
-    }
-  }, [selectedChallengeId]);
+  }, []);
 
   useEffect(() => {
     loadChallenges();
@@ -27,50 +41,54 @@ function RankingsPageComponent() {
   const selectedChallenge = challenges.find((c) => c.id === selectedChallengeId) || challenges[0];
 
   const handleJoin = (challengeId) => {
-    const updated = storage.joinChallenge(challengeId);
-    setChallenges(updated);
-    const ch = updated.find((c) => c.id === challengeId);
-    triggerBanner("🎉 Guruhga muvaffaqiyatli qo'shildingiz!", `${ch?.title} chempionati natijalari ochildi! Intizomni saqlang! 🏆`);
+    storage.joinChallenge(challengeId);
+    loadChallenges();
+    audioManager.playCheck();
+    triggerBanner("🎉 Guruhga a'zo bo'ldingiz!", "Reyting jadvali ochildi. Natijalaringiz endi hisoblanadi!");
   };
 
   const handleLeave = (challengeId) => {
-    if (window.confirm("Haqiqatan ham ushbu guruh marafoni va reytingidan chiqmoqchimisiz?")) {
-      const updated = storage.leaveChallenge(challengeId);
-      setChallenges(updated);
-      triggerBanner("ℹ️ Guruhdan chiqildi", "Siz ushbu chempionatdan chiqdingiz.");
-    }
+    storage.leaveChallenge(challengeId);
+    loadChallenges();
+    triggerBanner("Guruhdan chiqildi", "Reyting ma'lumotlari yashirildi.");
   };
 
   return (
     <div className="rankings-page">
-      {/* 1. Header Banner */}
+      {/* 1. Hero Card */}
       <div className="rankings-hero-card">
-        <div className="rankings-hero-content">
+        <div className="rankings-hero-top">
           <div className="rankings-pill-tag">
-            <span>🏆 JAMOAVIY INTIZOM LIGALARI</span>
+            <IconTrophy size={14} />
+            <span>Guruhlar & Musobaqalar</span>
           </div>
-          <h2 className="rankings-hero-title">Intizom Chempionati va Reytinglar</h2>
-          <p className="rankings-hero-sub">
-            Har bir guruhning o'ziga xos qat'iy qoidalari mavjud. Guruhga qo'shiling va haqiqiy natijalarni ko'ring!
-          </p>
+          <span className="rankings-hero-subtag">2026 Intizom Ligasiga Xush Kelibsiz</span>
         </div>
+
+        <h2 className="rankings-hero-title">Intizom Chempionati & Reytinglar</h2>
+        <p className="rankings-hero-desc">
+          Do'stlaringiz va intizomli insonlar bilan birgalikda musobaqalashish — odatlarni tark etmaslikning eng kuchli siri.
+          Reyting natijalarini ko'rish uchun avval ushbu guruhga a'zo bo'ling!
+        </p>
       </div>
 
       {/* 2. Challenge Selector Pills */}
-      <div className="challenge-selector-scroll">
+      <div className="challenges-selector-row">
         {challenges.map((ch) => (
           <button
             key={ch.id}
             type="button"
-            className={`challenge-tab-chip ${selectedChallenge?.id === ch.id ? 'active' : ''}`}
+            className={`challenge-select-chip ${selectedChallengeId === ch.id ? 'active' : ''}`}
             onClick={() => setSelectedChallengeId(ch.id)}
           >
-            <span className="chip-emoji">{ch.emoji}</span>
+            <div className="chip-emblem-wrap">
+              <ChallengeEmblem id={ch.id} size={18} />
+            </div>
             <span className="chip-title">{ch.title}</span>
             {ch.joined ? (
-              <span className="chip-joined-badge">A'zo ✅</span>
+              <span className="chip-joined-badge">A'zo</span>
             ) : (
-              <span className="chip-locked-badge">🔒 Qulf</span>
+              <span className="chip-locked-badge">Qulf</span>
             )}
           </button>
         ))}
@@ -81,13 +99,26 @@ function RankingsPageComponent() {
         <div className="challenge-main-card">
           <div className="challenge-card-header">
             <div className="challenge-header-left">
-              <span className="challenge-big-emoji">{selectedChallenge.emoji}</span>
+              <div className="challenge-big-emblem">
+                <ChallengeEmblem id={selectedChallenge.id} size={38} />
+              </div>
               <div>
                 <h3 className="challenge-heading">{selectedChallenge.title}</h3>
                 <p className="challenge-description">{selectedChallenge.description}</p>
                 <div className="challenge-meta-row">
-                  <span className="meta-pill">👥 {selectedChallenge.participantsCount} nafar ishtirokchi</span>
-                  <span className="meta-pill">🏅 Mukofot: {selectedChallenge.badgeName}</span>
+                  <span className="meta-pill">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    <span>{selectedChallenge.participantsCount} nafar ishtirokchi</span>
+                  </span>
+                  <span className="meta-pill">
+                    <IconTrophy size={14} />
+                    <span>Mukofot: {selectedChallenge.badgeName}</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -95,7 +126,12 @@ function RankingsPageComponent() {
             <div className="challenge-header-right">
               {selectedChallenge.joined ? (
                 <div className="joined-action-box">
-                  <span className="joined-status-badge">Siz guruh a'zosisiz ✅</span>
+                  <span className="joined-status-badge">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10B981" strokeWidth="2.5">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span>Siz guruh a'zosisiz</span>
+                  </span>
                   <button
                     type="button"
                     className="btn-leave-challenge"
@@ -111,7 +147,8 @@ function RankingsPageComponent() {
                   onClick={() => handleJoin(selectedChallenge.id)}
                 >
                   <span className="join-glow"></span>
-                  <span>🚀 Guruhga A'zo Bo'lish</span>
+                  <IconTrophy size={16} />
+                  <span>Guruhga A'zo Bo'lish</span>
                 </button>
               )}
             </div>
@@ -129,35 +166,40 @@ function RankingsPageComponent() {
               </div>
               <h4 className="locked-title">Reyting Natijalari Yashirin</h4>
               <p className="locked-desc">
-                Ushbu guruhdagi qatnashchilar va peshqadamlar natijalarini ko'rish uchun yuqoridagi <strong>"Guruhga A'zo Bo'lish"</strong> tugmasini bosing!
+                Ushbu musobaqa peshqadamlari va ishtirokchilar natijalarini ko'rish uchun yuqoridagi <strong>"Guruhga A'zo Bo'lish"</strong> tugmasini bosing!
               </p>
               <button
                 type="button"
                 className="btn-join-challenge-inline"
                 onClick={() => handleJoin(selectedChallenge.id)}
               >
-                Guruhga Qo'shilish va Natijalarni Ochish 🔓
+                <IconTrophy size={16} />
+                <span>Guruhga Qo'shilish va Natijalarni Ochish</span>
               </button>
             </div>
           ) : (
             /* UNLOCKED STATE: FULL LEADERBOARD */
             <div className="leaderboard-unlocked-container">
               <div className="leaderboard-header-bar">
-                <h4 className="leaderboard-title">Guruh Peshiqadamlari (Top Natijalar)</h4>
-                <span className="live-pill">🔴 Jonli Natijalar</span>
+                <h4 className="leaderboard-title">Guruh Peshqadamlari (Top Natijalar)</h4>
+                <span className="live-pill">
+                  <span className="pulse-dot"></span>
+                  <span>Jonli Natijalar</span>
+                </span>
               </div>
 
               {/* Podium for top 3 */}
               <div className="podium-row">
                 {selectedChallenge.leaderboard.slice(0, 3).map((item, idx) => {
-                  const placeColors = ['#f59e0b', '#94a3b8', '#cd7f32'];
-                  const placeIcons = ['🥇', '🥈', '🥉'];
+                  const rankNum = idx + 1;
                   return (
                     <div
                       key={idx}
-                      className={`podium-card podium-rank-${idx + 1} ${item.isCurrent ? 'is-user-podium' : ''}`}
+                      className={`podium-card podium-rank-${rankNum} ${item.isCurrent ? 'is-user-podium' : ''}`}
                     >
-                      <span className="podium-medal">{placeIcons[idx]}</span>
+                      <div className="podium-medal-wrap">
+                        <IconMedal rank={rankNum} size={28} />
+                      </div>
                       <div
                         className="podium-avatar"
                         style={{ background: item.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)' }}
@@ -165,7 +207,10 @@ function RankingsPageComponent() {
                         {item.name?.[0] || 'U'}
                       </div>
                       <h5 className="podium-name">{item.name}</h5>
-                      <span className="podium-streak">🔥 {item.streak} kun streak</span>
+                      <span className="podium-streak">
+                        <IconFlame size={14} />
+                        <span>{item.streak} kun streak</span>
+                      </span>
                       <span className="podium-points">{item.points} ball</span>
                       {item.isCurrent && <span className="podium-you-tag">Siz</span>}
                     </div>
@@ -192,9 +237,11 @@ function RankingsPageComponent() {
                         className={`leaderboard-row ${row.isCurrent ? 'is-current-user-row' : ''}`}
                       >
                         <td className="rank-col">
-                          <span className={`rank-badge rank-${row.rank}`}>
-                            {row.rank === 1 ? '🥇' : row.rank === 2 ? '🥈' : row.rank === 3 ? '🥉' : `#${row.rank}`}
-                          </span>
+                          {row.rank <= 3 ? (
+                            <IconMedal rank={row.rank} size={22} />
+                          ) : (
+                            <span className="rank-badge rank-num">#{row.rank}</span>
+                          )}
                         </td>
                         <td className="user-col">
                           <div className="user-cell">
@@ -211,7 +258,10 @@ function RankingsPageComponent() {
                           </div>
                         </td>
                         <td className="streak-col">
-                          <span className="table-streak-pill">🔥 {row.streak} kun</span>
+                          <span className="table-streak-pill">
+                            <IconFlame size={13} />
+                            <span>{row.streak} kun</span>
+                          </span>
                         </td>
                         <td className="rate-col">
                           <div className="completion-bar-wrap">

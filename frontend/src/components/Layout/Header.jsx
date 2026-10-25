@@ -6,6 +6,7 @@ import { storage } from '../../utils/storage';
 import { DateNavigator } from '../Dashboard/DateNavigator';
 
 import { BrandLogo } from '../Common/BrandLogo';
+import { IconFlame } from '../Common/AppIcons';
 
 function HeaderComponent({ onSelectTab, onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrade }) {
   const {
@@ -55,7 +56,7 @@ function HeaderComponent({ onSelectTab, onOpenProfile, onOpenAdmin, onOpenAuth, 
 
         {/* Global Streak Capsule */}
         <div className="header-streak-badge" title="Joriy uzluksiz intizom streak">
-          <span className="streak-fire-anim">🔥</span>
+          <IconFlame size={16} className="streak-fire-anim" />
           <span><strong>{streak}</strong> {t('streakDays')}</span>
         </div>
 

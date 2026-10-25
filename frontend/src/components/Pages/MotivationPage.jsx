@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
+import { IconFlame, IconShield } from '../Common/AppIcons';
 
 const MOTIVATION_QUOTES = [
   {
@@ -135,7 +136,8 @@ function MotivationPageComponent() {
         <div className="motivation-hero-glow"></div>
         <div className="motivation-hero-content">
           <div className="motivation-tag-pill">
-            <span>🔥 INTIZOM VA RUHIY KUCH</span>
+            <IconFlame size={14} />
+            <span>INTIZOM VA RUHIY KUCH</span>
           </div>
           <h2 className="motivation-hero-title">
             Iroda — mashq qilinadigan mushakdir
@@ -159,7 +161,8 @@ function MotivationPageComponent() {
               </button>
             ) : (
               <span className="user-read-only-badge">
-                🛡️ Videolar faqat admin tomonidan saralanadi va qo'shiladi
+                <IconShield size={14} color="#10B981" />
+                <span>Videolar faqat admin tomonidan saralanadi va qo'shiladi</span>
               </span>
             )}
           </div>
@@ -194,7 +197,11 @@ function MotivationPageComponent() {
       {/* 3. Thomas Shelby & Discipline YouTube Videos */}
       <div className="motivation-section-header">
         <div className="section-title-wrap">
-          <span className="section-icon">🎬</span>
+          <div className="section-icon-badge">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          </div>
           <div>
             <h3 className="section-heading">Thomas Shelby va Intizom Videolari</h3>
             <p className="section-subheading">Peaky Blinders intizomi va sovuqqonlik saboqlari</p>
@@ -249,7 +256,9 @@ function MotivationPageComponent() {
                   className="video-like-btn"
                   onClick={() => handleLike(vid.id)}
                 >
-                  <span className="like-icon">❤️</span>
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="#F43F5E">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                  </svg>
                   <span className="like-count">{vid.likes || 0}</span>
                 </button>
               </div>
@@ -261,7 +270,9 @@ function MotivationPageComponent() {
       {/* 4. Stoic & Thomas Shelby Mindset Principles */}
       <div className="motivation-section-header" style={{ marginTop: '36px' }}>
         <div className="section-title-wrap">
-          <span className="section-icon">🛡️</span>
+          <div className="section-icon-badge">
+            <IconShield size={18} color="#F59E0B" />
+          </div>
           <div>
             <h3 className="section-heading">Thomas Shelby Tamoyillari</h3>
             <p className="section-subheading">Iroda va xarakter tarbiyalash qoidalari</p>
