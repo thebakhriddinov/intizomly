@@ -4,10 +4,17 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 
-function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrade }) {
+function SidebarComponent({
+  activeTab = 'home',
+  onSelectTab,
+  onOpenProfile,
+  onOpenAdmin,
+  onOpenAuth,
+  onOpenUpgrade
+}) {
   const { currentUser, isAdmin, isPremium, logout } = useAuth();
-  const { jumpToday, triggerBanner } = useHabits();
-  const { t, lang } = useLanguage();
+  const { jumpToday } = useHabits();
+  const { t } = useLanguage();
 
   const streak = storage.getGlobalStreak();
 
@@ -27,11 +34,16 @@ function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrad
     ? `${currentUser.firstName?.[0] || 'U'}${currentUser.lastName?.[0] || ''}`.toUpperCase()
     : 'U';
 
+  const handleBrandClick = () => {
+    onSelectTab?.('home');
+    jumpToday();
+  };
+
   return (
     <aside className="app-sidebar">
       <div className="sidebar-top">
         {/* Brand Logo */}
-        <div className="brand-logo" onClick={jumpToday} role="button" tabIndex={0} title={t('appName')}>
+        <div className="brand-logo" onClick={handleBrandClick} role="button" tabIndex={0} title={t('appName')}>
           <div className="logo-icon-wrapper">
             <svg className="logo-svg" viewBox="0 0 32 32" fill="none">
               <path d="M16 2C13.5 7.5 9 11.5 9 18C9 24.075 12.134 28 16 28C19.866 28 23 24.075 23 18C23 14 20.5 10 16 2Z" fill="#B6F36B" />
@@ -46,41 +58,85 @@ function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrad
 
         {/* Sidebar Navigation */}
         <nav className="sidebar-nav">
-          <a href="#habits-section" className="sidebar-nav-item active">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-            <span>{t('navHabits')}</span>
-          </a>
-
-          <a href="#week-strip-card" className="sidebar-nav-item">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-            <span>{t('navWeek')}</span>
-          </a>
-
-          <a href="#github-heatmap-card" className="sidebar-nav-item">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-            <span>{t('navHeatmap')}</span>
-          </a>
-
+          {/* Tab 1: Home */}
           <button
             type="button"
-            className="sidebar-nav-item"
-            onClick={() => triggerBanner(
-              "🔔 " + (lang === 'ru' ? "Напоминание о привычках" : lang === 'en' ? "Discipline Check" : "Kunlik Intizom Eslatmasi"),
-              lang === 'ru' ? "Сегодня выполнили все запланированные задачи? Проверьте свой прогресс в Intizomly! 💧📖" : lang === 'en' ? "Have you completed all planned habits today? Keep your streak burning! 💧📖" : "Bugun shakar iste'mol qildingizmi? Kitob o'qish va 2 litr suv ichish rejasi esingizdami? 🚫🍬💧"
-            )}
+            className={`sidebar-nav-item ${activeTab === 'home' ? 'active' : ''}`}
+            onClick={() => onSelectTab?.('home')}
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-            <span>{t('navNotifs')}</span>
-            <span className="sidebar-badge">2</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+              <polyline points="9 22 9 12 15 12 15 22" />
+            </svg>
+            <span>{t('navHome') || 'Home'}</span>
           </button>
 
+          {/* Tab 2: Motivation */}
+          <button
+            type="button"
+            className={`sidebar-nav-item ${activeTab === 'motivation' ? 'active' : ''}`}
+            onClick={() => onSelectTab?.('motivation')}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+            <span>{t('navMotivation') || 'Motivatsiya'}</span>
+            <span className="sidebar-badge-shelby">Shelby</span>
+          </button>
+
+          {/* Tab 3: Reminder */}
+          <button
+            type="button"
+            className={`sidebar-nav-item ${activeTab === 'reminder' ? 'active' : ''}`}
+            onClick={() => onSelectTab?.('reminder')}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>{t('navReminder') || 'Eslatma & Qayd'}</span>
+          </button>
+
+          {/* Tab 4: Rankings */}
+          <button
+            type="button"
+            className={`sidebar-nav-item ${activeTab === 'rankings' ? 'active' : ''}`}
+            onClick={() => onSelectTab?.('rankings')}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+              <path d="M4 22h16" />
+              <path d="M10 14.66V17c0 .55-.45 1-1 1H7" />
+              <path d="M14 14.66V17c0 .55.45 1 1 1h2" />
+              <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+            </svg>
+            <span>{t('navRankings') || 'Reytinglar'}</span>
+          </button>
+
+          {/* Tab 5: You (Profile) */}
+          <button
+            type="button"
+            className={`sidebar-nav-item ${activeTab === 'you' ? 'active' : ''}`}
+            onClick={() => onSelectTab?.('you')}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+            <span>{t('navYou') || 'Profil'}</span>
+          </button>
+
+          {/* Admin Command Center */}
           {isAdmin && (
             <button
               type="button"
               className="sidebar-nav-item"
               onClick={onOpenAdmin}
             >
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
               <span>{t('navAdmin')}</span>
             </button>
           )}
@@ -129,7 +185,7 @@ function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrad
       <div className="sidebar-user-footer">
         <div
           className="sidebar-user-info"
-          onClick={onOpenProfile}
+          onClick={() => onSelectTab?.('you')}
           role="button"
           tabIndex={0}
           title={t('navProfile')}
@@ -152,7 +208,11 @@ function SidebarComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrad
           title={t('navLogout')}
           aria-label={t('navLogout')}
         >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
         </button>
       </div>
     </aside>

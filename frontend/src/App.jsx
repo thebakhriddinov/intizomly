@@ -14,6 +14,12 @@ import { DynamicIslandBanner } from './components/Feedback/DynamicIslandBanner';
 import { ToastContainer } from './components/Feedback/ToastContainer';
 import { EnvWarningBanner } from './components/Feedback/EnvWarningBanner';
 
+// Lazy-loaded pages for fast initial bundle
+const MotivationPage = lazy(() => import('./components/Pages/MotivationPage').then(m => ({ default: m.MotivationPage })));
+const ReminderPage = lazy(() => import('./components/Pages/ReminderPage').then(m => ({ default: m.ReminderPage })));
+const RankingsPage = lazy(() => import('./components/Pages/RankingsPage').then(m => ({ default: m.RankingsPage })));
+const ProfilePage = lazy(() => import('./components/Pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+
 // Code-split modals so they don't bloat the initial mobile download
 const HabitModal = lazy(() => import('./components/Modals/HabitModal').then(m => ({ default: m.HabitModal })));
 const ProfileSettingsModal = lazy(() => import('./components/Modals/ProfileSettingsModal').then(m => ({ default: m.ProfileSettingsModal })));
@@ -25,12 +31,15 @@ export function App() {
   const { t } = useLanguage();
   const { currentUser, authLoading } = useAuth();
 
+  // Active top-level navigation tab: 'home' | 'motivation' | 'reminder' | 'rankings' | 'you'
+  const [activeTab, setActiveTab] = useState('home');
+
   // Modals state
   const [habitModalOpen, setHabitModalOpen] = useState(false);
   const [habitToEdit, setHabitToEdit] = useState(null);
 
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [profileInitialTab, setProfileInitialTab] = useState('profile');
+  const [profileInitialTab, setProfileInitialTab] = useState('settings');
 
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -47,8 +56,7 @@ export function App() {
   }, []);
 
   const handleOpenProfile = useCallback(() => {
-    setProfileInitialTab('profile');
-    setProfileModalOpen(true);
+    setActiveTab('you');
   }, []);
 
   const handleOpenSettings = useCallback(() => {
@@ -113,6 +121,8 @@ export function App() {
       <div className="app-layout">
         {/* 2. Desktop Sidebar */}
         <Sidebar
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
           onOpenProfile={handleOpenProfile}
           onOpenAdmin={() => setAdminModalOpen(true)}
           onOpenAuth={() => setAuthModalOpen(true)}
@@ -122,6 +132,7 @@ export function App() {
         {/* 3. Main Layout Wrapper */}
         <div className="app-main-wrapper">
           <Header
+            onSelectTab={setActiveTab}
             onOpenProfile={handleOpenProfile}
             onOpenAdmin={() => setAdminModalOpen(true)}
             onOpenAuth={() => setAuthModalOpen(true)}
@@ -131,15 +142,47 @@ export function App() {
           <EnvWarningBanner />
 
           <main className="app-main">
-            {/* Mobile Date Navigator (Visible only on mobile/phone screens) */}
-            <DateNavigator className="mobile-date-bar" />
-            <WeekStrip />
-            <StatsOverview />
-            <Heatmap />
-            <HabitList
-              onOpenAddHabit={handleOpenAddHabit}
-              onEditHabit={handleEditHabit}
-            />
+            <Suspense fallback={
+              <div className="page-loading-skeleton">
+                <div className="loading-spinner"></div>
+                <span>Sahifa yuklanmoqda...</span>
+              </div>
+            }>
+              {/* TAB 1: HOME (Dashboard, Habits, Heatmap) */}
+              {activeTab === 'home' && (
+                <>
+                  {/* Mobile Date Navigator (Visible only on mobile/phone screens) */}
+                  <DateNavigator className="mobile-date-bar" />
+                  <WeekStrip />
+                  <StatsOverview />
+                  <Heatmap />
+                  <HabitList
+                    onOpenAddHabit={handleOpenAddHabit}
+                    onEditHabit={handleEditHabit}
+                  />
+                </>
+              )}
+
+              {/* TAB 2: MOTIVATION (Thomas Shelby Videos, Quotes, Principles) */}
+              {activeTab === 'motivation' && (
+                <MotivationPage />
+              )}
+
+              {/* TAB 3: REMINDER (Reminders & Silent Notes) */}
+              {activeTab === 'reminder' && (
+                <ReminderPage />
+              )}
+
+              {/* TAB 4: RANKINGS (Group Challenges & Unlocked Leaderboards) */}
+              {activeTab === 'rankings' && (
+                <RankingsPage />
+              )}
+
+              {/* TAB 5: YOU (Standalone Profile Page with Settings, Avatar, Socials, Badges) */}
+              {activeTab === 'you' && (
+                <ProfilePage onOpenSettings={handleOpenSettings} />
+              )}
+            </Suspense>
           </main>
 
           {/* 4. Footer */}
@@ -151,8 +194,8 @@ export function App() {
                   {t('tabSettings')}
                 </button>
                 <span>&bull;</span>
-                <button type="button" className="link-btn" onClick={handleOpenProfile}>
-                  {t('tabProfile')}
+                <button type="button" className="link-btn" onClick={() => setActiveTab('you')}>
+                  {t('navYou') || 'Profil'}
                 </button>
               </div>
             </div>
@@ -160,8 +203,11 @@ export function App() {
         </div>
       </div>
 
-      {/* 5. Mobile Bottom Navigation */}
-      <MobileBottomNav onOpenProfile={handleOpenProfile} />
+      {/* 5. Mobile Liquid Bottom Navigation */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+      />
 
       {/* 6. Lazy-Loaded Modals with Zero-Overhead when closed */}
       <Suspense fallback={null}>

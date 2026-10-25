@@ -10,7 +10,12 @@ export const STORAGE_KEYS = {
   HABITS: 'intizomly_habits_v2',
   HISTORY: 'intizomly_history_v2',
   NOTIFICATIONS: 'intizomly_notifs_v2',
-  SETTINGS: 'intizomly_settings_v2'
+  SETTINGS: 'intizomly_settings_v2',
+  MOTIVATION_VIDEOS: 'intizomly_motivation_videos_v2',
+  REMINDERS: 'intizomly_reminders_v2',
+  NOTES: 'intizomly_notes_v2',
+  CHALLENGES: 'intizomly_challenges_v2',
+  PROFILE_EXTRAS: 'intizomly_profile_extras_v2'
 };
 
 export const DEFAULT_USERS = [
@@ -139,6 +144,221 @@ export const DEFAULT_SETTINGS = {
   browserNotifEnabled: true
 };
 
+export const DEFAULT_MOTIVATION_VIDEOS = [
+  {
+    id: 'vid_shelby_1',
+    title: "Thomas Shelby — Qat'iy Intizom va Diqqat Qoidalari",
+    author: "Thomas Shelby / Peaky Blinders",
+    youtubeId: "5r3Cj9YhJtM",
+    embedUrl: "https://www.youtube.com/embed/5r3Cj9YhJtM",
+    quote: "Kuchsiz odam his-tuyg'ulariga bo'ysunadi. Kuchli odam esa his-tuyg'ularini intizomiga bo'ysundiradi.",
+    likes: 342,
+    addedBy: "Admin",
+    createdAt: Date.now() - 86400000 * 2
+  },
+  {
+    id: 'vid_shelby_2',
+    title: "Thomas Shelby — Sovuqqon Xotirjamlik va Yengilmas Iroda",
+    author: "Thomas Shelby / Peaky Blinders",
+    youtubeId: "fD3qZ8_U9lA",
+    embedUrl: "https://www.youtube.com/embed/fD3qZ8_U9lA",
+    quote: "Hech qachon dushmaningizga g'azabingizni ko'rsatmang. Shunchaki rejangizni jimgina bajaring.",
+    likes: 489,
+    addedBy: "Admin",
+    createdAt: Date.now() - 86400000 * 5
+  }
+];
+
+export const DEFAULT_REMINDERS = [
+  {
+    id: 'rem_1',
+    title: "Ertalabki reja va 1 stakan iliq suv",
+    time: "07:00",
+    category: "Sog'liq",
+    enabled: true,
+    completed: false
+  },
+  {
+    id: 'rem_2',
+    title: "Diqqatni jamlab 20 bet kitob mutolaasi",
+    time: "14:30",
+    category: "O'qish",
+    enabled: true,
+    completed: false
+  },
+  {
+    id: 'rem_3',
+    title: "Kechki intizom xulosasi va ertangi kun rejasi",
+    time: "21:30",
+    category: "Tartib",
+    enabled: true,
+    completed: false
+  }
+];
+
+export const DEFAULT_NOTES = [
+  {
+    id: 'note_1',
+    title: "Mening 2026-yilgi intizom maqsadlarim",
+    content: "1. Har kuni reja bo'yicha yashash.\n2. Shakar va ortiqcha vaqt o'g'rilaridan butunlay voz kechish.\n3. Har oyda kamida 2 ta kitobni tugatish.",
+    category: "Maqsad",
+    color: "emerald",
+    updatedAt: new Date().toISOString().split('T')[0]
+  },
+  {
+    id: 'note_2',
+    title: "Thomas Shelby aytgan asosiy tamoyil",
+    content: "Har qanday vaziyatda xotirjamlikni saqla. Intizom — hissiyotlar ustidan mutlaq g'alabadir.",
+    category: "Fikr",
+    color: "amber",
+    updatedAt: new Date().toISOString().split('T')[0]
+  }
+];
+
+export const DEFAULT_CHALLENGES = [
+  {
+    id: 'ch_no_sugar',
+    title: "No Sugar Challenge (30 Kun)",
+    emoji: "🚫🍬",
+    description: "Ortiqcha shakar, gazli shirin ichimliklar va shirinliklardan butunlay xalos bo'lish ligasi.",
+    participantsCount: 84,
+    badgeName: "Shakar Qotili 🛡️",
+    joined: false,
+    leaderboard: [
+      { rank: 1, name: "Mustafo Bakhriddinov", streak: 38, completionRate: 100, points: 1950, isCurrent: false, avatarGradient: "linear-gradient(135deg, #10b981, #06b6d4)" },
+      { rank: 2, name: "Malika Karimova", streak: 29, completionRate: 96, points: 1450, isCurrent: false, avatarGradient: "linear-gradient(135deg, #f59e0b, #ef4444)" },
+      { rank: 3, name: "Jasur Rahimov", streak: 24, completionRate: 92, points: 1200, isCurrent: false, avatarGradient: "linear-gradient(135deg, #3b82f6, #8b5cf6)" },
+      { rank: 4, name: "Alisher Qodirov", streak: 19, completionRate: 88, points: 950, isCurrent: false, avatarGradient: "linear-gradient(135deg, #6366f1, #a855f7)" },
+      { rank: 5, name: "Dilorom Yusupova", streak: 14, completionRate: 85, points: 700, isCurrent: false, avatarGradient: "linear-gradient(135deg, #ec4899, #f43f5e)" }
+    ]
+  },
+  {
+    id: 'ch_early_birds',
+    title: "Early Birds 06:00 AM (Tonggi Baraka)",
+    emoji: "⏰",
+    description: "Har kuni tongda 06:00 dan kechikmasdan uyg'onib, kuningizni unumli boshlash musobaqasi.",
+    participantsCount: 128,
+    badgeName: "Tonggi Lochin 🦅",
+    joined: false,
+    leaderboard: [
+      { rank: 1, name: "Sanjar Beknazarov", streak: 42, completionRate: 100, points: 2100, isCurrent: false, avatarGradient: "linear-gradient(135deg, #f59e0b, #b6f36b)" },
+      { rank: 2, name: "Mustafo Bakhriddinov", streak: 35, completionRate: 98, points: 1750, isCurrent: false, avatarGradient: "linear-gradient(135deg, #10b981, #06b6d4)" },
+      { rank: 3, name: "Nodira Saidova", streak: 31, completionRate: 94, points: 1550, isCurrent: false, avatarGradient: "linear-gradient(135deg, #8b5cf6, #ec4899)" }
+    ]
+  },
+  {
+    id: 'ch_water_master',
+    title: "Hydro Master 2 Litr",
+    emoji: "💧",
+    description: "Tanani toza va tetik saqlash uchun har kuni kamida 2 litr toza suv ichish chempionati.",
+    participantsCount: 195,
+    badgeName: "Suv Manbai 🌊",
+    joined: false,
+    leaderboard: [
+      { rank: 1, name: "Malika Karimova", streak: 45, completionRate: 100, points: 2250, isCurrent: false, avatarGradient: "linear-gradient(135deg, #06b6d4, #3b82f6)" },
+      { rank: 2, name: "Azizbek Normatov", streak: 33, completionRate: 97, points: 1650, isCurrent: false, avatarGradient: "linear-gradient(135deg, #10b981, #b6f36b)" }
+    ]
+  },
+  {
+    id: 'ch_reading_club',
+    title: "Kitobxonlar 20 Bet Marafoni",
+    emoji: "📖",
+    description: "Kuniga kamida 20 bet kitob mutolaa qilib, aql va zakovatni charxlash ligasi.",
+    participantsCount: 76,
+    badgeName: "Donolik Maskani 📚",
+    joined: false,
+    leaderboard: [
+      { rank: 1, name: "Farrux Zokirov", streak: 51, completionRate: 100, points: 2550, isCurrent: false, avatarGradient: "linear-gradient(135deg, #6366f1, #3b82f6)" },
+      { rank: 2, name: "Mustafo Bakhriddinov", streak: 27, completionRate: 95, points: 1350, isCurrent: false, avatarGradient: "linear-gradient(135deg, #10b981, #06b6d4)" }
+    ]
+  }
+];
+
+export const DEFAULT_PROFILE_EXTRAS = {
+  avatarUrl: "",
+  bio: "Intizom — bu o'z xohishlaringiz ustidan mutlaq g'alaba qozonishdir. Har kuni 1% yaxshiroq! 🚀",
+  socialLinks: [
+    { id: 'soc_tg', platform: 'telegram', username: 'thebakhriddinov', label: 'Telegram', icon: 'tg' },
+    { id: 'soc_ig', platform: 'instagram', username: 'bakhriddinov_m', label: 'Instagram', icon: 'ig' },
+    { id: 'soc_gh', platform: 'github', username: 'thebakhriddinov', label: 'GitHub', icon: 'gh' }
+  ],
+  followers: [
+    { id: 'f_1', name: 'Malika Karimova', role: 'premium', streak: 29, avatarGradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
+    { id: 'f_2', name: 'Alisher Qodirov', role: 'user', streak: 19, avatarGradient: 'linear-gradient(135deg, #6366f1, #a855f7)' },
+    { id: 'f_3', name: 'Jasur Rahimov', role: 'user', streak: 24, avatarGradient: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }
+  ],
+  following: [
+    { id: 'f_1', name: 'Malika Karimova', role: 'premium', streak: 29, avatarGradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
+    { id: 'f_2', name: 'Alisher Qodirov', role: 'user', streak: 19, avatarGradient: 'linear-gradient(135deg, #6366f1, #a855f7)' }
+  ],
+  followRequests: [
+    { id: 'req_1', name: 'Dilorom Yusupova', streak: 14, time: '2 soat oldin' }
+  ]
+};
+
+export const BADGES_CONFIG = [
+  {
+    streakReq: 10,
+    id: 'badge_10',
+    title: "Boshlang'ich Temir Iroda",
+    description: "10 kunlik to'xtovsiz intizomga erishildi",
+    icon: "🥉",
+    color: "#CD7F32",
+    glow: "rgba(205, 127, 50, 0.45)",
+    tag: "BRONZE MASTER"
+  },
+  {
+    streakReq: 20,
+    id: 'badge_20',
+    title: "Kumush Matonat",
+    description: "20 kunlik uzluksiz intizom zanjiri",
+    icon: "🥈",
+    color: "#E2E8F0",
+    glow: "rgba(226, 232, 240, 0.45)",
+    tag: "SILVER TITAN"
+  },
+  {
+    streakReq: 50,
+    id: 'badge_50',
+    title: "Oltin Odatlar Sohibi",
+    description: "50 kunlik yangi xarakter shakllandi",
+    icon: "🥇",
+    color: "#FBBF24",
+    glow: "rgba(251, 191, 36, 0.5)",
+    tag: "GOLDEN CHAMPION"
+  },
+  {
+    streakReq: 70,
+    id: 'badge_70',
+    title: "Olmos Qat'iyat",
+    description: "70 kunlik mutlaq intizom cho'qqisi",
+    icon: "💎",
+    color: "#06B6D4",
+    glow: "rgba(6, 182, 212, 0.55)",
+    tag: "DIAMOND PERSISTENCE"
+  },
+  {
+    streakReq: 90,
+    id: 'badge_90',
+    title: "Qirollik Tartibi",
+    description: "90 kun — o'z hayotini to'liq o'zgartirgan shaxs",
+    icon: "👑",
+    color: "#A855F7",
+    glow: "rgba(168, 85, 247, 0.55)",
+    tag: "ROYAL SOVEREIGN"
+  },
+  {
+    streakReq: 100,
+    id: 'badge_100',
+    title: "Afsonaviy Yengilmas",
+    description: "100 kunlik afsonaviy g'alaba va yengilmas iroda",
+    icon: "🔥",
+    color: "#B6F36B",
+    glow: "rgba(182, 243, 107, 0.65)",
+    tag: "IMMORTAL TITAN"
+  }
+];
+
 class StorageManager {
   constructor() {
     this.users = this.load(STORAGE_KEYS.USERS, null);
@@ -147,6 +367,11 @@ class StorageManager {
     this.history = this.load(STORAGE_KEYS.HISTORY, null);
     this.notifications = this.load(STORAGE_KEYS.NOTIFICATIONS, null);
     this.settings = this.load(STORAGE_KEYS.SETTINGS, null);
+    this.videos = this.load(STORAGE_KEYS.MOTIVATION_VIDEOS, null);
+    this.reminders = this.load(STORAGE_KEYS.REMINDERS, null);
+    this.notes = this.load(STORAGE_KEYS.NOTES, null);
+    this.challenges = this.load(STORAGE_KEYS.CHALLENGES, null);
+    this.profileExtras = this.load(STORAGE_KEYS.PROFILE_EXTRAS, null);
 
     this.initDefaults();
   }
@@ -243,6 +468,36 @@ class StorageManager {
     } else if (!this.settings.language) {
       this.settings.language = "uz";
       this.save(STORAGE_KEYS.SETTINGS, this.settings);
+    }
+
+    // 7. Motivation Videos
+    if (!this.videos || !Array.isArray(this.videos) || this.videos.length === 0) {
+      this.videos = JSON.parse(JSON.stringify(DEFAULT_MOTIVATION_VIDEOS));
+      this.save(STORAGE_KEYS.MOTIVATION_VIDEOS, this.videos);
+    }
+
+    // 8. Reminders
+    if (!this.reminders || !Array.isArray(this.reminders)) {
+      this.reminders = JSON.parse(JSON.stringify(DEFAULT_REMINDERS));
+      this.save(STORAGE_KEYS.REMINDERS, this.reminders);
+    }
+
+    // 9. Notes
+    if (!this.notes || !Array.isArray(this.notes)) {
+      this.notes = JSON.parse(JSON.stringify(DEFAULT_NOTES));
+      this.save(STORAGE_KEYS.NOTES, this.notes);
+    }
+
+    // 10. Challenges & Rankings
+    if (!this.challenges || !Array.isArray(this.challenges)) {
+      this.challenges = JSON.parse(JSON.stringify(DEFAULT_CHALLENGES));
+      this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
+    }
+
+    // 11. Profile Extras
+    if (!this.profileExtras || typeof this.profileExtras !== 'object') {
+      this.profileExtras = JSON.parse(JSON.stringify(DEFAULT_PROFILE_EXTRAS));
+      this.save(STORAGE_KEYS.PROFILE_EXTRAS, this.profileExtras);
     }
   }
 
@@ -565,6 +820,289 @@ class StorageManager {
     this.settings = { ...this.getSettings(), ...updates };
     this.save(STORAGE_KEYS.SETTINGS, this.settings);
     return this.settings;
+  }
+
+  // ==================== MOTIVATION VIDEOS ====================
+  getMotivationVideos() {
+    return this.videos || DEFAULT_MOTIVATION_VIDEOS;
+  }
+
+  addMotivationVideo({ title, youtubeUrl, quote, author }) {
+    let yId = youtubeUrl.trim();
+    if (yId.includes('v=')) {
+      yId = yId.split('v=')[1].split('&')[0];
+    } else if (yId.includes('youtu.be/')) {
+      yId = yId.split('youtu.be/')[1].split('?')[0];
+    } else if (yId.includes('embed/')) {
+      yId = yId.split('embed/')[1].split('?')[0];
+    }
+
+    const newVideo = {
+      id: 'vid_' + Date.now(),
+      title: title.trim(),
+      author: author?.trim() || "Thomas Shelby / Motivatsiya",
+      youtubeId: yId,
+      embedUrl: `https://www.youtube.com/embed/${yId}`,
+      quote: quote?.trim() || "Intizom — bu o'z his-tuyg'ularing ustidan mutlaq g'alabadir.",
+      likes: 120,
+      addedBy: "Admin",
+      createdAt: Date.now()
+    };
+
+    if (!Array.isArray(this.videos)) this.videos = [];
+    this.videos.unshift(newVideo);
+    this.save(STORAGE_KEYS.MOTIVATION_VIDEOS, this.videos);
+    return newVideo;
+  }
+
+  deleteMotivationVideo(id) {
+    if (!Array.isArray(this.videos)) return false;
+    const idx = this.videos.findIndex(v => v.id === id);
+    if (idx !== -1) {
+      this.videos.splice(idx, 1);
+      this.save(STORAGE_KEYS.MOTIVATION_VIDEOS, this.videos);
+      return true;
+    }
+    return false;
+  }
+
+  likeMotivationVideo(id) {
+    if (!Array.isArray(this.videos)) return 0;
+    const v = this.videos.find(item => item.id === id);
+    if (v) {
+      v.likes = (v.likes || 0) + 1;
+      this.save(STORAGE_KEYS.MOTIVATION_VIDEOS, this.videos);
+      return v.likes;
+    }
+    return 0;
+  }
+
+  // ==================== REMINDERS ====================
+  getReminders() {
+    return this.reminders || DEFAULT_REMINDERS;
+  }
+
+  addReminder({ title, time, category }) {
+    if (!Array.isArray(this.reminders)) this.reminders = [];
+    const newRem = {
+      id: 'rem_' + Date.now(),
+      title: title.trim(),
+      time: time || "09:00",
+      category: category || "Tartib",
+      enabled: true,
+      completed: false
+    };
+    this.reminders.push(newRem);
+    this.save(STORAGE_KEYS.REMINDERS, this.reminders);
+    return newRem;
+  }
+
+  toggleReminder(id) {
+    if (!Array.isArray(this.reminders)) return null;
+    const r = this.reminders.find(item => item.id === id);
+    if (r) {
+      r.enabled = !r.enabled;
+      this.save(STORAGE_KEYS.REMINDERS, this.reminders);
+      return r;
+    }
+    return null;
+  }
+
+  toggleReminderCompleted(id) {
+    if (!Array.isArray(this.reminders)) return null;
+    const r = this.reminders.find(item => item.id === id);
+    if (r) {
+      r.completed = !r.completed;
+      this.save(STORAGE_KEYS.REMINDERS, this.reminders);
+      return r;
+    }
+    return null;
+  }
+
+  deleteReminder(id) {
+    if (!Array.isArray(this.reminders)) return false;
+    const idx = this.reminders.findIndex(item => item.id === id);
+    if (idx !== -1) {
+      this.reminders.splice(idx, 1);
+      this.save(STORAGE_KEYS.REMINDERS, this.reminders);
+      return true;
+    }
+    return false;
+  }
+
+  // ==================== NOTES ====================
+  getNotes() {
+    return this.notes || DEFAULT_NOTES;
+  }
+
+  addNote({ title, content, category, color }) {
+    if (!Array.isArray(this.notes)) this.notes = [];
+    const newNote = {
+      id: 'note_' + Date.now(),
+      title: title.trim(),
+      content: content.trim(),
+      category: category || "Shaxsiy",
+      color: color || "emerald",
+      updatedAt: new Date().toISOString().split('T')[0]
+    };
+    this.notes.unshift(newNote);
+    this.save(STORAGE_KEYS.NOTES, this.notes);
+    return newNote;
+  }
+
+  updateNote(id, { title, content, category, color }) {
+    if (!Array.isArray(this.notes)) return null;
+    const n = this.notes.find(item => item.id === id);
+    if (n) {
+      if (title !== undefined) n.title = title.trim();
+      if (content !== undefined) n.content = content.trim();
+      if (category !== undefined) n.category = category;
+      if (color !== undefined) n.color = color;
+      n.updatedAt = new Date().toISOString().split('T')[0];
+      this.save(STORAGE_KEYS.NOTES, this.notes);
+      return n;
+    }
+    return null;
+  }
+
+  deleteNote(id) {
+    if (!Array.isArray(this.notes)) return false;
+    const idx = this.notes.findIndex(item => item.id === id);
+    if (idx !== -1) {
+      this.notes.splice(idx, 1);
+      this.save(STORAGE_KEYS.NOTES, this.notes);
+      return true;
+    }
+    return false;
+  }
+
+  // ==================== CHALLENGES & RANKINGS ====================
+  getChallenges() {
+    return this.challenges || DEFAULT_CHALLENGES;
+  }
+
+  joinChallenge(id, currentUser) {
+    if (!Array.isArray(this.challenges)) this.challenges = [];
+    const ch = this.challenges.find(item => item.id === id);
+    if (!ch) return null;
+    ch.joined = true;
+    ch.participantsCount = (ch.participantsCount || 0) + 1;
+
+    const currentName = currentUser
+      ? `${currentUser.firstName || 'Men'} ${currentUser.lastName || ''}`.trim()
+      : 'Siz (Foydalanuvchi)';
+    const exists = ch.leaderboard?.some(row => row.isCurrent || row.name === currentName);
+    if (!exists) {
+      const curStreak = this.getGlobalStreak() || 12;
+      if (!Array.isArray(ch.leaderboard)) ch.leaderboard = [];
+      ch.leaderboard.push({
+        rank: ch.leaderboard.length + 1,
+        name: currentName,
+        streak: curStreak,
+        completionRate: 95,
+        points: curStreak * 50,
+        isCurrent: true,
+        avatarGradient: currentUser?.avatarGradient || "linear-gradient(135deg, #10b981, #b6f36b)"
+      });
+      ch.leaderboard.sort((a, b) => b.points - a.points);
+      ch.leaderboard.forEach((item, index) => { item.rank = index + 1; });
+    }
+
+    this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
+    return ch;
+  }
+
+  leaveChallenge(id) {
+    if (!Array.isArray(this.challenges)) return null;
+    const ch = this.challenges.find(item => item.id === id);
+    if (!ch) return null;
+    ch.joined = false;
+    ch.participantsCount = Math.max(1, (ch.participantsCount || 1) - 1);
+    ch.leaderboard = (ch.leaderboard || []).filter(row => !row.isCurrent);
+    ch.leaderboard.forEach((item, index) => { item.rank = index + 1; });
+
+    this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
+    return ch;
+  }
+
+  // ==================== PROFILE EXTRAS & SOCIALS ====================
+  getProfileExtras() {
+    return this.profileExtras || DEFAULT_PROFILE_EXTRAS;
+  }
+
+  updateProfileExtras(updates) {
+    this.profileExtras = { ...this.getProfileExtras(), ...updates };
+    this.save(STORAGE_KEYS.PROFILE_EXTRAS, this.profileExtras);
+    return this.profileExtras;
+  }
+
+  addSocialLink({ platform, username }) {
+    const extras = this.getProfileExtras();
+    const cleanUser = username.replace(/^@/, '').trim();
+    const newLink = {
+      id: 'soc_' + Date.now(),
+      platform,
+      username: cleanUser,
+      label: platform.charAt(0).toUpperCase() + platform.slice(1),
+      icon: platform === 'telegram' ? 'tg' : platform === 'instagram' ? 'ig' : platform === 'youtube' ? 'yt' : platform === 'github' ? 'gh' : 'x'
+    };
+    extras.socialLinks = [...(extras.socialLinks || []), newLink];
+    this.updateProfileExtras(extras);
+    return extras;
+  }
+
+  deleteSocialLink(id) {
+    const extras = this.getProfileExtras();
+    extras.socialLinks = (extras.socialLinks || []).filter(item => item.id !== id);
+    this.updateProfileExtras(extras);
+    return extras;
+  }
+
+  followUser(userToFollow) {
+    const extras = this.getProfileExtras();
+    if (!Array.isArray(extras.following)) extras.following = [];
+    const exists = extras.following.some(f => f.id === userToFollow.id);
+    if (!exists) {
+      extras.following.push(userToFollow);
+      this.updateProfileExtras(extras);
+    }
+    return extras;
+  }
+
+  unfollowUser(userId) {
+    const extras = this.getProfileExtras();
+    extras.following = (extras.following || []).filter(f => f.id !== userId);
+    this.updateProfileExtras(extras);
+    return extras;
+  }
+
+  acceptFollowRequest(reqId) {
+    const extras = this.getProfileExtras();
+    const req = extras.followRequests?.find(r => r.id === reqId);
+    if (req) {
+      extras.followRequests = extras.followRequests.filter(r => r.id !== reqId);
+      extras.followers = [
+        ...(extras.followers || []),
+        { id: req.id, name: req.name, streak: req.streak, avatarGradient: "linear-gradient(135deg, #10b981, #06b6d4)", role: 'user' }
+      ];
+      this.updateProfileExtras(extras);
+    }
+    return extras;
+  }
+
+  // ==================== BADGES ENGINE ====================
+  getBadgesStatus(currentStreak) {
+    const streak = currentStreak || 0;
+    return BADGES_CONFIG.map(badge => {
+      const isUnlocked = streak >= badge.streakReq;
+      const progressPct = isUnlocked ? 100 : Math.min(100, Math.round((streak / badge.streakReq) * 100));
+      return {
+        ...badge,
+        isUnlocked,
+        progressPct,
+        currentStreak: streak
+      };
+    });
   }
 }
 

@@ -5,13 +5,14 @@ import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 import { DateNavigator } from '../Dashboard/DateNavigator';
 
-function HeaderComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrade }) {
+function HeaderComponent({ onSelectTab, onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrade }) {
   const {
     jumpToday,
     settings,
     updateSettings,
     history,
-    habits
+    habits,
+    triggerBanner
   } = useHabits();
   const { currentUser, isAdmin, isPremium } = useAuth();
   const { t, lang } = useLanguage();
@@ -41,7 +42,15 @@ function HeaderComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrade
     <header className="app-header">
       <div className="header-left">
         {/* Mobile brand logo */}
-        <div className="mobile-only-brand" onClick={jumpToday} role="button" tabIndex={0}>
+        <div
+          className="mobile-only-brand"
+          onClick={() => {
+            onSelectTab?.('home');
+            jumpToday();
+          }}
+          role="button"
+          tabIndex={0}
+        >
           <div className="logo-icon-wrapper">
             <svg className="logo-svg" viewBox="0 0 32 32" fill="none">
               <path d="M16 2C13.5 7.5 9 11.5 9 18C9 24.075 12.134 28 16 28C19.866 28 23 24.075 23 18C23 14 20.5 10 16 2Z" fill="#B6F36B" />
@@ -109,28 +118,25 @@ function HeaderComponent({ onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrade
           )}
         </button>
 
-        {/* Quick iPhone Notification Banner Trigger */}
+        {/* Quick Eslatmalar Navigation */}
         <button
           type="button"
           className="icon-action-btn notif-bell-btn"
-          onClick={() => triggerBanner(
-            "🔔 " + (lang === 'ru' ? "Напоминание о привычках" : lang === 'en' ? "Discipline Check" : "Kunlik Intizom Eslatmasi"),
-            lang === 'ru' ? "Сегодня выполнили все запланированные задачи? Проверьте свой прогресс в Intizomly! 💧📖" : lang === 'en' ? "Have you completed all planned habits today? Keep your streak burning! 💧📖" : "Bugun shakar iste'mol qildingizmi? Kitob o'qish va 2 litr suv ichish rejasi esingizdami? 🚫🍬💧"
-          )}
-          title={t('navNotifs')}
-          aria-label={t('navNotifs')}
+          onClick={() => onSelectTab?.('reminder')}
+          title={t('navReminder') || "Eslatmalar"}
+          aria-label={t('navReminder') || "Eslatmalar"}
         >
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          <span className="notification-badge">2</span>
+          <span className="notification-badge">3</span>
         </button>
 
-        {/* User Avatar Trigger */}
+        {/* User Avatar Trigger (Switches to "You" Profile Tab) */}
         <div
           className="user-avatar-trigger"
-          onClick={onOpenProfile}
+          onClick={() => onSelectTab?.('you')}
           role="button"
           tabIndex={0}
-          title={t('navProfile')}
+          title={t('navYou') || "Profil"}
         >
           <div className="avatar-circle" style={{ background: currentUser?.avatarGradient || 'var(--bg-secondary)' }}>
             <span>{initials}</span>
