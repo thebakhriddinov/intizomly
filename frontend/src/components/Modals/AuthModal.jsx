@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { validateUzbekPhone, formatUzbekPhone } from '../../utils/phone';
+import { BrandLogo } from '../Common/BrandLogo';
 
 export function AuthModal({ isOpen, onClose, onLoginSuccess, isAuthGate = false }) {
   const { login, register } = useAuth();
@@ -134,12 +135,7 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess, isAuthGate = false 
         )}
 
         <div className="auth-header-visual">
-          <div className="logo-icon-wrapper large-logo">
-            <svg className="logo-svg" viewBox="0 0 32 32" fill="none">
-              <path d="M16 2C13.5 7.5 9 11.5 9 18C9 24.075 12.134 28 16 28C19.866 28 23 24.075 23 18C23 14 20.5 10 16 2Z" fill="#B6F36B" />
-              <path d="M11 18.5L14.5 22L21 14.5" stroke="#0B0D0F" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
+          <BrandLogo size="lg" showText={false} style={{ margin: '0 auto 8px auto' }} />
           <h3 className="auth-title">Intizomly</h3>
           <p className="auth-subtitle">Har kunlik intizom, odatlar va maqsadlar nazorati</p>
 

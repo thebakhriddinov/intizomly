@@ -4,6 +4,8 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 
+import { BrandLogo } from '../Common/BrandLogo';
+
 function SidebarComponent({
   activeTab = 'home',
   onSelectTab,
@@ -42,19 +44,13 @@ function SidebarComponent({
   return (
     <aside className="app-sidebar">
       <div className="sidebar-top">
-        {/* Brand Logo */}
-        <div className="brand-logo" onClick={handleBrandClick} role="button" tabIndex={0} title={t('appName')}>
-          <div className="logo-icon-wrapper">
-            <svg className="logo-svg" viewBox="0 0 32 32" fill="none">
-              <path d="M16 2C13.5 7.5 9 11.5 9 18C9 24.075 12.134 28 16 28C19.866 28 23 24.075 23 18C23 14 20.5 10 16 2Z" fill="#B6F36B" />
-              <path d="M11 18.5L14.5 22L21 14.5" stroke="#0B0D0F" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <div className="brand-text">
-            <span className="brand-name">Intizom<span className="accent-text">ly</span></span>
-            {roleBadge}
-          </div>
-        </div>
+        {/* Modern Brand Logo */}
+        <BrandLogo
+          size="md"
+          roleBadge={roleBadge}
+          onClick={handleBrandClick}
+          className="sidebar-brand-btn"
+        />
 
         {/* Sidebar Navigation */}
         <nav className="sidebar-nav">

@@ -197,8 +197,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
-  min-height: 100vh;
+html {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
   background-color: var(--bg-app);
   color: var(--text-primary);
   font-family: var(--font-stack);
@@ -206,20 +216,30 @@ html, body {
   line-height: 1.48;
   letter-spacing: -0.015em;
   overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
-/* Strict Anti-Tayoqcha on all interactive components */
-body, button, .stat-card, .habit-card, .week-day-cell, .filter-chip,
+#root {
+  min-height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Strict Anti-Tayoqcha on interactive components (excluded body so touch gestures pan smoothly) */
+button, .stat-card, .habit-card, .week-day-cell, .filter-chip,
 .user-avatar-trigger, .brand-logo, .modal-tab-btn, .admin-kpi-card,
-.demo-user-btn, .gh-square, .sidebar-nav-item, .mob-nav-btn, .segmented-btn {
+.demo-user-btn, .gh-square, .sidebar-nav-item, .mob-nav-btn, .segmented-btn,
+.intizomly-brand-logo {
   user-select: none;
   -webkit-user-select: none;
   -ms-user-select: none;
-  cursor: default;
 }
 
 input, textarea {
@@ -420,18 +440,21 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   z-index: 1;
   display: grid;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-  min-height: 100vh;
+  min-height: 100%;
+  width: 100%;
   background-color: var(--bg-app);
+  overflow-x: clip;
 }
 
 .app-main-wrapper {
   position: relative;
   z-index: 1;
-  background-color: transparent;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  width: 100%;
   background-color: var(--bg-app);
+  flex: 1 0 auto;
 }
 
 /* --------------------------------------------------------------------------
@@ -2890,21 +2913,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
    -------------------------------------------------------------------------- */
 @media (max-width: 1023px) {
   .app-layout {
-  position: relative;
-  z-index: 1;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    width: 100%;
+    grid-template-columns: none;
   }
 
   .app-sidebar {
-    display: none;
-  }
-
-  .mobile-only-brand {
-    display: flex;
-  }
-
-  .mobile-bottom-nav {
-    display: flex;
+    display: none !important;
   }
 
   .app-header {
@@ -2912,8 +2929,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   }
 
   .app-main {
+    width: 100%;
     padding: var(--space-4);
-    padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom, 14px) + var(--space-6));
+    padding-bottom: calc(105px + env(safe-area-inset-bottom, 24px)) !important;
+    touch-action: pan-y;
+  }
+
+  .app-footer {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 24px));
   }
 
   .stats-grid {
@@ -3225,26 +3248,27 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   transform: translateZ(0);
 }
 
-.habit-card {
-  contain: layout style paint;
-  touch-action: manipulation;
-  transform: translate3d(0, 0, 0);
-}
-
+.habit-card,
 .stat-card,
 .week-strip-card,
-.github-heatmap-card {
-  contain: layout style paint;
+.github-heatmap-card,
+.video-card,
+.reminder-card,
+.note-card,
+.challenge-main-card,
+.profile-hero-card,
+.badge-card {
+  touch-action: pan-y;
   transform: translate3d(0, 0, 0);
 }
 
-.app-sidebar, .app-header, .mobile-bottom-nav {
+.app-sidebar, .app-header, .mobile-bottom-nav, .mobile-liquid-bottom-nav {
   isolation: isolate;
   transform: translateZ(0);
 }
 
-/* Prevent 300ms touch delay on all interactive elements */
-button, [role="button"], .habit-checkbox-btn, .filter-chip, .week-day-cell, .gh-square, a, input {
+/* Prevent 300ms touch delay on buttons while keeping pan-y on page elements */
+button, .habit-checkbox-btn, .filter-chip, .week-day-cell, .gh-square, a, input {
   touch-action: manipulation;
 }
 
@@ -5675,5 +5699,128 @@ input:checked + .slider:before {
   padding-left: 28px;
 }
 
+/* ==========================================================================
+   27. MODERN VECTOR BRAND LOGO STYLING
+   ========================================================================== */
+.intizomly-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 4px 6px;
+  border-radius: var(--radius-sm, 12px);
+}
 
+.intizomly-brand-logo:hover {
+  transform: translateY(-1px) scale(1.02);
+}
 
+.intizomly-brand-logo:active {
+  transform: scale(0.97);
+}
+
+.brand-emblem-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.emblem-backlight-glow {
+  position: absolute;
+  width: 75%;
+  height: 75%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(182, 243, 107, 0.45) 0%, rgba(6, 182, 212, 0.25) 50%, transparent 70%);
+  filter: blur(8px);
+  pointer-events: none;
+  animation: logoPulseGlow 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes logoPulseGlow {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+.brand-emblem-svg {
+  display: block;
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55));
+}
+
+.brand-text-block {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brand-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-title-main {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #FFFFFF;
+  line-height: 1.15;
+}
+
+.brand-title-accent {
+  background: linear-gradient(135deg, #E2FF8F 0%, #B6F36B 45%, #10B981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 900;
+  filter: drop-shadow(0 0 10px rgba(182, 243, 107, 0.5));
+}
+
+.brand-tagline-micro {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* Size Variants */
+.intizomly-brand-logo.size-sm .brand-title-main {
+  font-size: 1.05rem;
+}
+
+.intizomly-brand-logo.size-lg {
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.intizomly-brand-logo.size-lg .brand-title-main {
+  font-size: 1.6rem;
+}
+
+.intizomly-brand-logo.size-lg .brand-title-row {
+  justify-content: center;
+}
+
+/* Mobile Header Brand Layout */
+.mobile-header-brand {
+  padding: 0;
+}
+
+.sidebar-brand-btn {
+  width: 100%;
+}

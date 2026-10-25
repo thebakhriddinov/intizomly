@@ -13,6 +13,7 @@ import { HabitList } from './components/Dashboard/HabitList';
 import { DynamicIslandBanner } from './components/Feedback/DynamicIslandBanner';
 import { ToastContainer } from './components/Feedback/ToastContainer';
 import { EnvWarningBanner } from './components/Feedback/EnvWarningBanner';
+import { BrandLogo } from './components/Common/BrandLogo';
 
 // Lazy-loaded pages for fast initial bundle
 const MotivationPage = lazy(() => import('./components/Pages/MotivationPage').then(m => ({ default: m.MotivationPage })));
@@ -80,13 +81,8 @@ export function App() {
         background: '#080B11',
         gap: '16px'
       }}>
-        <div className="logo-icon-wrapper large-logo">
-          <svg className="logo-svg" viewBox="0 0 32 32" fill="none">
-            <path d="M16 2C13.5 7.5 9 11.5 9 18C9 24.075 12.134 28 16 28C19.866 28 23 24.075 23 18C23 14 20.5 10 16 2Z" fill="#B6F36B" />
-            <path d="M11 18.5L14.5 22L21 14.5" stroke="#0B0D0F" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-        <span style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '13px' }}>Intizomly yuklanmoqda...</span>
+        <BrandLogo size="lg" showText={true} />
+        <span style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '13px', letterSpacing: '0.3px' }}>Intizomly yuklanmoqda...</span>
       </div>
     );
   }

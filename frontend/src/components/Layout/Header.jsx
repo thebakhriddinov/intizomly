@@ -5,6 +5,8 @@ import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 import { DateNavigator } from '../Dashboard/DateNavigator';
 
+import { BrandLogo } from '../Common/BrandLogo';
+
 function HeaderComponent({ onSelectTab, onOpenProfile, onOpenAdmin, onOpenAuth, onOpenUpgrade }) {
   const {
     jumpToday,
@@ -42,23 +44,14 @@ function HeaderComponent({ onSelectTab, onOpenProfile, onOpenAdmin, onOpenAuth, 
     <header className="app-header">
       <div className="header-left">
         {/* Mobile brand logo */}
-        <div
-          className="mobile-only-brand"
+        <BrandLogo
+          size="sm"
           onClick={() => {
             onSelectTab?.('home');
             jumpToday();
           }}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="logo-icon-wrapper">
-            <svg className="logo-svg" viewBox="0 0 32 32" fill="none">
-              <path d="M16 2C13.5 7.5 9 11.5 9 18C9 24.075 12.134 28 16 28C19.866 28 23 24.075 23 18C23 14 20.5 10 16 2Z" fill="#B6F36B" />
-              <path d="M11 18.5L14.5 22L21 14.5" stroke="#0B0D0F" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <span className="brand-name">Intizom<span className="accent-text">ly</span></span>
-        </div>
+          className="mobile-header-brand"
+        />
 
         {/* Global Streak Capsule */}
         <div className="header-streak-badge" title="Joriy uzluksiz intizom streak">
