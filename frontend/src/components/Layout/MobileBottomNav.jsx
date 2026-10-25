@@ -1,6 +1,7 @@
 import React, { memo, useRef, useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { audioManager } from '../../utils/audio';
+import { IconFocus } from '../Common/AppIcons';
 
 const NAV_TABS = [
   {
@@ -25,14 +26,12 @@ const NAV_TABS = [
     )
   },
   {
-    id: 'reminder',
+    id: 'focus',
+    alias: 'reminder',
     labelKey: 'navReminder',
-    defaultLabel: 'Eslatma',
+    defaultLabel: 'Focus',
     icon: (
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" />
-        <polyline points="12 6 12 12 16 14" />
-      </svg>
+      <IconFocus size={21} />
     )
   },
   {
@@ -68,7 +67,10 @@ function MobileBottomNavComponent({ activeTab = 'home', onSelectTab }) {
   const navContainerRef = useRef(null);
 
   // Active tab index for fluid pill calculation
-  const activeIndex = Math.max(0, NAV_TABS.findIndex((tab) => tab.id === activeTab));
+  const activeIndex = Math.max(
+    0,
+    NAV_TABS.findIndex((tab) => tab.id === activeTab || (tab.alias && tab.alias === activeTab))
+  );
 
   // Touch gesture state for sliding / dragging between tabs like iPhone
   const touchStartXRef = useRef(0);
@@ -138,7 +140,7 @@ function MobileBottomNavComponent({ activeTab = 'home', onSelectTab }) {
       </div>
 
       {NAV_TABS.map((tab, idx) => {
-        const isActive = tab.id === activeTab;
+        const isActive = tab.id === activeTab || (tab.alias && tab.alias === activeTab);
         const label = t(tab.labelKey) || tab.defaultLabel;
 
         return (

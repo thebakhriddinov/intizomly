@@ -162,6 +162,46 @@ class AudioManager {
       console.warn('Audio play error:', e);
     }
   }
+
+  /**
+   * Play resonant deep Zen Focus bell upon completing a study focus session
+   */
+  playFocusDone() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      // Multi-layered resonant bell harmonics: fundamental 528 Hz, 1056 Hz, 1584 Hz
+      const harmonics = [
+        { freq: 528, gainVal: 0.35, decay: 2.2 },
+        { freq: 1056, gainVal: 0.22, decay: 1.8 },
+        { freq: 1584, gainVal: 0.15, decay: 1.2 },
+        { freq: 2112, gainVal: 0.08, decay: 0.8 }
+      ];
+
+      harmonics.forEach(({ freq, gainVal, decay }) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.linearRampToValueAtTime(gainVal, now + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + decay + 0.05);
+      });
+    } catch (e) {
+      console.warn('Audio play error:', e);
+    }
+  }
 }
 
 export const audioManager = new AudioManager();

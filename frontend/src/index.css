@@ -6377,3 +6377,701 @@ input:checked + .slider:before {
   }
 }
 
+/* ==========================================================================
+   SECTION 29: CHALLENGES SELECTOR ROW & CHIPS (Rankings Page)
+   Resolves unstyled browser-default white buttons shown in screenshot
+   ========================================================================== */
+.challenges-selector-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .challenges-selector-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .challenges-selector-row::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.challenge-select-chip {
+  background: var(--bg-card, rgba(18, 24, 38, 0.75));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.09));
+  border-radius: 16px;
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  color: var(--text-primary, #F8FAFC);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: left;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.challenge-select-chip:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(16, 185, 129, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.challenge-select-chip.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(6, 182, 212, 0.12));
+  border-color: #10B981;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.28), inset 0 0 12px rgba(16, 185, 129, 0.08);
+  transform: translateY(-1px);
+}
+
+.chip-emblem-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.challenge-select-chip.active .chip-emblem-wrap {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.chip-title {
+  font-weight: 600;
+  color: var(--text-primary, #F8FAFC);
+  letter-spacing: -0.2px;
+}
+
+.chip-joined-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.18);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  margin-left: auto;
+}
+
+.chip-locked-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(244, 63, 94, 0.12);
+  color: #F43F5E;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  margin-left: auto;
+}
+
+/* ==========================================================================
+   SECTION 30: MODAL CANCEL BUTTONS & DIALOG CONTROLS
+   ========================================================================== */
+.btn-cancel {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary, #94A3B8);
+  padding: 11px 22px;
+  border-radius: 14px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-cancel:hover {
+  background: rgba(244, 63, 94, 0.12);
+  color: #F43F5E;
+  border-color: rgba(244, 63, 94, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-cancel:active {
+  transform: scale(0.97);
+}
+
+/* ==========================================================================
+   SECTION 31: FOCUS TIMER (Study & Deep Work Circular Countdown)
+   ========================================================================== */
+.focus-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10B981;
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: 0.3px;
+}
+
+.focus-content-area {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  align-items: center;
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.focus-subject-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.focus-picker-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-secondary, #94A3B8);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.focus-subjects-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.focus-subject-chip {
+  background: var(--bg-card, rgba(17, 24, 39, 0.7));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 999px;
+  padding: 7px 15px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94A3B8);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.focus-subject-chip:hover {
+  color: var(--text-primary, #F8FAFC);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.focus-subject-chip.active {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: #10B981;
+  color: #10B981;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+}
+
+.focus-timer-card {
+  background: var(--bg-card, rgba(15, 23, 42, 0.75));
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 28px;
+  padding: 34px 24px;
+  width: 100%;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.32);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.focus-gauge-wrapper {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+.focus-svg-gauge {
+  width: 280px;
+  height: 280px;
+  overflow: visible;
+}
+
+.focus-circle-bg {
+  stroke: rgba(16, 185, 129, 0.12);
+}
+
+.focus-circle-progress {
+  transition: stroke-dashoffset 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: stroke-dashoffset;
+}
+
+.focus-center-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.focus-status-tag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.focus-pill-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  padding: 3px 11px;
+  border-radius: 999px;
+}
+
+.focus-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  animation: focusPulseDot 1.4s infinite;
+}
+
+@keyframes focusPulseDot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.65);
+  }
+}
+
+.focus-pill-idle {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 11px;
+  border-radius: 999px;
+}
+
+.focus-pill-finished {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #F59E0B;
+  background: rgba(245, 158, 11, 0.16);
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.focus-digital-clock {
+  font-size: 3.8rem;
+  font-weight: 850;
+  font-family: 'JetBrains Mono', 'Roboto Mono', ui-monospace, monospace;
+  letter-spacing: -2px;
+  color: var(--text-primary, #F8FAFC);
+  line-height: 1;
+  text-shadow: 0 0 24px rgba(16, 185, 129, 0.35);
+}
+
+.focus-subject-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94A3B8);
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.focus-time-subinfo {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted, #64748B);
+}
+
+/* Micro Adjustment Buttons */
+.focus-adjust-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-time-adjust {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 7px 15px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-primary, #F8FAFC);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.btn-time-adjust:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #10B981;
+  transform: translateY(-1px);
+}
+
+.btn-time-adjust:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+/* Preset Duration Chips */
+.focus-presets-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
+.focus-preset-chip {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 9px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.focus-preset-chip:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.focus-preset-chip.active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10B981;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+}
+
+.preset-chip-mins {
+  font-size: 0.88rem;
+  font-weight: 750;
+  color: var(--text-primary, #F8FAFC);
+}
+
+.preset-chip-desc {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted, #64748B);
+}
+
+/* Action Buttons */
+.focus-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding-top: 4px;
+}
+
+.btn-focus-main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 34px;
+  border-radius: 999px;
+  font-size: 1.05rem;
+  font-weight: 750;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-focus-main.is-idle {
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: #032015;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
+}
+
+.btn-focus-main.is-idle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.58);
+}
+
+.btn-focus-main.is-running {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: #1A1002;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+}
+
+.btn-focus-main.is-running:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(245, 158, 11, 0.55);
+}
+
+.btn-focus-reset {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 22px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 650;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-secondary, #94A3B8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-focus-reset:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, #F8FAFC);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-focus-chime-test {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #10B981;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-focus-chime-test:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: #10B981;
+}
+
+/* Insights & Inspiration */
+.focus-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  width: 100%;
+}
+
+@media (max-width: 580px) {
+  .focus-insights-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.focus-stat-box {
+  background: var(--bg-card, rgba(17, 24, 39, 0.7));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  border-radius: 20px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.focus-stat-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.focus-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.focus-stat-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary, #F8FAFC);
+}
+
+.focus-stat-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--text-muted, #64748B);
+}
+
+.focus-tip-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  border-radius: 18px;
+  padding: 16px 20px;
+  width: 100%;
+}
+
+.focus-tip-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.focus-tip-text {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-secondary, #94A3B8);
+}
+
+/* Light Mode Overrides for Section 29, 30, 31 */
+.theme-light .challenge-select-chip {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
+}
+
+.theme-light .challenge-select-chip:hover {
+  background: #F8FAFC !important;
+  border-color: #10B981 !important;
+}
+
+.theme-light .challenge-select-chip.active {
+  background: #ECFDF5 !important;
+  border-color: #10B981 !important;
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.2) !important;
+}
+
+.theme-light .chip-title {
+  color: #0F172A !important;
+}
+
+.theme-light .chip-emblem-wrap {
+  background: #F1F5F9 !important;
+}
+
+.theme-light .btn-cancel {
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #475569 !important;
+}
+
+.theme-light .btn-cancel:hover {
+  background: #FFF1F2 !important;
+  border-color: #FECDD3 !important;
+  color: #E11D48 !important;
+}
+
+.theme-light .focus-timer-card {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.07) !important;
+}
+
+.theme-light .focus-circle-bg {
+  stroke: #E2E8F0 !important;
+}
+
+.theme-light .focus-digital-clock {
+  color: #0F172A !important;
+  text-shadow: none !important;
+}
+
+.theme-light .focus-subject-chip {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #475569 !important;
+}
+
+.theme-light .focus-subject-chip.active {
+  background: #ECFDF5 !important;
+  border-color: #10B981 !important;
+  color: #059669 !important;
+}
+
+.theme-light .focus-stat-box {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+}
+
+.theme-light .focus-stat-val {
+  color: #0F172A !important;
+}
+
+.theme-light .btn-time-adjust {
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+
+.theme-light .focus-preset-chip {
+  background: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+}
+
+.theme-light .preset-chip-mins {
+  color: #0F172A !important;
+}
+
+.theme-light .btn-focus-reset {
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #334155 !important;
+}
+
+.theme-light .focus-tip-banner {
+  background: #FFFBEB !important;
+  border-color: #FDE68A !important;
+}
+
+.theme-light .focus-tip-text {
+  color: #78350F !important;
+}
+
+

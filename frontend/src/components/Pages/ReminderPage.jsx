@@ -4,7 +4,7 @@ import { useHabits } from '../../context/HabitsContext';
 import { storage } from '../../utils/storage';
 import { reminderService } from '../../utils/reminderService';
 import { audioManager } from '../../utils/audio';
-import { IconAlarm, IconLightbulb, IconSilent, IconCategory } from '../Common/AppIcons';
+import { IconAlarm, IconLightbulb, IconSilent, IconCategory, IconFocus } from '../Common/AppIcons';
 
 const CATEGORIES = [
   { id: "Sog'liq", label: "Sog'liq", color: '#10B981' },
@@ -23,12 +23,45 @@ const NOTE_COLORS = [
   { id: 'rose', bg: 'rgba(244, 63, 94, 0.12)', border: '#f43f5e', label: 'Qizil' }
 ];
 
+const FOCUS_PRESETS = [
+  { mins: 10, label: '10 daq', desc: 'Tezkor' },
+  { mins: 15, label: '15 daq', desc: 'Qisqa' },
+  { mins: 20, label: '20 daq', desc: 'Standart Dars', isDefault: true },
+  { mins: 25, label: '25 daq', desc: 'Pomodoro' },
+  { mins: 30, label: '30 daq', desc: 'Chuqur' },
+  { mins: 45, label: '45 daq', desc: 'Universitet' },
+  { mins: 60, label: '60 daq', desc: 'Imtihon' }
+];
+
+const FOCUS_SUBJECTS = [
+  "📚 Dars & Vazifa",
+  "💻 Dasturlash & Kod",
+  "📖 Kitob Mutolaasi",
+  "🎯 Chuqur Diqqat",
+  "✍️ Konspekt & Til"
+];
+
 function ReminderPageComponent() {
   const { t } = useLanguage();
   const { triggerBanner } = useHabits();
 
-  // Active sub-tab: 'reminders' (eslatmalar) or 'notes' (shaxsiy qaydlar - eslatmasiz)
-  const [activeSubTab, setActiveSubTab] = useState('reminders');
+  // Active sub-tab: 'focus' (Default for study timer), 'reminders' (vaqtli eslatmalar), or 'notes' (shaxsiy qaydlar)
+  const [activeSubTab, setActiveSubTab] = useState('focus');
+
+  // --- FOCUS TIMER STATE ---
+  // Default: 20 minutes (1200 seconds)
+  const [focusDuration, setFocusDuration] = useState(20 * 60);
+  const [focusTimeLeft, setFocusTimeLeft] = useState(20 * 60);
+  const [isFocusRunning, setIsFocusRunning] = useState(false);
+  const [focusSubject, setFocusSubject] = useState("📚 Dars & Vazifa");
+  const [focusSessionCount, setFocusSessionCount] = useState(() => {
+    try {
+      const saved = localStorage.getItem('intizomly_focus_sessions');
+      return saved ? parseInt(saved, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
 
   // Reminders state
   const [reminders, setReminders] = useState([]);
@@ -57,6 +90,98 @@ function ReminderPageComponent() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Focus Timer countdown effect
+  useEffect(() => {
+    let interval = null;
+    if (isFocusRunning && focusTimeLeft > 0) {
+      interval = setInterval(() => {
+        setFocusTimeLeft((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setIsFocusRunning(false);
+            handleFocusFinished();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isFocusRunning, focusTimeLeft]);
+
+  // Completion sound, chime & notification
+  const handleFocusFinished = useCallback(() => {
+    // 1. Play high-grade resonant Focus completion chime
+    audioManager.playFocusDone();
+    setTimeout(() => {
+      audioManager.playCelebration();
+    }, 700);
+
+    // 2. Vibrate phone (haptic feedback)
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      try {
+        navigator.vibrate([350, 150, 350, 150, 600]);
+      } catch (e) {}
+    }
+
+    // 3. Desktop / phone OS system push notification
+    reminderService.showNotification("🎉 Dars va Focus vaqti yakunlandi!", {
+      body: `${focusSubject}: ${Math.round(focusDuration / 60)} daqiqalik chuqur dars seansi yakunlandi. Endi biroz dam oling!`
+    });
+
+    // 4. In-app dynamic toast
+    triggerBanner(
+      "🎯 Focus Muvaffaqiyatli Yakunlandi!",
+      `Barakalla! "${focusSubject}" bo'yicha ${Math.round(focusDuration / 60)} daqiqa o'tirib dars qildingiz. Dam olish vaqti!`
+    );
+
+    // 5. Increment daily count
+    setFocusSessionCount((c) => {
+      const next = c + 1;
+      try {
+        localStorage.setItem('intizomly_focus_sessions', next.toString());
+      } catch (e) {}
+      return next;
+    });
+  }, [focusDuration, focusSubject, triggerBanner]);
+
+  // Focus adjustments
+  const handleSetDuration = (minutes) => {
+    const totalSecs = Math.max(60, Math.min(180 * 60, minutes * 60));
+    setFocusDuration(totalSecs);
+    setFocusTimeLeft(totalSecs);
+    setIsFocusRunning(false);
+  };
+
+  const handleAdjustMinutes = (deltaMin) => {
+    const currentMin = Math.round(focusTimeLeft / 60);
+    const newMin = Math.max(1, Math.min(180, currentMin + deltaMin));
+    handleSetDuration(newMin);
+  };
+
+  const handleToggleFocus = () => {
+    audioManager.init();
+    if (focusTimeLeft === 0) {
+      setFocusTimeLeft(focusDuration);
+      setIsFocusRunning(true);
+    } else {
+      setIsFocusRunning(!isFocusRunning);
+    }
+  };
+
+  const handleResetFocus = () => {
+    setIsFocusRunning(false);
+    setFocusTimeLeft(focusDuration);
+  };
+
+  const formatFocusTime = (totalSeconds) => {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
 
   // Request browser notification permission
   const handleRequestNotifPermission = async () => {
@@ -184,13 +309,25 @@ function ReminderPageComponent() {
       <div className="reminder-header-card">
         <div className="reminder-header-top">
           <div>
-            <h2 className="reminder-main-title">Eslatmalar va Qaydlar</h2>
+            <div className="focus-header-badge">
+              <IconFocus size={16} color="#10B981" />
+              <span>Dars & Chuqur Diqqat</span>
+            </div>
+            <h2 className="reminder-main-title">Focus & Intizom Hub</h2>
             <p className="reminder-main-sub">
-              Haqiqiy vaqtli avtomatik eslatmalar va sokin shaxsiy intizom daftarchasi
+              O'tirib dars qilish taymeri, vaqtli eslatmalar va shaxsiy intizom daftari
             </p>
           </div>
 
           <div className="reminder-tab-switch">
+            <button
+              type="button"
+              className={`reminder-pill-btn ${activeSubTab === 'focus' ? 'active' : ''}`}
+              onClick={() => setActiveSubTab('focus')}
+            >
+              <IconFocus size={16} />
+              <span>Focus Taymer</span>
+            </button>
             <button
               type="button"
               className={`reminder-pill-btn ${activeSubTab === 'reminders' ? 'active' : ''}`}
@@ -233,6 +370,260 @@ function ReminderPageComponent() {
           </div>
         )}
       </div>
+
+      {/* --- SUBTAB 1: FOCUS TAYMER (STUDY & DEEP WORK COUNTDOWN) --- */}
+      {activeSubTab === 'focus' && (
+        <div className="focus-content-area">
+          {/* Subject / Purpose Picker */}
+          <div className="focus-subject-picker">
+            <span className="focus-picker-label">Dars yo'nalishi:</span>
+            <div className="focus-subjects-row">
+              {FOCUS_SUBJECTS.map((subj) => (
+                <button
+                  key={subj}
+                  type="button"
+                  className={`focus-subject-chip ${focusSubject === subj ? 'active' : ''}`}
+                  onClick={() => setFocusSubject(subj)}
+                >
+                  {subj}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Main Focus Card with Circular Timer */}
+          <div className="focus-timer-card">
+            <div className="focus-gauge-wrapper">
+              <svg className="focus-svg-gauge" width="280" height="280" viewBox="0 0 280 280">
+                <defs>
+                  <linearGradient id="focusGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#10B981" />
+                    <stop offset="100%" stopColor="#34D399" />
+                  </linearGradient>
+                  <filter id="focusGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="0" stdDeviation="8" floodColor="#10B981" floodOpacity="0.45" />
+                  </filter>
+                </defs>
+
+                {/* Background track circle */}
+                <circle
+                  cx="140"
+                  cy="140"
+                  r="110"
+                  className="focus-circle-bg"
+                  fill="none"
+                  strokeWidth="14"
+                />
+
+                {/* Animated Green Countdown Circle */}
+                <circle
+                  cx="140"
+                  cy="140"
+                  r="110"
+                  className="focus-circle-progress"
+                  fill="none"
+                  stroke="url(#focusGreenGrad)"
+                  strokeWidth="14"
+                  strokeDasharray={2 * Math.PI * 110}
+                  strokeDashoffset={(2 * Math.PI * 110) * (1 - (focusDuration > 0 ? focusTimeLeft / focusDuration : 0))}
+                  strokeLinecap="round"
+                  filter="url(#focusGlow)"
+                  transform="rotate(-90 140 140)"
+                />
+              </svg>
+
+              {/* Inside center content */}
+              <div className="focus-center-content">
+                <div className="focus-status-tag">
+                  {isFocusRunning ? (
+                    <span className="focus-pill-live">
+                      <span className="focus-live-dot"></span>
+                      Dars jarayoni
+                    </span>
+                  ) : focusTimeLeft === 0 ? (
+                    <span className="focus-pill-finished">
+                      🎉 Bajarildi!
+                    </span>
+                  ) : (
+                    <span className="focus-pill-idle">
+                      Tayyormisiz?
+                    </span>
+                  )}
+                </div>
+
+                <div className="focus-digital-clock">
+                  {formatFocusTime(focusTimeLeft)}
+                </div>
+
+                <div className="focus-subject-text">
+                  {focusSubject}
+                </div>
+
+                <div className="focus-time-subinfo">
+                  {focusTimeLeft === 0
+                    ? "Dam olish vaqti keldi"
+                    : `${Math.ceil(focusTimeLeft / 60)} daqiqa qoldi`}
+                </div>
+              </div>
+            </div>
+
+            {/* Micro Minute Adjustment Buttons */}
+            <div className="focus-adjust-row">
+              <button
+                type="button"
+                className="btn-time-adjust"
+                onClick={() => handleAdjustMinutes(-5)}
+                disabled={isFocusRunning}
+                title="5 daqiqa kamaytirish"
+              >
+                -5 daq
+              </button>
+              <button
+                type="button"
+                className="btn-time-adjust"
+                onClick={() => handleAdjustMinutes(-1)}
+                disabled={isFocusRunning}
+                title="1 daqiqa kamaytirish"
+              >
+                -1 daq
+              </button>
+              <button
+                type="button"
+                className="btn-time-adjust"
+                onClick={() => handleAdjustMinutes(1)}
+                disabled={isFocusRunning}
+                title="1 daqiqa qo'shish"
+              >
+                +1 daq
+              </button>
+              <button
+                type="button"
+                className="btn-time-adjust"
+                onClick={() => handleAdjustMinutes(5)}
+                disabled={isFocusRunning}
+                title="5 daqiqa qo'shish"
+              >
+                +5 daq
+              </button>
+            </div>
+
+            {/* Quick Preset Duration Chips */}
+            <div className="focus-presets-row">
+              {FOCUS_PRESETS.map((preset) => {
+                const isSelected = focusDuration === preset.mins * 60;
+                return (
+                  <button
+                    key={preset.mins}
+                    type="button"
+                    className={`focus-preset-chip ${isSelected ? 'active' : ''}`}
+                    onClick={() => handleSetDuration(preset.mins)}
+                    disabled={isFocusRunning}
+                  >
+                    <span className="preset-chip-mins">{preset.label}</span>
+                    <span className="preset-chip-desc">{preset.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Main Action Buttons */}
+            <div className="focus-actions-row">
+              <button
+                type="button"
+                className={`btn-focus-main ${isFocusRunning ? 'is-running' : 'is-idle'}`}
+                onClick={handleToggleFocus}
+              >
+                {isFocusRunning ? (
+                  <>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16" rx="1.5" />
+                      <rect x="14" y="4" width="4" height="16" rx="1.5" />
+                    </svg>
+                    <span>Pauza Qilish</span>
+                  </>
+                ) : focusTimeLeft === 0 ? (
+                  <>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polyline points="1 4 1 10 7 10" />
+                      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                    </svg>
+                    <span>Yangi Dars Boshlash</span>
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                      <polygon points="6 3 20 12 6 21 6 3" />
+                    </svg>
+                    <span>Darsni Boshlash</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="btn-focus-reset"
+                onClick={handleResetFocus}
+                title="Taymerni qayta o'rnatish"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>
+                <span>Qayta O'rnatish</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn-focus-chime-test"
+                onClick={() => {
+                  audioManager.playFocusDone();
+                  triggerBanner("🔔 Focus Qo'ng'irog'i", "Dars vaqti tugaganda mana shunday yoqimli ovoz yangraydi!");
+                }}
+                title="Tugash ovozini sinash"
+              >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <span>Ovozni sinash</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom Focus Meta & Inspiration */}
+          <div className="focus-insights-grid">
+            <div className="focus-stat-box">
+              <div className="focus-stat-icon-wrap">
+                <IconFocus size={24} color="#10B981" />
+              </div>
+              <div className="focus-stat-info">
+                <span className="focus-stat-val">{focusSessionCount} ta seans</span>
+                <span className="focus-stat-label">Bugun o'tirilgan darslar</span>
+              </div>
+            </div>
+
+            <div className="focus-stat-box">
+              <div className="focus-stat-icon-wrap" style={{ background: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.3)' }}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#3B82F6" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
+              </div>
+              <div className="focus-stat-info">
+                <span className="focus-stat-val">{focusSessionCount * 20} daqiqa</span>
+                <span className="focus-stat-label">Jami chuqur diqqat vaqti</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="focus-tip-banner">
+            <div className="focus-tip-icon">💡</div>
+            <div className="focus-tip-text">
+              <strong>Oltin Intizom Qoidasi:</strong> Dars boshlanganda telefoningizni qo'ldan uzoqqa qo'ying. 20 daqiqa hech qanday ijtimoiy tarmoqlarsiz faqat bitta mavzuni o'rganish miyaning diqqat markazini 3 barobarga oshiradi.
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* --- SUBTAB 1: REMINDERS (ESLATMALAR) --- */}
       {activeSubTab === 'reminders' && (

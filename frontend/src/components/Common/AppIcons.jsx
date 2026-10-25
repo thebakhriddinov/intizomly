@@ -5,6 +5,20 @@ import React from 'react';
  * Replaces plain text emojis and flat stickers with crafted, theme-adaptive SVG emblems.
  */
 
+export function IconFocus({ size = 20, className = '', color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={`app-icon app-icon-focus ${className}`}>
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="2" fill={color} />
+      <line x1="12" y1="1" x2="12" y2="4" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <line x1="12" y1="20" x2="12" y2="23" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <line x1="1" y1="12" x2="4" y2="12" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <line x1="20" y1="12" x2="23" y2="12" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function IconAlarm({ size = 20, className = '', color = 'currentColor' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={`app-icon app-icon-alarm ${className}`}>

@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 
 import { BrandLogo } from '../Common/BrandLogo';
+import { IconFocus } from '../Common/AppIcons';
 
 function SidebarComponent({
   activeTab = 'home',
@@ -80,17 +81,15 @@ function SidebarComponent({
             <span className="sidebar-badge-shelby">Shelby</span>
           </button>
 
-          {/* Tab 3: Reminder */}
+          {/* Tab 3: Focus & Study */}
           <button
             type="button"
-            className={`sidebar-nav-item ${activeTab === 'reminder' ? 'active' : ''}`}
-            onClick={() => onSelectTab?.('reminder')}
+            className={`sidebar-nav-item ${activeTab === 'focus' || activeTab === 'reminder' ? 'active' : ''}`}
+            onClick={() => onSelectTab?.('focus')}
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-            <span>{t('navReminder') || 'Eslatma & Qayd'}</span>
+            <IconFocus size={18} />
+            <span>{t('navReminder') || 'Focus'}</span>
+            <span className="sidebar-badge-shelby" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}>20m</span>
           </button>
 
           {/* Tab 4: Rankings */}

@@ -164,8 +164,8 @@ export function App() {
                 <MotivationPage />
               )}
 
-              {/* TAB 3: REMINDER (Reminders & Silent Notes) */}
-              {activeTab === 'reminder' && (
+              {/* TAB 3: FOCUS (Focus Timer, Study Sessions, Reminders & Silent Notes) */}
+              {(activeTab === 'focus' || activeTab === 'reminder') && (
                 <ReminderPage />
               )}
 
