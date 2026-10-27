@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useHabits } from '../../context/HabitsContext';
 import { storage } from '../../utils/storage';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import {
   IconTrophy,
   IconFlame,
@@ -17,6 +18,7 @@ import {
   IconLock,
   IconUsers
 } from '../Common/AppIcons';
+import { PWAInstallCard } from '../Common/PWAInstallCard';
 
 function BadgeEmblem({ id, color, size = 28 }) {
   if (id === 'badge_10') return <IconShield size={size} color={color} />;
@@ -57,21 +59,49 @@ function ProfilePageComponent({ onOpenSettings }) {
   const [selectedPlatform, setSelectedPlatform] = useState('telegram');
   const [socialUsername, setSocialUsername] = useState('');
 
-  // Follow suggestions list
-  const [suggestedUsers, setSuggestedUsers] = useState([
-    { id: 'sug_1', name: 'Sanjar Beknazarov', streak: 42, role: 'premium', avatarGradient: 'linear-gradient(135deg, #f59e0b, #b6f36b)' },
-    { id: 'sug_2', name: 'Nodira Saidova', streak: 31, role: 'user', avatarGradient: 'linear-gradient(135deg, #8b5cf6, #ec4899)' },
-    { id: 'sug_3', name: 'Azizbek Normatov', streak: 33, role: 'user', avatarGradient: 'linear-gradient(135deg, #10b981, #b6f36b)' }
-  ]);
+  // Follow suggestions list (Loaded from real database users)
+  const [suggestedUsers, setSuggestedUsers] = useState([]);
 
   const streak = storage.getGlobalStreak();
   const badges = storage.getBadgesStatus(streak);
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback(async () => {
     const extras = storage.getProfileExtras();
     setProfileExtras(extras);
     setBioText(extras.bio || '');
-  }, []);
+
+    // Fetch REAL registered users from Supabase
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data: dbProfiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, role, avatar_gradient');
+
+        if (Array.isArray(dbProfiles) && dbProfiles.length > 0) {
+          const followingIds = new Set((extras.following || []).map(f => f.id));
+          const currentId = currentUser?.id;
+
+          const realSuggestions = dbProfiles
+            .filter(p => p.id !== currentId && !followingIds.has(p.id))
+            .map(p => ({
+              id: p.id,
+              name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Foydalanuvchi',
+              role: p.role || 'user',
+              streak: 0,
+              avatarGradient: p.avatar_gradient || 'linear-gradient(135deg, #10b981, #06b6d4)'
+            }));
+
+          setSuggestedUsers(realSuggestions);
+        } else {
+          setSuggestedUsers([]);
+        }
+      } catch (err) {
+        console.warn('Real users load for suggestions failed:', err);
+      }
+    } else {
+      setSuggestedUsers([]);
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     loadData();
@@ -378,6 +408,11 @@ function ProfilePageComponent({ onOpenSettings }) {
         </div>
       </div>
 
+      {/* PWA Mobile App Card */}
+      <div style={{ marginBottom: '24px' }}>
+        <PWAInstallCard />
+      </div>
+
       {/* 5. Intizom Mukofotlari va Badgelar (Pastda to'g'ridan-to'g'ri faqat badgelar turadi) */}
       <div className="badges-section">
         <div className="section-info-row">
@@ -458,7 +493,7 @@ function ProfilePageComponent({ onOpenSettings }) {
 
       {/* --- NETWORK / FOLLOWERS MODAL (Opens only when clicking followers or following) --- */}
       {showNetworkModal && (
-        <div className="modal-backdrop" onClick={() => setShowNetworkModal(false)}>
+        <div className="modal-overlay" onClick={() => setShowNetworkModal(false)} style={{ zIndex: 1050 }}>
           <div className="modal-card network-dialog-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-wrap">
@@ -647,7 +682,7 @@ function ProfilePageComponent({ onOpenSettings }) {
 
       {/* --- ADD SOCIAL ACCOUNT MODAL --- */}
       {showAddSocialModal && (
-        <div className="modal-backdrop" onClick={() => setShowAddSocialModal(false)}>
+        <div className="modal-overlay" onClick={() => setShowAddSocialModal(false)} style={{ zIndex: 1050 }}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-wrap">

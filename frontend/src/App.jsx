@@ -20,6 +20,7 @@ const MotivationPage = lazy(() => import('./components/Pages/MotivationPage').th
 const ReminderPage = lazy(() => import('./components/Pages/ReminderPage').then(m => ({ default: m.ReminderPage })));
 const RankingsPage = lazy(() => import('./components/Pages/RankingsPage').then(m => ({ default: m.RankingsPage })));
 const ProfilePage = lazy(() => import('./components/Pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
+const AdminDashboard = lazy(() => import('./components/Admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 
 // Code-split modals so they don't bloat the initial mobile download
 const HabitModal = lazy(() => import('./components/Modals/HabitModal').then(m => ({ default: m.HabitModal })));
@@ -177,6 +178,11 @@ export function App() {
               {/* TAB 5: YOU (Standalone Profile Page with Settings, Avatar, Socials, Badges) */}
               {activeTab === 'you' && (
                 <ProfilePage onOpenSettings={handleOpenSettings} />
+              )}
+
+              {/* TAB 6: ADMIN (Dedicated Full View) */}
+              {activeTab === 'admin' && (
+                <AdminDashboard onClose={() => setActiveTab('home')} />
               )}
             </Suspense>
           </main>

@@ -1,11 +1,13 @@
 {
   "name": "intizomly",
   "private": true,
+  "type": "module",
   "workspaces": [
     "frontend"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=frontend",
+    "backend": "node backend/server.js",
     "build": "npm run build --workspace=frontend && node -e \"const fs=require('fs'); fs.cpSync('frontend/dist', 'dist', {recursive:true});\"",
     "preview": "npm run preview --workspace=frontend",
     "start": "npm run preview --workspace=frontend"

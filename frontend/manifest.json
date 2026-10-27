@@ -1,21 +1,35 @@
 {
-  "name": "Intizomly — Odatlar va Intizom Nazorati",
+  "id": "/?source=pwa",
+  "name": "Intizomly — Har Kunlik Odatlar va Intizom",
   "short_name": "Intizomly",
-  "start_url": "./index.html",
+  "description": "Har kunlik ishlarni va odatlarni nazorat qilish, streaklarni hisoblash va shaxsiy intizomni oshirish ilovasi.",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0B0D0F",
-  "theme_color": "#B6F36B",
-  "description": "Har kunlik ishlarni va odatlarni nazorat qilib borish, streaklarni hisoblash va shaxsiy intizomni oshirish ilovasi.",
+  "orientation": "portrait-primary",
+  "background_color": "#080B11",
+  "theme_color": "#080B11",
+  "lang": "uz",
+  "dir": "ltr",
+  "categories": ["productivity", "lifestyle", "utilities"],
   "icons": [
     {
-      "src": "assets/icon-192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

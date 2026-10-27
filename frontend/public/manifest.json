@@ -1,0 +1,59 @@
+{
+  "id": "/?source=pwa",
+  "name": "Intizomly — Har Kunlik Odatlar va Intizom",
+  "short_name": "Intizomly",
+  "description": "Har kunlik ishlarni va odatlarni nazorat qilish, streaklarni hisoblash va shaxsiy intizomni oshirish ilovasi.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#080B11",
+  "theme_color": "#080B11",
+  "lang": "uz",
+  "dir": "ltr",
+  "categories": ["productivity", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Bugungi Reja",
+      "short_name": "Bugun",
+      "description": "Bugungi kunlik odatlarni ko'rish",
+      "url": "/?tab=home",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Fokus Taymer",
+      "short_name": "Fokus",
+      "description": "Fokus sessiyasini boshlash",
+      "url": "/?tab=focus",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Motivatsiya",
+      "short_name": "Motivatsiya",
+      "description": "Tomas Shelby qoidalari va iqtiboslar",
+      "url": "/?tab=motivation",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "prefer_related_applications": false
+}

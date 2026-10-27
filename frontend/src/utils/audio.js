@@ -87,7 +87,7 @@ class AudioManager {
   }
 
   /**
-   * Play authentic Apple iPhone Tri-tone notification chime
+   * Play iconic Apple iPhone SMS "Ding" (Note) glass bell chime
    */
   playNotification() {
     if (!this.enabled) return;
@@ -95,29 +95,33 @@ class AudioManager {
     if (!this.ctx) return;
 
     try {
-      const tones = [
-        { freq: 830.6, delay: 0.00, dur: 0.28, vol: 0.25 }, // G#5
-        { freq: 987.8, delay: 0.09, dur: 0.32, vol: 0.28 }, // B5
-        { freq: 1318.5, delay: 0.18, dur: 0.55, vol: 0.32 } // E6
+      const now = this.ctx.currentTime;
+      // Authentic iPhone SMS "Ding" - crystal strike with harmonic overtone shimmer
+      const harmonics = [
+        { freq: 1318.51, gain: 0.38, decay: 0.85 }, // Fundamental (E6)
+        { freq: 2637.02, gain: 0.20, decay: 0.50 }, // 2nd harmonic (E7)
+        { freq: 3951.07, gain: 0.09, decay: 0.32 }, // 3rd harmonic (B7)
+        { freq: 5274.04, gain: 0.05, decay: 0.16 }  // Crisp metallic strike transient
       ];
 
-      tones.forEach(({ freq, delay, dur, vol }) => {
-        const now = this.ctx.currentTime + delay;
+      harmonics.forEach(({ freq, gain, decay }) => {
         const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
+        const gainNode = this.ctx.createGain();
 
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, now);
 
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(vol, now + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        gainNode.gain.setValueAtTime(0.0001, now);
+        // Instantaneous 2ms strike attack
+        gainNode.gain.linearRampToValueAtTime(gain, now + 0.002);
+        // Resonant smooth exponential bell ring
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + decay);
 
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        osc.connect(gainNode);
+        gainNode.connect(this.ctx.destination);
 
         osc.start(now);
-        osc.stop(now + dur + 0.05);
+        osc.stop(now + decay + 0.02);
       });
     } catch (e) {
       console.warn('Audio play error:', e);

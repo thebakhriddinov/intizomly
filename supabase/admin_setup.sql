@@ -18,7 +18,7 @@ DECLARE
   v_admin_first_name TEXT := 'Mustafo';
   v_admin_last_name  TEXT := 'Bakhriddinov';
   v_admin_phone      TEXT := '998701265759'; -- 70 126 5759
-  v_admin_password   TEXT := 'bratan';       -- Yangi kuchli parol qo'yishingiz mumkin
+  v_admin_password   TEXT := 'admin123';     -- Admin paroli
   v_admin_email      TEXT := '998701265759@phone.intizomly.uz';
   
   v_user_id UUID;

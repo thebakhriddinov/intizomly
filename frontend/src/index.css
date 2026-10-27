@@ -2001,19 +2001,20 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 /* --------------------------------------------------------------------------
    14. APPLE MODALS & BOTTOM SHEETS
    -------------------------------------------------------------------------- */
-.modal-overlay {
+.modal-overlay,
+.modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--bg-overlay);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--bg-overlay, rgba(3, 7, 18, 0.82));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: 1050;
   padding: var(--space-4);
   animation: fadeIn 0.2s ease;
 }
@@ -7469,6 +7470,484 @@ input:checked + .slider:before {
   border-color: #10B981 !important;
   color: #059669 !important;
 }
+
+/* ==========================================================================
+   PWA INSTALLATION CARD & PROGRESSIVE WEB APP COMPONENTS
+   ========================================================================== */
+.pwa-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(16, 25, 38, 0.75), rgba(10, 16, 26, 0.85));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(182, 243, 107, 0.22);
+  border-radius: var(--radius-card, 20px);
+  padding: 20px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.pwa-card:hover {
+  border-color: rgba(182, 243, 107, 0.45);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.5), 0 0 25px rgba(182, 243, 107, 0.12);
+}
+
+.pwa-card.pwa-card-standalone {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: linear-gradient(135deg, rgba(16, 40, 32, 0.65), rgba(8, 18, 16, 0.85));
+}
+
+.pwa-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.pwa-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(182, 243, 107, 0.18), rgba(6, 182, 212, 0.22));
+  border: 1px solid rgba(182, 243, 107, 0.35);
+  color: #B6F36B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(182, 243, 107, 0.2);
+}
+
+.pwa-icon-box.installed {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.3));
+  border-color: #10B981;
+  color: #10B981;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+}
+
+.pwa-card-title-group {
+  flex: 1;
+}
+
+.pwa-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.pwa-card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: -0.2px;
+}
+
+.pwa-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.pwa-status-badge.active {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34D399;
+}
+
+.pwa-status-badge.recommend {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #FBBF24;
+}
+
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+  animation: pwaPulse 2s infinite ease-in-out;
+}
+
+@keyframes pwaPulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 12px #34D399; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.pwa-card-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #94A3B8);
+  line-height: 1.5;
+}
+
+.pwa-features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 16px 0 18px 0;
+}
+
+@media (max-width: 640px) {
+  .pwa-features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pwa-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.pwa-feat-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.pwa-feat-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.pwa-feat-text strong {
+  font-size: 12.5px;
+  color: #F8FAFC;
+  font-weight: 600;
+}
+
+.pwa-feat-text span {
+  font-size: 11px;
+  color: #94A3B8;
+}
+
+.pwa-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.pwa-install-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: #05080C;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 20px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.pwa-install-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.45);
+}
+
+.pwa-install-btn:active {
+  transform: translateY(0);
+}
+
+.pwa-guide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #CBD5E1;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.pwa-guide-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+}
+
+/* PWA GUIDE MODAL */
+.pwa-guide-modal {
+  max-width: 540px;
+  width: 92%;
+  background: #0E1520;
+  border: 1px solid rgba(182, 243, 107, 0.3);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(16, 185, 129, 0.15);
+}
+
+.pwa-guide-header-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(182, 243, 107, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.pwa-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pwa-step-item {
+  display: flex;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.pwa-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10B981, #06B6D4);
+  color: #05080C;
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.4);
+}
+
+.pwa-step-content {
+  flex: 1;
+}
+
+.pwa-step-title {
+  font-size: 14px;
+  color: #F8FAFC;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.pwa-step-desc {
+  font-size: 12.5px;
+  color: #94A3B8;
+  line-height: 1.5;
+}
+
+.pwa-key-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  padding: 2px 7px;
+  font-size: 11.5px;
+  color: #F1F5F9;
+  font-weight: 600;
+  margin: 4px 0 0 4px;
+  vertical-align: middle;
+}
+
+.pwa-guide-tip-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(182, 243, 107, 0.08);
+  border: 1px solid rgba(182, 243, 107, 0.22);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 18px;
+}
+
+/* ==========================================================================
+   NETWORK & FOLLOWERS MODAL STYLES (CENTERED, LIQUID GLASS)
+   ========================================================================== */
+.network-dialog-card {
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  margin: auto;
+  border-radius: var(--radius-hero, 26px);
+  background: var(--bg-card, #0f1622);
+  border: 1px solid rgba(182, 243, 107, 0.25);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(16, 185, 129, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.network-modal-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.net-dialog-tab {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary, #94a3b8);
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.net-dialog-tab:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.net-dialog-tab.active {
+  background: rgba(182, 243, 107, 0.15);
+  border-color: rgba(182, 243, 107, 0.4);
+  color: var(--primary-accent, #b6f36b);
+}
+
+.network-modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  max-height: 52vh;
+}
+
+.users-list-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.user-dialog-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.2s ease;
+}
+
+.user-dialog-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.user-follow-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.user-follow-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-follow-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, #f8fafc);
+}
+
+.user-follow-streak {
+  font-size: 11.5px;
+  color: var(--text-secondary, #94a3b8);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-follow-dialog {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #05080c;
+  border: none;
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: 10px;
+  padding: 6px 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.btn-follow-dialog:hover {
+  transform: translateY(-1px);
+}
+
+.btn-unfollow-dialog {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  font-weight: 600;
+  font-size: 12px;
+  border-radius: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.btn-accept-dialog {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+  color: #080d05;
+  border: none;
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.empty-dialog-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 13.5px;
+  text-align: center;
+}
+
+
 
 
 

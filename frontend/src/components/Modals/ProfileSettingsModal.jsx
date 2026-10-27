@@ -4,6 +4,7 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 import { validateUzbekPhone } from '../../utils/phone';
+import { PWAInstallCard } from '../Common/PWAInstallCard';
 
 export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', onOpenAuth, onOpenUpgrade }) {
   const { currentUser, isPremium, isAdmin, updateProfile, logout } = useAuth();
@@ -237,6 +238,11 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
           </form>
         ) : (
           <div className="modal-body">
+            {/* 0. PWA MOBILE APP INSTALLATION */}
+            <div className="settings-group" style={{ marginBottom: '22px' }}>
+              <PWAInstallCard />
+            </div>
+
             {/* 1. LANGUAGE SWITCHER (NEW FEATURE REQUEST) */}
             <div className="settings-group">
               <div>

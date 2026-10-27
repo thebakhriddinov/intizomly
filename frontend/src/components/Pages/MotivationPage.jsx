@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, memo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
-import { IconFlame, IconShield } from '../Common/AppIcons';
+import { IconFlame, IconShield, IconVideo, IconPlus, IconCheck } from '../Common/AppIcons';
 
 const MOTIVATION_QUOTES = [
   {
@@ -90,13 +90,13 @@ function MotivationPageComponent() {
     }
   };
 
-  // Helper to extract YouTube ID
+  // Helper to extract YouTube ID (Supports youtu.be, watch?v=, shorts, embed, and raw ID)
   const extractYoutubeId = (urlOrId) => {
     if (!urlOrId) return '';
     const trimmed = urlOrId.trim();
-    if (trimmed.length === 11 && !trimmed.includes('/')) return trimmed;
-    const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-    return match ? match[1] : trimmed;
+    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+    const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+    return match ? match[1] : '';
   };
 
   // Admin: Add video
@@ -207,7 +207,33 @@ function MotivationPageComponent() {
             <p className="section-subheading">Peaky Blinders intizomi va sovuqqonlik saboqlari</p>
           </div>
         </div>
-        <span className="videos-count-badge">{videos.length} ta video</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span className="videos-count-badge">{videos.length} ta video</span>
+          {isAdmin && (
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => setShowAddModal(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                fontSize: '12px',
+                fontWeight: 700,
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#fff',
+                border: 'none',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.35)',
+                cursor: 'pointer'
+              }}
+            >
+              <span>➕</span>
+              <span>Video Qo'shish</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="videos-grid">
@@ -292,28 +318,74 @@ function MotivationPageComponent() {
 
       {/* Admin Add Video Modal */}
       {showAddModal && isAdmin && (
-        <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
-          <div className="modal-card admin-video-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title-wrap">
-                <span className="modal-icon-badge">🎬</span>
+        <div
+          className="modal-overlay"
+          onClick={() => setShowAddModal(false)}
+          style={{ zIndex: 1100 }}
+        >
+          <div
+            className="modal-card admin-video-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '560px',
+              width: '95%',
+              borderRadius: '24px',
+              background: 'rgba(18, 25, 38, 0.96)',
+              backdropFilter: 'blur(28px)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.75)',
+              overflow: 'hidden'
+            }}
+          >
+            <div
+              className="modal-header"
+              style={{
+                padding: '20px 24px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}
+            >
+              <div className="modal-title-wrap" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    background: 'rgba(244, 63, 94, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#f43f5e'
+                  }}
+                >
+                  <IconVideo size={22} />
+                </div>
                 <div>
-                  <h3 className="modal-title">YouTube Video Qo'shish (Admin)</h3>
-                  <p className="modal-subtitle">Motivatsiya sahifasiga yangi darslik yoki rolik joylash</p>
+                  <h3 className="modal-title" style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    YouTube Video Qo'shish
+                  </h3>
+                  <p className="modal-subtitle" style={{ margin: '3px 0 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    Motivatsiya sahifasiga yangi darslik yoki rolik joylash
+                  </p>
                 </div>
               </div>
               <button
                 type="button"
                 className="modal-close-btn"
                 onClick={() => setShowAddModal(false)}
+                aria-label="Yopish"
               >
                 &times;
               </button>
             </div>
 
-            <form onSubmit={handleAddVideo} className="admin-video-form">
-              <div className="form-group">
-                <label className="form-label">Video Sarlavhasi</label>
+            <form onSubmit={handleAddVideo} className="admin-video-form" style={{ padding: '20px 24px' }}>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Video Sarlavhasi *
+                </label>
                 <input
                   type="text"
                   className="form-input"
@@ -321,57 +393,172 @@ function MotivationPageComponent() {
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   required
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: 'var(--text-primary)',
+                    fontSize: '13px'
+                  }}
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">YouTube Video Havolasi yoki ID</label>
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  YouTube Video Havolasi yoki ID *
+                </label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="https://www.youtube.com/watch?v=5r3Cj9YhJtM yoki 5r3Cj9YhJtM"
+                  placeholder="https://www.youtube.com/watch?v=NmS8_Ls9qyU yoki NmS8_Ls9qyU"
                   value={newYoutubeId}
                   onChange={(e) => setNewYoutubeId(e.target.value)}
                   required
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: 'var(--text-primary)',
+                    fontSize: '13px'
+                  }}
                 />
-                <span className="form-hint">Faqat YouTube ID yoki to'liq havola qabul qilinadi.</span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Tezkor namunalar:</span>
+                  {[
+                    { id: 'NmS8_Ls9qyU', label: 'Stay Strong' },
+                    { id: 'WFyEBIJ2Q_8', label: 'Best Speech' },
+                    { id: 'AJsa0FSlHwc', label: 'Walking Alone' },
+                    { id: '2Vv-BfVoq4g', label: 'Discipline Beats Motivation' }
+                  ].map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => {
+                        setNewYoutubeId(s.id);
+                        if (!newTitle) setNewTitle(`Thomas Shelby — ${s.label}`);
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        borderRadius: '8px',
+                        background: 'rgba(182, 243, 107, 0.08)',
+                        border: '1px solid rgba(182, 243, 107, 0.25)',
+                        color: 'var(--primary-accent)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Muallif / Qahramon</label>
+              {/* Live Preview Box */}
+              {extractYoutubeId(newYoutubeId) && (
+                <div
+                  style={{
+                    marginBottom: '16px',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    background: '#000',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)'
+                  }}
+                >
+                  <div style={{ padding: '8px 12px', background: 'rgba(16, 185, 129, 0.15)', fontSize: '11px', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <IconCheck size={14} color="#10b981" />
+                    <span>Jonli ko'rinish (ID: {extractYoutubeId(newYoutubeId)}):</span>
+                  </div>
+                  <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
+                    <iframe
+                      src={`https://www.youtube.com/embed/${extractYoutubeId(newYoutubeId)}`}
+                      title="Preview"
+                      frameBorder="0"
+                      allowFullScreen
+                      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                    ></iframe>
+                  </div>
+                </div>
+              )}
+
+              <div className="form-group" style={{ marginBottom: '16px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Muallif / Qahramon
+                </label>
                 <input
                   type="text"
                   className="form-input"
                   placeholder="Thomas Shelby / Peaky Blinders"
                   value={newAuthor}
                   onChange={(e) => setNewAuthor(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: 'var(--text-primary)',
+                    fontSize: '13px'
+                  }}
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Iqtibos yoki Xulosa</label>
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label className="form-label" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Iqtibos yoki Xulosa
+                </label>
                 <textarea
                   className="form-textarea"
                   rows="2"
-                  placeholder="Ushbu videodan asosiy xulosa..."
+                  placeholder="Ushbu videodan asosiy intizom xulosasi..."
                   value={newQuote}
                   onChange={(e) => setNewQuote(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    color: 'var(--text-primary)',
+                    fontSize: '13px',
+                    resize: 'vertical'
+                  }}
                 />
               </div>
 
-              <div className="modal-footer-btns">
+              <div className="modal-footer-btns" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                 <button
                   type="button"
-                  className="btn-modal-cancel"
+                  className="btn-modal-cancel secondary-btn"
                   onClick={() => setShowAddModal(false)}
+                  style={{ padding: '8px 18px', borderRadius: '12px', fontSize: '13px' }}
                 >
                   Bekor qilish
                 </button>
                 <button
                   type="submit"
-                  className="btn-modal-save"
+                  className="btn-modal-save primary-btn"
+                  style={{
+                    padding: '8px 22px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: '#fff',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer'
+                  }}
                 >
-                  Joylash ✅
+                  <IconCheck size={16} />
+                  <span>Videoni Joylash</span>
                 </button>
               </div>
             </form>

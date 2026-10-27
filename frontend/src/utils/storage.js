@@ -52,6 +52,67 @@ export const DEFAULT_USERS = [
   }
 ];
 
+export const saveUserPassword = (key, password) => {
+  if (!key || !password) return;
+  try {
+    const raw = localStorage.getItem('intizomly_user_passwords');
+    const map = raw ? JSON.parse(raw) : {};
+    const cleanPass = String(password).trim();
+    map[String(key).toLowerCase().trim()] = cleanPass;
+    const digits = String(key).replace(/\D/g, '');
+    if (digits.length >= 7) {
+      map[digits] = cleanPass;
+      if (digits.length === 9) map['998' + digits] = cleanPass;
+    }
+    localStorage.setItem('intizomly_user_passwords', JSON.stringify(map));
+  } catch (e) {}
+};
+
+export const getUserPassword = (userOrId) => {
+  try {
+    const raw = localStorage.getItem('intizomly_user_passwords');
+    const map = raw ? JSON.parse(raw) : {};
+
+    const presets = {
+      'usr_admin': 'bratan',
+      'usr_premium': 'premium123',
+      'usr_free': 'user123',
+      '998701265759': 'bratan',
+      '701265759': 'bratan',
+      'admin@intizomly.uz': 'bratan',
+      'premium@intizomly.uz': 'premium123',
+      'oddiy@intizomly.uz': 'user123'
+    };
+
+    if (typeof userOrId === 'string') {
+      const q = userOrId.toLowerCase().trim();
+      const digits = q.replace(/\D/g, '');
+      return map[q] || presets[q] || map[digits] || presets[digits] || '';
+    }
+
+    if (userOrId && typeof userOrId === 'object') {
+      if (userOrId.password && typeof userOrId.password === 'string' && userOrId.password.trim()) {
+        return userOrId.password.trim();
+      }
+      const id = String(userOrId.id || '').toLowerCase();
+      const email = String(userOrId.email || '').toLowerCase();
+      const phone = String(userOrId.phone || '');
+      const digits = phone.replace(/\D/g, '');
+
+      const found = map[id] || presets[id] ||
+                    map[email] || presets[email] ||
+                    map[digits] || presets[digits] ||
+                    map[phone] || presets[phone];
+      if (found) return found;
+
+      if (userOrId.role === 'admin') return 'bratan';
+      if (userOrId.role === 'premium') return 'premium123';
+      return 'user123';
+    }
+  } catch (e) {}
+  return 'user123';
+};
+
 export const DEFAULT_HABITS = [
   {
     id: 'habit_sugar',
@@ -147,10 +208,10 @@ export const DEFAULT_SETTINGS = {
 export const DEFAULT_MOTIVATION_VIDEOS = [
   {
     id: 'vid_shelby_1',
-    title: "Thomas Shelby — Qat'iy Intizom va Diqqat Qoidalari",
+    title: "Thomas Shelby — Sovuqqon Iroda va Qat'iy Intizom",
     author: "Thomas Shelby / Peaky Blinders",
-    youtubeId: "5r3Cj9YhJtM",
-    embedUrl: "https://www.youtube.com/embed/5r3Cj9YhJtM",
+    youtubeId: "NmS8_Ls9qyU",
+    embedUrl: "https://www.youtube.com/embed/NmS8_Ls9qyU",
     quote: "Kuchsiz odam his-tuyg'ulariga bo'ysunadi. Kuchli odam esa his-tuyg'ularini intizomiga bo'ysundiradi.",
     likes: 342,
     addedBy: "Admin",
@@ -158,14 +219,25 @@ export const DEFAULT_MOTIVATION_VIDEOS = [
   },
   {
     id: 'vid_shelby_2',
-    title: "Thomas Shelby — Sovuqqon Xotirjamlik va Yengilmas Iroda",
+    title: "Thomas Shelby — Qat'iyat va Yengilmas Xarakter Saboqlari",
     author: "Thomas Shelby / Peaky Blinders",
-    youtubeId: "fD3qZ8_U9lA",
-    embedUrl: "https://www.youtube.com/embed/fD3qZ8_U9lA",
+    youtubeId: "WFyEBIJ2Q_8",
+    embedUrl: "https://www.youtube.com/embed/WFyEBIJ2Q_8",
     quote: "Hech qachon dushmaningizga g'azabingizni ko'rsatmang. Shunchaki rejangizni jimgina bajaring.",
     likes: 489,
     addedBy: "Admin",
     createdAt: Date.now() - 86400000 * 5
+  },
+  {
+    id: 'vid_shelby_3',
+    title: "Thomas Shelby — Yolg'iz Qadam va Shaxsiy Kuch",
+    author: "Thomas Shelby / Peaky Blinders",
+    youtubeId: "AJsa0FSlHwc",
+    embedUrl: "https://www.youtube.com/embed/AJsa0FSlHwc",
+    quote: "Agar buyuk maqsadlarga erishmoqchi bo'lsang, ko'pchilikning olqishini kutishni to'xtatishing kerak.",
+    likes: 560,
+    addedBy: "Admin",
+    createdAt: Date.now() - 86400000 * 7
   }
 ];
 
@@ -282,18 +354,9 @@ export const DEFAULT_PROFILE_EXTRAS = {
     { id: 'soc_ig', platform: 'instagram', username: 'bakhriddinov_m', label: 'Instagram', icon: 'ig' },
     { id: 'soc_gh', platform: 'github', username: 'thebakhriddinov', label: 'GitHub', icon: 'gh' }
   ],
-  followers: [
-    { id: 'f_1', name: 'Malika Karimova', role: 'premium', streak: 29, avatarGradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-    { id: 'f_2', name: 'Alisher Qodirov', role: 'user', streak: 19, avatarGradient: 'linear-gradient(135deg, #6366f1, #a855f7)' },
-    { id: 'f_3', name: 'Jasur Rahimov', role: 'user', streak: 24, avatarGradient: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }
-  ],
-  following: [
-    { id: 'f_1', name: 'Malika Karimova', role: 'premium', streak: 29, avatarGradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-    { id: 'f_2', name: 'Alisher Qodirov', role: 'user', streak: 19, avatarGradient: 'linear-gradient(135deg, #6366f1, #a855f7)' }
-  ],
-  followRequests: [
-    { id: 'req_1', name: 'Dilorom Yusupova', streak: 14, time: '2 soat oldin' }
-  ]
+  followers: [],
+  following: [],
+  followRequests: []
 };
 
 export const BADGES_CONFIG = [
@@ -470,9 +533,13 @@ class StorageManager {
       this.save(STORAGE_KEYS.SETTINGS, this.settings);
     }
 
-    // 7. Motivation Videos
-    if (!this.videos || !Array.isArray(this.videos) || this.videos.length === 0) {
-      this.videos = JSON.parse(JSON.stringify(DEFAULT_MOTIVATION_VIDEOS));
+    // 7. Motivation Videos (Avtomatik tozalash va yangilash)
+    const hasBrokenVideos = Array.isArray(this.videos) && this.videos.some(v => v.youtubeId === '5r3Cj9YhJtM' || v.youtubeId === 'fD3qZ8_U9lA');
+    if (!this.videos || !Array.isArray(this.videos) || this.videos.length === 0 || hasBrokenVideos) {
+      const customVideos = Array.isArray(this.videos)
+        ? this.videos.filter(v => v.youtubeId !== '5r3Cj9YhJtM' && v.youtubeId !== 'fD3qZ8_U9lA' && !DEFAULT_MOTIVATION_VIDEOS.some(dv => dv.youtubeId === v.youtubeId))
+        : [];
+      this.videos = [...DEFAULT_MOTIVATION_VIDEOS, ...customVideos];
       this.save(STORAGE_KEYS.MOTIVATION_VIDEOS, this.videos);
     }
 
@@ -827,25 +894,28 @@ class StorageManager {
     return this.videos || DEFAULT_MOTIVATION_VIDEOS;
   }
 
-  addMotivationVideo({ title, youtubeUrl, quote, author }) {
-    let yId = youtubeUrl.trim();
-    if (yId.includes('v=')) {
+  addMotivationVideo({ title, youtubeUrl, quote, author, addedBy }) {
+    let yId = (youtubeUrl || '').trim();
+    const match = yId.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+    if (match) {
+      yId = match[1];
+    } else if (/^[a-zA-Z0-9_-]{11}$/.test(yId)) {
+      // Alla qachon 11 belgili to'g'ri ID
+    } else if (yId.includes('v=')) {
       yId = yId.split('v=')[1].split('&')[0];
     } else if (yId.includes('youtu.be/')) {
       yId = yId.split('youtu.be/')[1].split('?')[0];
-    } else if (yId.includes('embed/')) {
-      yId = yId.split('embed/')[1].split('?')[0];
     }
 
     const newVideo = {
       id: 'vid_' + Date.now(),
-      title: title.trim(),
-      author: author?.trim() || "Thomas Shelby / Motivatsiya",
+      title: (title || '').trim() || "Thomas Shelby — Intizom Saboqlari",
+      author: author?.trim() || "Thomas Shelby / Peaky Blinders",
       youtubeId: yId,
       embedUrl: `https://www.youtube.com/embed/${yId}`,
       quote: quote?.trim() || "Intizom — bu o'z his-tuyg'ularing ustidan mutlaq g'alabadir.",
-      likes: 120,
-      addedBy: "Admin",
+      likes: Math.floor(Math.random() * 50) + 120,
+      addedBy: addedBy || "Admin",
       createdAt: Date.now()
     };
 
@@ -853,6 +923,24 @@ class StorageManager {
     this.videos.unshift(newVideo);
     this.save(STORAGE_KEYS.MOTIVATION_VIDEOS, this.videos);
     return newVideo;
+  }
+
+  updateMotivationVideo(id, updates) {
+    if (!Array.isArray(this.videos)) return null;
+    const idx = this.videos.findIndex(v => v.id === id);
+    if (idx !== -1) {
+      if (updates.youtubeUrl) {
+        const match = updates.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+        const yId = match ? match[1] : (updates.youtubeUrl.trim().length === 11 ? updates.youtubeUrl.trim() : this.videos[idx].youtubeId);
+        updates.youtubeId = yId;
+        updates.embedUrl = `https://www.youtube.com/embed/${yId}`;
+        delete updates.youtubeUrl;
+      }
+      this.videos[idx] = { ...this.videos[idx], ...updates, updatedAt: Date.now() };
+      this.save(STORAGE_KEYS.MOTIVATION_VIDEOS, this.videos);
+      return this.videos[idx];
+    }
+    return null;
   }
 
   deleteMotivationVideo(id) {
@@ -984,7 +1072,22 @@ class StorageManager {
   joinChallenge(id, currentUser) {
     if (!Array.isArray(this.challenges)) this.challenges = [];
     const ch = this.challenges.find(item => item.id === id);
-    if (!ch) return null;
+    if (!ch) return { error: 'NOT_FOUND', message: "Musobaqa topilmadi" };
+
+    if (ch.joined) {
+      return { success: true, alreadyJoined: true, challenge: ch };
+    }
+
+    // Maksimal 4 ta musobaqaga bir vaqtda a'zo bo'lish cheklovi
+    const joinedCount = this.challenges.filter(item => item.joined && item.id !== id).length;
+    if (joinedCount >= 4) {
+      return {
+        error: 'MAX_LIMIT_REACHED',
+        joinedCount,
+        message: "Siz bir vaqtning o'zida ko'pi bilan 4 ta musobaqaga a'zo bo'la olasiz (4/4 limit)!"
+      };
+    }
+
     ch.joined = true;
     ch.participantsCount = (ch.participantsCount || 0) + 1;
 
@@ -1009,7 +1112,7 @@ class StorageManager {
     }
 
     this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
-    return ch;
+    return { success: true, challenge: ch };
   }
 
   leaveChallenge(id) {
@@ -1025,9 +1128,48 @@ class StorageManager {
     return ch;
   }
 
+  addChallenge({ title, emoji, description, badgeName, targetDays = 30 }) {
+    if (!Array.isArray(this.challenges)) {
+      this.challenges = [...DEFAULT_CHALLENGES];
+    }
+    const newChallenge = {
+      id: 'ch_' + Date.now(),
+      title: (title || '').trim(),
+      emoji: emoji || '🎯',
+      description: (description || '').trim(),
+      participantsCount: 0,
+      badgeName: badgeName || "Intizom Qahramoni 🛡️",
+      targetDays: parseInt(targetDays) || 30,
+      joined: false,
+      leaderboard: [],
+      createdAt: Date.now()
+    };
+    this.challenges.unshift(newChallenge);
+    this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
+    return newChallenge;
+  }
+
+  deleteChallenge(id) {
+    if (!Array.isArray(this.challenges)) return false;
+    this.challenges = this.challenges.filter(c => c.id !== id);
+    this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
+    return true;
+  }
+
   // ==================== PROFILE EXTRAS & SOCIALS ====================
   getProfileExtras() {
-    return this.profileExtras || DEFAULT_PROFILE_EXTRAS;
+    let extras = this.profileExtras || { ...DEFAULT_PROFILE_EXTRAS };
+    // Ensure clean state if previously seeded with fake mock users
+    if (extras.followers && extras.followers.some(f => f.id === 'f_1' || f.id === 'f_2' || f.id === 'f_3')) {
+      extras.followers = [];
+    }
+    if (extras.following && extras.following.some(f => f.id === 'f_1' || f.id === 'f_2')) {
+      extras.following = [];
+    }
+    if (extras.followRequests && extras.followRequests.some(r => r.id === 'req_1')) {
+      extras.followRequests = [];
+    }
+    return extras;
   }
 
   updateProfileExtras(updates) {
@@ -1107,3 +1249,5 @@ class StorageManager {
 }
 
 export const storage = new StorageManager();
+export { StorageManager };
+export default storage;
