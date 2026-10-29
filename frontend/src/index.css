@@ -8366,3 +8366,25 @@ button:active:not(:disabled) {
   justify-content: center !important;
   flex-shrink: 0 !important;
 }
+/* Rankings Challenges Column List & Cards */
+.challenges-column-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.challenge-column-card {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+  user-select: none;
+}
+
+.challenge-column-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(16, 185, 129, 0.15) !important;
+}
+
+.challenge-column-card:active {
+  transform: scale(0.99);
+}
