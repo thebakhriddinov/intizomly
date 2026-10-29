@@ -90,13 +90,37 @@ function MotivationPageComponent() {
     }
   };
 
-  // Helper to extract YouTube ID (Supports youtu.be, watch?v=, shorts, embed, and raw ID)
+  // Helper to extract YouTube ID (Supports youtu.be, watch?v=, shorts, embed, live, iframe, and raw 11-char ID)
   const extractYoutubeId = (urlOrId) => {
     if (!urlOrId) return '';
-    const trimmed = urlOrId.trim();
-    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-    const match = trimmed.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([a-zA-Z0-9_-]{11})/);
-    return match ? match[1] : '';
+    let raw = urlOrId.trim();
+
+    // 1. Agar foydalanuvchi iframe tagini nusxalagan bo'lsa
+    const iframeMatch = raw.match(/src=["']([^"']+)["']/i);
+    if (iframeMatch) {
+      raw = iframeMatch[1];
+    }
+
+    // 2. Toza 11 belgili ID
+    if (/^[a-zA-Z0-9_-]{11}$/.test(raw)) {
+      return raw;
+    }
+
+    // 3. YouTube link patternlari (watch?v=, youtu.be/, embed/, shorts/, live/)
+    const match = raw.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+?&v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/);
+    if (match && match[1]) {
+      return match[1];
+    }
+
+    // 4. Fallback: v= parametri
+    const vParam = raw.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+    if (vParam && vParam[1]) {
+      return vParam[1];
+    }
+
+    // 5. Har qanday 11 belgili string
+    const fallbackMatch = raw.match(/([a-zA-Z0-9_-]{11})/);
+    return fallbackMatch ? fallbackMatch[1] : '';
   };
 
   // Admin: Add video
@@ -105,7 +129,7 @@ function MotivationPageComponent() {
     if (!isAdmin) return;
 
     const ytId = extractYoutubeId(newYoutubeId);
-    if (!ytId) {
+    if (!ytId || ytId.length !== 11) {
       alert("Iltimos, to'g'ri YouTube havola yoki Video ID kiriting!");
       return;
     }
@@ -113,10 +137,11 @@ function MotivationPageComponent() {
     storage.addMotivationVideo({
       title: newTitle.trim() || "Thomas Shelby — Intizom Saboqlari",
       author: newAuthor.trim() || "Thomas Shelby",
+      youtubeUrl: ytId,
       youtubeId: ytId,
-      embedUrl: `https://www.youtube.com/embed/${ytId}`,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${ytId}`,
       quote: newQuote.trim() || "Intizom — bu o'z xohishlaringiz ustidan mutlaq g'alabadir.",
-      likes: 10,
+      likes: Math.floor(Math.random() * 40) + 120,
       addedBy: currentUser ? `${currentUser.firstName} (Admin)` : "Admin"
     });
 
@@ -149,16 +174,10 @@ function MotivationPageComponent() {
           {/* Admin badge or indicator */}
           <div className="motivation-admin-meta">
             {isAdmin ? (
-              <button
-                type="button"
-                className="btn-admin-add-video"
-                onClick={() => setShowAddModal(true)}
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                <span>+ Yangi Video Qo'shish (Admin)</span>
-              </button>
+              <span className="user-read-only-badge" style={{ borderColor: 'rgba(182, 243, 107, 0.3)', background: 'rgba(182, 243, 107, 0.08)', color: 'var(--primary-accent)' }}>
+                <IconShield size={14} color="var(--primary-accent)" />
+                <span>Admin boshqaruvi faol: pastdagi bo'limdan yangi video qo'shishingiz mumkin</span>
+              </span>
             ) : (
               <span className="user-read-only-badge">
                 <IconShield size={14} color="#10B981" />
@@ -169,24 +188,33 @@ function MotivationPageComponent() {
         </div>
       </div>
 
-      {/* 2. Interactive Daily Quote Box */}
+      {/* 2. Interactive Daily Quote Box - Keng va erkin zamonaviy format */}
       <div className="motivation-quote-card">
-        <div className="quote-mark-icon">“</div>
-        <div className="quote-body">
-          <p className="quote-text">{currentQuote.quote}</p>
+        <div className="quote-header-row">
+          <div className="quote-mark-badge">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+            </svg>
+          </div>
+          <span className="quote-author-tag">{currentQuote.tag}</span>
+        </div>
+
+        <p className="quote-text">
+          "{currentQuote.quote}"
+        </p>
+
+        <div className="quote-footer-row">
           <div className="quote-author-row">
             <span className="quote-author-name">{currentQuote.author}</span>
-            <span className="quote-author-tag">{currentQuote.tag}</span>
           </div>
-        </div>
-        <div className="quote-actions">
+
           <button
             type="button"
             className="quote-shuffle-btn"
             onClick={() => setActiveQuoteIdx((prev) => (prev + 1) % MOTIVATION_QUOTES.length)}
-            title="Boshqa iqtibos"
+            title="Boshqa iqtibos olish"
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
             </svg>
             <span>Yangi Iqtibos</span>
@@ -198,13 +226,10 @@ function MotivationPageComponent() {
       <div className="motivation-section-header">
         <div className="section-title-wrap">
           <div className="section-icon-badge">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-              <polygon points="5 3 19 12 5 21 5 3" />
-            </svg>
+            <IconVideo size={18} color="#F43F5E" />
           </div>
           <div>
             <h3 className="section-heading">Thomas Shelby va Intizom Videolari</h3>
-            <p className="section-subheading">Peaky Blinders intizomi va sovuqqonlik saboqlari</p>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -229,7 +254,7 @@ function MotivationPageComponent() {
                 cursor: 'pointer'
               }}
             >
-              <span>➕</span>
+              <IconPlus size={14} color="#fff" />
               <span>Video Qo'shish</span>
             </button>
           )}
@@ -241,11 +266,13 @@ function MotivationPageComponent() {
           <div key={vid.id} className="video-card">
             <div className="video-player-wrap">
               <iframe
-                src={`https://www.youtube.com/embed/${vid.youtubeId}`}
+                src={`https://www.youtube-nocookie.com/embed/${vid.youtubeId}?rel=0&modestbranding=1`}
                 title={vid.title}
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
                 allowFullScreen
+                loading="lazy"
                 className="youtube-iframe"
               ></iframe>
             </div>
@@ -267,26 +294,50 @@ function MotivationPageComponent() {
                 )}
               </div>
 
-              {vid.quote && (
-                <p className="video-quote">"{vid.quote}"</p>
-              )}
-
-              <div className="video-footer-meta">
+              <div className="video-footer-meta" style={{ marginTop: 'auto', paddingTop: '6px' }}>
                 <span className="video-author-badge">
                   <span className="author-dot"></span>
                   {vid.author}
                 </span>
 
-                <button
-                  type="button"
-                  className="video-like-btn"
-                  onClick={() => handleLike(vid.id)}
-                >
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="#F43F5E">
-                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                  </svg>
-                  <span className="like-count">{vid.likes || 0}</span>
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+                  <a
+                    href={`https://www.youtube.com/watch?v=${vid.youtubeId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '3px 8px',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 0, 0, 0.12)',
+                      border: '1px solid rgba(255, 0, 0, 0.25)',
+                      color: '#ff4d4f',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      textDecoration: 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                    title="YouTube ilovasida yoki yangi oynada ochish"
+                  >
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="#ff4d4f">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                    <span>YouTube</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    className="video-like-btn"
+                    onClick={() => handleLike(vid.id)}
+                  >
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="#F43F5E">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                    <span className="like-count">{vid.likes || 0}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -321,20 +372,24 @@ function MotivationPageComponent() {
         <div
           className="modal-overlay"
           onClick={() => setShowAddModal(false)}
-          style={{ zIndex: 1100 }}
+          style={{ zIndex: 1100, overflowY: 'auto', padding: '16px' }}
         >
           <div
             className="modal-card admin-video-modal"
             onClick={(e) => e.stopPropagation()}
             style={{
               maxWidth: '560px',
-              width: '95%',
+              width: '100%',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
               borderRadius: '24px',
               background: 'rgba(18, 25, 38, 0.96)',
               backdropFilter: 'blur(28px)',
               border: '1px solid rgba(255, 255, 255, 0.12)',
               boxShadow: '0 25px 60px rgba(0, 0, 0, 0.75)',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              margin: 'auto'
             }}
           >
             <div
@@ -344,7 +399,8 @@ function MotivationPageComponent() {
                 borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                flexShrink: 0
               }}
             >
               <div className="modal-title-wrap" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -381,7 +437,16 @@ function MotivationPageComponent() {
               </button>
             </div>
 
-            <form onSubmit={handleAddVideo} className="admin-video-form" style={{ padding: '20px 24px' }}>
+            <form
+              onSubmit={handleAddVideo}
+              className="admin-video-form modal-body"
+              style={{
+                padding: '20px 24px',
+                overflowY: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                flex: 1
+              }}
+            >
               <div className="form-group" style={{ marginBottom: '16px' }}>
                 <label className="form-label" style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                   Video Sarlavhasi *
@@ -470,15 +535,27 @@ function MotivationPageComponent() {
                     boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)'
                   }}
                 >
-                  <div style={{ padding: '8px 12px', background: 'rgba(16, 185, 129, 0.15)', fontSize: '11px', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <IconCheck size={14} color="#10b981" />
-                    <span>Jonli ko'rinish (ID: {extractYoutubeId(newYoutubeId)}):</span>
+                  <div style={{ padding: '8px 12px', background: 'rgba(16, 185, 129, 0.15)', fontSize: '11px', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <IconCheck size={14} color="#10b981" />
+                      <span>Jonli ko'rinish (ID: {extractYoutubeId(newYoutubeId)}):</span>
+                    </div>
+                    <a
+                      href={`https://www.youtube.com/watch?v=${extractYoutubeId(newYoutubeId)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#10b981', textDecoration: 'underline', fontSize: '11px' }}
+                    >
+                      YouTube'da ochish ↗
+                    </a>
                   </div>
                   <div style={{ position: 'relative', width: '100%', paddingTop: '56.25%' }}>
                     <iframe
-                      src={`https://www.youtube.com/embed/${extractYoutubeId(newYoutubeId)}`}
+                      src={`https://www.youtube-nocookie.com/embed/${extractYoutubeId(newYoutubeId)}?rel=0&modestbranding=1`}
                       title="Preview"
                       frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerPolicy="strict-origin-when-cross-origin"
                       allowFullScreen
                       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                     ></iframe>
@@ -531,7 +608,22 @@ function MotivationPageComponent() {
                 />
               </div>
 
-              <div className="modal-footer-btns" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <div
+                className="modal-footer-btns"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  position: 'sticky',
+                  bottom: -1,
+                  background: 'linear-gradient(to top, rgba(18, 25, 38, 0.98) 85%, rgba(18, 25, 38, 0.8) 100%)',
+                  backdropFilter: 'blur(12px)',
+                  paddingTop: '16px',
+                  paddingBottom: '8px',
+                  marginTop: '10px',
+                  zIndex: 5
+                }}
+              >
                 <button
                   type="button"
                   className="btn-modal-cancel secondary-btn"
@@ -554,7 +646,8 @@ function MotivationPageComponent() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)'
                   }}
                 >
                   <IconCheck size={16} />

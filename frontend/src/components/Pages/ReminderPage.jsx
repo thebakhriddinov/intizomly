@@ -95,8 +95,11 @@ function ReminderPageComponent() {
   const [editingNote, setEditingNote] = useState(null);
   const [noteTitle, setNoteTitle] = useState('');
   const [noteContent, setNoteContent] = useState('');
-  const [noteCategory, setNoteCategory] = useState("Maqsad");
   const [noteColor, setNoteColor] = useState('emerald');
+
+  // Toggle state for lamp (tip) banners - only visible when clicked
+  const [showFocusTip, setShowFocusTip] = useState(false);
+  const [showNotesTip, setShowNotesTip] = useState(false);
 
   const loadData = useCallback(() => {
     setReminders(storage.getReminders());
@@ -247,6 +250,11 @@ function ReminderPageComponent() {
     e.preventDefault();
     if (!remTitle.trim()) return;
 
+    // Telefon uchun bildirishnoma ruxsatini tekshirish va so'rash
+    if (notifPermission === 'default') {
+      reminderService.requestPermission().then((res) => setNotifPermission(res));
+    }
+
     storage.addReminder({
       title: remTitle.trim(),
       time: remTime || "12:00",
@@ -375,7 +383,33 @@ function ReminderPageComponent() {
                   : "Bildirishnomalarga ruxsat berilmagan (Faqat sayt ochiq paytda eslatadi)"}
               </span>
             </div>
-            {notifPermission !== 'granted' && (
+            {notifPermission === 'granted' ? (
+              <button
+                type="button"
+                className="btn-enable-notif"
+                onClick={async () => {
+                  await reminderService.testReminder({
+                    title: "Kundalik intizom eslatmasi",
+                    time: reminderService.getCurrentTimeStr(),
+                    category: "Intizom"
+                  });
+                  triggerBanner("Bildirishnoma yuborildi", "Telefoningizga bildirishnoma va iPhone Ding tovushi yuborildi!");
+                }}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.18)',
+                  color: '#10B981',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                title="Haqiqiy bildirishnomani telefonda sinab ko'rish"
+              >
+                <IconAlarm size={14} color="#10B981" />
+                <span>Sinov bildirishnomasi</span>
+              </button>
+            ) : (
               <button
                 type="button"
                 className="btn-enable-notif"
@@ -635,13 +669,42 @@ function ReminderPageComponent() {
             </div>
           </div>
 
-          <div className="focus-tip-banner">
-            <div className="focus-tip-icon">
-              <IconLightbulb size={22} color="#F59E0B" />
-            </div>
-            <div className="focus-tip-text">
-              <strong>Oltin Intizom Qoidasi:</strong> Dars boshlanganda telefoningizni qo'ldan uzoqqa qo'ying. 20 daqiqa hech qanday ijtimoiy tarmoqlarsiz faqat bitta mavzuni o'rganish miyaning diqqat markazini 3 barobarga oshiradi.
-            </div>
+          {/* Toggleable Focus Tip (Lamp / Maslahat) */}
+          <div className="focus-tip-container">
+            <button
+              type="button"
+              className={`focus-tip-toggle-btn ${showFocusTip ? 'active' : ''}`}
+              onClick={() => setShowFocusTip((prev) => !prev)}
+              aria-label="Foydali tavsiya"
+            >
+              <div className="focus-tip-icon">
+                <IconLightbulb size={20} color="#F59E0B" />
+              </div>
+              <span className="focus-tip-toggle-title">Oltin intizom tavsiyasi</span>
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                style={{
+                  marginLeft: 'auto',
+                  transform: showFocusTip ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.25s ease'
+                }}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {showFocusTip && (
+              <div className="focus-tip-banner animate-fade-in" style={{ marginTop: '8px' }}>
+                <div className="focus-tip-text">
+                  <strong>Oltin Intizom Qoidasi:</strong> Dars boshlanganda telefoningizni qo'ldan uzoqqa qo'ying. 20 daqiqa hech qanday ijtimoiy tarmoqlarsiz faqat bitta mavzuni o'rganish miyaning diqqat markazini 3 barobarga oshiradi.
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -728,15 +791,43 @@ function ReminderPageComponent() {
       {/* --- SUBTAB 2: NOTES (NOTE YOZIB QOYADI LEKIN ESLATMAYDI) --- */}
       {activeSubTab === 'notes' && (
         <div className="notes-content-area">
-          {/* Note disclaimer banner */}
-          <div className="note-info-banner">
-            <div className="note-banner-icon-wrap">
-              <IconLightbulb size={24} />
-            </div>
-            <div>
-              <strong>Shaxsiy Qaydlar — Eslatma Yuborilmaydi</strong>
-              <p>Bu sahifada yozilgan fikrlar, g'oyalar va rejalaringiz sokin shaxsiy daftarcha kabi saqlanadi. Hech qanday tovush yoki chalg'ituvchi bildirishnoma yuborilmaydi.</p>
-            </div>
+          {/* Note disclaimer toggle (Lamp / Maslahat) */}
+          <div className="note-info-container">
+            <button
+              type="button"
+              className={`note-info-toggle-btn ${showNotesTip ? 'active' : ''}`}
+              onClick={() => setShowNotesTip((prev) => !prev)}
+              aria-label="Shaxsiy qaydlar eslatmasi"
+            >
+              <div className="note-banner-icon-wrap">
+                <IconLightbulb size={20} color="#F59E0B" />
+              </div>
+              <span className="note-info-toggle-title">Shaxsiy qaydlar eslatmasi</span>
+              <svg
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                style={{
+                  marginLeft: 'auto',
+                  transform: showNotesTip ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.25s ease'
+                }}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {showNotesTip && (
+              <div className="note-info-banner animate-fade-in" style={{ marginTop: '8px' }}>
+                <div>
+                  <strong>Shaxsiy Qaydlar — Eslatma Yuborilmaydi</strong>
+                  <p>Bu sahifada yozilgan fikrlar, g'oyalar va rejalaringiz sokin shaxsiy daftarcha kabi saqlanadi. Hech qanday tovush yoki chalg'ituvchi bildirishnoma yuborilmaydi.</p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="subtab-action-bar">

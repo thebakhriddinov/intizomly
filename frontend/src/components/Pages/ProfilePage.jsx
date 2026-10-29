@@ -16,9 +16,9 @@ import {
   IconCheck,
   IconEdit,
   IconLock,
-  IconUsers
+  IconUsers,
+  IconLaptop
 } from '../Common/AppIcons';
-import { PWAInstallCard } from '../Common/PWAInstallCard';
 
 function BadgeEmblem({ id, color, size = 28 }) {
   if (id === 'badge_10') return <IconShield size={size} color={color} />;
@@ -334,8 +334,8 @@ function ProfilePageComponent({ onOpenSettings }) {
             const fullUrl = soc.username.startsWith('http')
               ? soc.username
               : platObj
-              ? `${platObj.prefix}${soc.username}`
-              : `https://${soc.username}`;
+                ? `${platObj.prefix}${soc.username}`
+                : `https://${soc.username}`;
 
             return (
               <div key={soc.id} className="profile-social-item-wrap">
@@ -406,11 +406,6 @@ function ProfilePageComponent({ onOpenSettings }) {
             <span className="net-stat-lbl">Ochilgan Badgelar</span>
           </div>
         </div>
-      </div>
-
-      {/* PWA Mobile App Card */}
-      <div style={{ marginBottom: '24px' }}>
-        <PWAInstallCard />
       </div>
 
       {/* 5. Intizom Mukofotlari va Badgelar (Pastda to'g'ridan-to'g'ri faqat badgelar turadi) */}

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react';
-import { storage } from '../utils/storage';
+import { storage, STORAGE_KEYS } from '../utils/storage';
 import { audioManager } from '../utils/audio';
 import { fireCelebrationConfetti } from '../utils/confetti';
 import { useAuth } from './AuthContext';
@@ -183,34 +183,30 @@ export function HabitsProvider({ children }) {
   // ==================== HABITS CRUD & TOGGLE ====================
 
   const toggleHabit = useCallback(async (habitId) => {
-    let newState = false;
-    let isCurrentlyDone = false;
+    // 1. O(1) Aniq joriy holatni aniqlaymiz
+    const isCurrentlyDone = !!(storage.history?.[dateKey]?.[habitId]);
+    const newState = !isCurrentlyDone;
 
-    // Optimistic UI update using functional state updater for rock-solid stability
-    setHistory(prevHistory => {
-      isCurrentlyDone = !!(prevHistory[dateKey] && prevHistory[dateKey][habitId]);
-      newState = !isCurrentlyDone;
+    // 2. Storage va React State ni sinxron yangilaymiz
+    const updatedHistory = { ...storage.history };
+    if (!updatedHistory[dateKey]) {
+      updatedHistory[dateKey] = {};
+    } else {
+      updatedHistory[dateKey] = { ...updatedHistory[dateKey] };
+    }
 
-      const updatedHistory = { ...prevHistory };
-      if (!updatedHistory[dateKey]) {
-        updatedHistory[dateKey] = {};
-      }
+    if (newState) {
+      updatedHistory[dateKey][habitId] = true;
+    } else {
+      delete updatedHistory[dateKey][habitId];
+    }
 
-      if (newState) {
-        updatedHistory[dateKey] = { ...updatedHistory[dateKey], [habitId]: true };
-      } else {
-        const dayMap = { ...updatedHistory[dateKey] };
-        delete dayMap[habitId];
-        updatedHistory[dateKey] = dayMap;
-      }
+    storage.history = updatedHistory;
+    storage.save(STORAGE_KEYS.HISTORY, updatedHistory);
+    setHistory(updatedHistory);
 
-      storage.history = updatedHistory;
-      return updatedHistory;
-    });
-
-    // Play sounds & feedback
-    if (!isCurrentlyDone) {
-      audioManager.playCheck();
+    // 3. Foydalanuvchiga aniq feedback (bajarildi yoki bekor qilindi)
+    if (newState) {
       addToast("Bajarildi! 🎉", "Ajoyib intizom!", "success", 2000);
 
       const afterStats = storage.getDayStats(dateKey);
@@ -222,31 +218,28 @@ export function HabitsProvider({ children }) {
         addToast("Tabriklaymiz! 🌟", "Bugungi barcha vazifalar to'liq bajarildi!", "success", 5000);
       }
     } else {
-      audioManager.playUncheck();
+      addToast("Bekor qilindi", "Vazifa bajarilmagan holatga qaytarildi", "info", 2000);
     }
 
-    // Sync with Supabase if active
+    // 4. Agar Supabase ulangan bo'lsa, server bilan sinxronlash
     if (currentUser?.isSupabaseUser) {
       try {
         await supabaseService.toggleCompletion(currentUser.id, habitId, dateKey, isCurrentlyDone);
       } catch (err) {
         console.error('[Habits] Toggle error on Supabase:', err);
-        // Rollback on error
-        setHistory(prev => {
-          const rolledBack = { ...prev };
-          if (isCurrentlyDone) {
-            if (!rolledBack[dateKey]) rolledBack[dateKey] = {};
-            rolledBack[dateKey][habitId] = true;
-          } else if (rolledBack[dateKey]) {
-            delete rolledBack[dateKey][habitId];
-          }
-          storage.history = rolledBack;
-          return rolledBack;
-        });
+        // Rollback
+        const rollbackHistory = { ...storage.history };
+        if (isCurrentlyDone) {
+          if (!rollbackHistory[dateKey]) rollbackHistory[dateKey] = {};
+          rollbackHistory[dateKey][habitId] = true;
+        } else if (rollbackHistory[dateKey]) {
+          delete rollbackHistory[dateKey][habitId];
+        }
+        storage.history = rollbackHistory;
+        storage.save(STORAGE_KEYS.HISTORY, rollbackHistory);
+        setHistory(rollbackHistory);
         addToast("Xatolik", "Server bilan sinxronlashda xatolik yuz berdi", "warning");
       }
-    } else {
-      storage.save(storage.constructor.STORAGE_KEYS?.HISTORY || 'intizomly_history_v2', storage.history);
     }
   }, [dateKey, settings.confettiEnabled, addToast, currentUser]);
 

@@ -571,4 +571,95 @@ export function IconBan({ size = 16, className = '', color = 'currentColor' }) {
   );
 }
 
+export function IconPending({ size = 16, className = '', color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`app-icon app-icon-pending ${className}`}>
+      <path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
+    </svg>
+  );
+}
+
+export function IconLayers({ size = 16, className = '', color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`app-icon app-icon-layers ${className}`}>
+      <polygon points="12 2 2 7 12 12 22 7 12 2" />
+      <polyline points="2 17 12 22 22 17" />
+      <polyline points="2 12 12 17 22 12" />
+    </svg>
+  );
+}
+
+/**
+ * HabitGlyphIcon - Replaces flat emoji stickers with crafted vector emblems
+ */
+export function HabitGlyphIcon({ emoji = '', category = '', title = '', size = 18, className = '' }) {
+  const combined = `${emoji} ${category} ${title}`.toLowerCase();
+
+  let IconComponent = IconTarget;
+  let accentColor = '#10B981';
+  let bgColor = 'rgba(16, 185, 129, 0.12)';
+
+  if (combined.includes('💧') || combined.includes('suv') || combined.includes('water')) {
+    IconComponent = IconWater;
+    accentColor = '#06B6D4';
+    bgColor = 'rgba(6, 182, 212, 0.15)';
+  } else if (combined.includes('📚') || combined.includes('📖') || combined.includes('kitob') || combined.includes('read') || combined.includes("o'qish")) {
+    IconComponent = IconBook;
+    accentColor = '#3B82F6';
+    bgColor = 'rgba(59, 130, 246, 0.15)';
+  } else if (combined.includes('🏃') || combined.includes('sport') || combined.includes('mashq') || combined.includes('yugurish')) {
+    IconComponent = IconRunner;
+    accentColor = '#F59E0B';
+    bgColor = 'rgba(245, 158, 11, 0.15)';
+  } else if (combined.includes('🔥') || combined.includes('shijoat') || combined.includes('olov')) {
+    IconComponent = IconFlame;
+    accentColor = '#EF4444';
+    bgColor = 'rgba(239, 68, 68, 0.15)';
+  } else if (combined.includes('⚡') || combined.includes('quvvat') || combined.includes('energiya')) {
+    IconComponent = IconLightning;
+    accentColor = '#B6F36B';
+    bgColor = 'rgba(182, 243, 107, 0.15)';
+  } else if (combined.includes('👑') || combined.includes('yetakchi') || combined.includes('maqsad')) {
+    IconComponent = IconCrown;
+    accentColor = '#F59E0B';
+    bgColor = 'rgba(245, 158, 11, 0.15)';
+  } else if (combined.includes('💎') || combined.includes('boylik') || combined.includes('invest')) {
+    IconComponent = IconDiamond;
+    accentColor = '#06B6D4';
+    bgColor = 'rgba(6, 182, 212, 0.15)';
+  } else if (combined.includes('🛡️') || combined.includes('intizom') || combined.includes('sabot')) {
+    IconComponent = IconShield;
+    accentColor = '#10B981';
+    bgColor = 'rgba(16, 185, 129, 0.15)';
+  } else if (combined.includes('⏰') || combined.includes('vaqt') || combined.includes('uyg')) {
+    IconComponent = IconAlarm;
+    accentColor = '#8B5CF6';
+    bgColor = 'rgba(139, 92, 246, 0.15)';
+  } else if (combined.includes('🚫') || combined.includes('shakar') || combined.includes('tashlash')) {
+    IconComponent = IconNoSugar;
+    accentColor = '#F43F5E';
+    bgColor = 'rgba(244, 63, 94, 0.15)';
+  }
+
+  return (
+    <div
+      className={`habit-vector-badge ${className}`}
+      style={{
+        width: `${size + 14}px`,
+        height: `${size + 14}px`,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '10px',
+        backgroundColor: bgColor,
+        border: `1px solid ${accentColor}33`,
+        flexShrink: 0
+      }}
+    >
+      <IconComponent size={size} color={accentColor} />
+    </div>
+  );
+}
+
+
 

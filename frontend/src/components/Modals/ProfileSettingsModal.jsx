@@ -19,6 +19,7 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showPWAInstall, setShowPWAInstall] = useState(false);
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -238,177 +239,243 @@ export function ProfileSettingsModal({ isOpen, onClose, initialTab = 'profile', 
           </form>
         ) : (
           <div className="modal-body">
-            {/* 0. PWA MOBILE APP INSTALLATION */}
-            <div className="settings-group" style={{ marginBottom: '22px' }}>
-              <PWAInstallCard />
-            </div>
+              {/* 0. PWA MOBILE APP INSTALLATION - Accordion Toggle on Click */}
+              <div className="settings-group" style={{ marginBottom: '18px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowPWAInstall(prev => !prev)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    borderRadius: '14px',
+                    background: showPWAInstall ? 'rgba(182, 243, 107, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+                    border: `1px solid ${showPWAInstall ? 'var(--primary-accent)' : 'rgba(255, 255, 255, 0.1)'}`,
+                    cursor: 'pointer',
+                    transition: 'all 0.22s ease',
+                    color: 'var(--text-primary)'
+                  }}
+                  title="Ilovani o'rnatish yo'riqnomasi"
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '10px',
+                      background: 'rgba(182, 243, 107, 0.15)',
+                      border: '1px solid rgba(182, 243, 107, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--primary-accent)',
+                      flexShrink: 0
+                    }}>
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                        <line x1="12" y1="18" x2="12.01" y2="18" />
+                      </svg>
+                    </div>
+                    <div style={{ textAlign: 'left' }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        Ilovani Yuklab Olish (Telefon & Kompyuter)
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {showPWAInstall ? "Yo'riqnomani yopish uchun bosing" : "Ilovani o'rnatish yo'riqnomasini ko'rish uchun bosing"}
+                      </div>
+                    </div>
+                  </div>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="16"
+                    height="16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    style={{
+                      transform: showPWAInstall ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.25s ease',
+                      color: 'var(--text-secondary)'
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
 
-            {/* 1. LANGUAGE SWITCHER (NEW FEATURE REQUEST) */}
-            <div className="settings-group">
-              <div>
-                <h4 className="settings-group-title">🌐 {t('languageLabel')}</h4>
-                <p className="settings-group-desc">{t('languageDesc')}</p>
-              </div>
-              <div className="ios-segmented-control" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-                <button
-                  type="button"
-                  className={`segmented-btn ${lang === 'uz' ? 'active' : ''}`}
-                  onClick={() => setLanguage('uz')}
-                >
-                  🇺🇿 O'zbekcha
-                </button>
-                <button
-                  type="button"
-                  className={`segmented-btn ${lang === 'ru' ? 'active' : ''}`}
-                  onClick={() => setLanguage('ru')}
-                >
-                  🇷🇺 Русский
-                </button>
-                <button
-                  type="button"
-                  className={`segmented-btn ${lang === 'en' ? 'active' : ''}`}
-                  onClick={() => setLanguage('en')}
-                >
-                  🇬🇧 English
-                </button>
-              </div>
-            </div>
-
-            {/* 2. APPEARANCE (LIGHT / DARK / SYSTEM) */}
-            <div className="settings-group">
-              <div>
-                <h4 className="settings-group-title">🌓 {t('appearanceLabel')}</h4>
-                <p className="settings-group-desc">{t('appearanceDesc')}</p>
-              </div>
-              <div className="ios-segmented-control">
-                <button
-                  type="button"
-                  className={`segmented-btn ${(settings.appearance || 'system') === 'system' ? 'active' : ''}`}
-                  onClick={() => updateSettings({ appearance: 'system' })}
-                >
-                  ⚙️ {t('appearanceSystem')}
-                </button>
-                <button
-                  type="button"
-                  className={`segmented-btn ${settings.appearance === 'light' ? 'active' : ''}`}
-                  onClick={() => updateSettings({ appearance: 'light' })}
-                >
-                  ☀️ {t('appearanceLight')}
-                </button>
-                <button
-                  type="button"
-                  className={`segmented-btn ${settings.appearance === 'dark' ? 'active' : ''}`}
-                  onClick={() => updateSettings({ appearance: 'dark' })}
-                >
-                  🌙 {t('appearanceDark')}
-                </button>
-              </div>
-            </div>
-
-            {/* 3. LIQUID COLOR THEMES */}
-            <div className="settings-group">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h4 className="settings-group-title">🎨 {t('themeLabel')}</h4>
-                  <p className="settings-group-desc">{t('themeDesc')}</p>
-                </div>
-                {!isPremium && (
-                  <span className="user-role-badge role-premium">⚡ PRO ONLY</span>
+                {showPWAInstall && (
+                  <div style={{ marginTop: '12px', animation: 'fadeIn 0.25s ease' }}>
+                    <PWAInstallCard />
+                  </div>
                 )}
               </div>
 
-              <div className="theme-picker-grid">
-                <div
-                  className={`theme-option-card ${settings.theme === 'emerald' ? 'active' : ''}`}
-                  onClick={() => handleThemeSelect('emerald')}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="theme-swatch swatch-emerald"></div>
-                  <span className="theme-title">{t('themeEmerald')}</span>
+              {/* 1. LANGUAGE SWITCHER (NEW FEATURE REQUEST) */}
+              <div className="settings-group">
+                <div>
+                  <h4 className="settings-group-title">🌐 {t('languageLabel')}</h4>
+                  <p className="settings-group-desc">{t('languageDesc')}</p>
+                </div>
+                <div className="ios-segmented-control" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                  <button
+                    type="button"
+                    className={`segmented-btn ${lang === 'uz' ? 'active' : ''}`}
+                    onClick={() => setLanguage('uz')}
+                  >
+                    🇺🇿 O'zbekcha
+                  </button>
+                  <button
+                    type="button"
+                    className={`segmented-btn ${lang === 'ru' ? 'active' : ''}`}
+                    onClick={() => setLanguage('ru')}
+                  >
+                    🇷🇺 Русский
+                  </button>
+                  <button
+                    type="button"
+                    className={`segmented-btn ${lang === 'en' ? 'active' : ''}`}
+                    onClick={() => setLanguage('en')}
+                  >
+                    🇬🇧 English
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. APPEARANCE (LIGHT / DARK / SYSTEM) */}
+              <div className="settings-group">
+                <div>
+                  <h4 className="settings-group-title">🌓 {t('appearanceLabel')}</h4>
+                  <p className="settings-group-desc">{t('appearanceDesc')}</p>
+                </div>
+                <div className="ios-segmented-control">
+                  <button
+                    type="button"
+                    className={`segmented-btn ${(settings.appearance || 'system') === 'system' ? 'active' : ''}`}
+                    onClick={() => updateSettings({ appearance: 'system' })}
+                  >
+                    ⚙️ {t('appearanceSystem')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`segmented-btn ${settings.appearance === 'light' ? 'active' : ''}`}
+                    onClick={() => updateSettings({ appearance: 'light' })}
+                  >
+                    ☀️ {t('appearanceLight')}
+                  </button>
+                  <button
+                    type="button"
+                    className={`segmented-btn ${settings.appearance === 'dark' ? 'active' : ''}`}
+                    onClick={() => updateSettings({ appearance: 'dark' })}
+                  >
+                    🌙 {t('appearanceDark')}
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. LIQUID COLOR THEMES */}
+              <div className="settings-group">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h4 className="settings-group-title">🎨 {t('themeLabel')}</h4>
+                    <p className="settings-group-desc">{t('themeDesc')}</p>
+                  </div>
+                  {!isPremium && (
+                    <span className="user-role-badge role-premium">⚡ PRO ONLY</span>
+                  )}
                 </div>
 
-                <div
-                  className={`theme-option-card ${settings.theme === 'violet' ? 'active' : ''}`}
-                  onClick={() => handleThemeSelect('violet')}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="theme-swatch swatch-violet"></div>
-                  <span className="theme-title">{t('themeViolet')}</span>
-                  {!isPremium && <span className="theme-badge-premium">PRO</span>}
+                <div className="theme-picker-grid">
+                  <div
+                    className={`theme-option-card ${settings.theme === 'emerald' ? 'active' : ''}`}
+                    onClick={() => handleThemeSelect('emerald')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="theme-swatch swatch-emerald"></div>
+                    <span className="theme-title">{t('themeEmerald')}</span>
+                  </div>
+
+                  <div
+                    className={`theme-option-card ${settings.theme === 'violet' ? 'active' : ''}`}
+                    onClick={() => handleThemeSelect('violet')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="theme-swatch swatch-violet"></div>
+                    <span className="theme-title">{t('themeViolet')}</span>
+                    {!isPremium && <span className="theme-badge-premium">PRO</span>}
+                  </div>
+
+                  <div
+                    className={`theme-option-card ${settings.theme === 'cyber' ? 'active' : ''}`}
+                    onClick={() => handleThemeSelect('cyber')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="theme-swatch swatch-cyber"></div>
+                    <span className="theme-title">{t('themeCyber')}</span>
+                    {!isPremium && <span className="theme-badge-premium">PRO</span>}
+                  </div>
+
+                  <div
+                    className={`theme-option-card ${settings.theme === 'gold' ? 'active' : ''}`}
+                    onClick={() => handleThemeSelect('gold')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="theme-swatch swatch-gold"></div>
+                    <span className="theme-title">{t('themeGold')}</span>
+                    {!isPremium && <span className="theme-badge-premium">PRO</span>}
+                  </div>
+
+                  <div
+                    className={`theme-option-card ${settings.theme === 'oled' ? 'active' : ''}`}
+                    onClick={() => handleThemeSelect('oled')}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="theme-swatch swatch-oled"></div>
+                    <span className="theme-title">{t('themeOled')}</span>
+                    {!isPremium && <span className="theme-badge-premium">PRO</span>}
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. SOUND & CONFETTI TOGGLES */}
+              <div className="settings-group">
+                <div className="setting-toggle-row">
+                  <div>
+                    <span className="toggle-title">🔊 {t('soundLabel')}</span>
+                    <span className="toggle-sub">{t('soundDesc')}</span>
+                  </div>
+                  <label className="switch-control">
+                    <input
+                      type="checkbox"
+                      checked={settings.soundEnabled !== false}
+                      onChange={(e) => updateSettings({ soundEnabled: e.target.checked })}
+                    />
+                    <span className="switch-slider"></span>
+                  </label>
                 </div>
 
-                <div
-                  className={`theme-option-card ${settings.theme === 'cyber' ? 'active' : ''}`}
-                  onClick={() => handleThemeSelect('cyber')}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="theme-swatch swatch-cyber"></div>
-                  <span className="theme-title">{t('themeCyber')}</span>
-                  {!isPremium && <span className="theme-badge-premium">PRO</span>}
-                </div>
-
-                <div
-                  className={`theme-option-card ${settings.theme === 'gold' ? 'active' : ''}`}
-                  onClick={() => handleThemeSelect('gold')}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="theme-swatch swatch-gold"></div>
-                  <span className="theme-title">{t('themeGold')}</span>
-                  {!isPremium && <span className="theme-badge-premium">PRO</span>}
-                </div>
-
-                <div
-                  className={`theme-option-card ${settings.theme === 'oled' ? 'active' : ''}`}
-                  onClick={() => handleThemeSelect('oled')}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="theme-swatch swatch-oled"></div>
-                  <span className="theme-title">{t('themeOled')}</span>
-                  {!isPremium && <span className="theme-badge-premium">PRO</span>}
+                <div className="setting-toggle-row">
+                  <div>
+                    <span className="toggle-title">🎉 {t('confettiLabel')}</span>
+                    <span className="toggle-sub">{t('confettiDesc')}</span>
+                  </div>
+                  <label className="switch-control">
+                    <input
+                      type="checkbox"
+                      checked={settings.confettiEnabled !== false}
+                      onChange={(e) => updateSettings({ confettiEnabled: e.target.checked })}
+                    />
+                    <span className="switch-slider"></span>
+                  </label>
                 </div>
               </div>
             </div>
-
-            {/* 4. SOUND & CONFETTI TOGGLES */}
-            <div className="settings-group">
-              <div className="setting-toggle-row">
-                <div>
-                  <span className="toggle-title">🔊 {t('soundLabel')}</span>
-                  <span className="toggle-sub">{t('soundDesc')}</span>
-                </div>
-                <label className="switch-control">
-                  <input
-                    type="checkbox"
-                    checked={settings.soundEnabled !== false}
-                    onChange={(e) => updateSettings({ soundEnabled: e.target.checked })}
-                  />
-                  <span className="switch-slider"></span>
-                </label>
-              </div>
-
-              <div className="setting-toggle-row">
-                <div>
-                  <span className="toggle-title">🎉 {t('confettiLabel')}</span>
-                  <span className="toggle-sub">{t('confettiDesc')}</span>
-                </div>
-                <label className="switch-control">
-                  <input
-                    type="checkbox"
-                    checked={settings.confettiEnabled !== false}
-                    onChange={(e) => updateSettings({ confettiEnabled: e.target.checked })}
-                  />
-                  <span className="switch-slider"></span>
-                </label>
-              </div>
-            </div>
-          </div>
         )}
-      </div>
+          </div>
     </div>
-  );
+      );
 }

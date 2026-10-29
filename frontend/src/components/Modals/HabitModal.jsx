@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { HabitGlyphIcon } from '../Common/AppIcons';
 
 export function HabitModal({ isOpen, onClose, habitToEdit }) {
   const { addHabit, updateHabit } = useHabits();
@@ -75,9 +76,7 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
       <div className="modal-card small-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title-wrap">
-            <div className="modal-icon-badge">
-              <span>{emoji}</span>
-            </div>
+            <HabitGlyphIcon emoji={emoji} category={category} title={title} size={20} />
             <div>
               <h3 className="modal-title">
                 {habitToEdit ? "Odatni Tahrirlash" : "Yangi Odat Qo'shish"}

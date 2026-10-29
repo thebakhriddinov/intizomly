@@ -44,14 +44,14 @@ function HeaderComponent({ onSelectTab, onOpenProfile, onOpenAdmin, onOpenAuth, 
   return (
     <header className="app-header">
       <div className="header-left">
-        {/* Mobile brand logo */}
+        {/* Brand logo (Telefonda va Desktopda bir xil) */}
         <BrandLogo
           size="md"
           onClick={() => {
             onSelectTab?.('home');
             jumpToday();
           }}
-          className="mobile-header-brand"
+          className="header-brand-logo"
         />
 
         {/* Global Streak Capsule */}

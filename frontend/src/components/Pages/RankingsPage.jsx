@@ -444,8 +444,8 @@ function RankingsPageComponent() {
             onClick={() => setShowAddModal(true)}
             style={{ borderStyle: 'dashed', borderColor: 'var(--primary-accent)' }}
           >
-            <IconPlus size={16} />
-            <span className="chip-title">+ Yangi Challenge</span>
+            <IconPlus size={15} />
+            <span className="chip-title">Yangi Challenge</span>
           </button>
         )}
       </div>

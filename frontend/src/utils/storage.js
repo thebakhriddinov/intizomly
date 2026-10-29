@@ -534,10 +534,21 @@ class StorageManager {
     }
 
     // 7. Motivation Videos (Avtomatik tozalash va yangilash)
-    const hasBrokenVideos = Array.isArray(this.videos) && this.videos.some(v => v.youtubeId === '5r3Cj9YhJtM' || v.youtubeId === 'fD3qZ8_U9lA');
+    const hasBrokenVideos = Array.isArray(this.videos) && this.videos.some(v => 
+      !v.youtubeId || 
+      v.youtubeId.trim().length !== 11 || 
+      v.youtubeId === '5r3Cj9YhJtM' || 
+      v.youtubeId === 'fD3qZ8_U9lA'
+    );
     if (!this.videos || !Array.isArray(this.videos) || this.videos.length === 0 || hasBrokenVideos) {
       const customVideos = Array.isArray(this.videos)
-        ? this.videos.filter(v => v.youtubeId !== '5r3Cj9YhJtM' && v.youtubeId !== 'fD3qZ8_U9lA' && !DEFAULT_MOTIVATION_VIDEOS.some(dv => dv.youtubeId === v.youtubeId))
+        ? this.videos.filter(v => 
+            v.youtubeId && 
+            v.youtubeId.trim().length === 11 && 
+            v.youtubeId !== '5r3Cj9YhJtM' && 
+            v.youtubeId !== 'fD3qZ8_U9lA' && 
+            !DEFAULT_MOTIVATION_VIDEOS.some(dv => dv.youtubeId === v.youtubeId)
+          )
         : [];
       this.videos = [...DEFAULT_MOTIVATION_VIDEOS, ...customVideos];
       this.save(STORAGE_KEYS.MOTIVATION_VIDEOS, this.videos);
@@ -891,20 +902,50 @@ class StorageManager {
 
   // ==================== MOTIVATION VIDEOS ====================
   getMotivationVideos() {
-    return this.videos || DEFAULT_MOTIVATION_VIDEOS;
+    let list = this.videos || DEFAULT_MOTIVATION_VIDEOS;
+    if (Array.isArray(list)) {
+      // Har doim yaroqsiz yoki bo'sh ID li videolarni tozalaymiz
+      const cleaned = list.filter(v => v && v.youtubeId && v.youtubeId.trim().length === 11);
+      if (cleaned.length !== list.length) {
+        this.videos = cleaned.length > 0 ? cleaned : DEFAULT_MOTIVATION_VIDEOS;
+        this.save(STORAGE_KEYS.MOTIVATION_VIDEOS, this.videos);
+        return this.videos;
+      }
+      return list;
+    }
+    return DEFAULT_MOTIVATION_VIDEOS;
   }
 
-  addMotivationVideo({ title, youtubeUrl, quote, author, addedBy }) {
-    let yId = (youtubeUrl || '').trim();
-    const match = yId.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+  addMotivationVideo({ title, youtubeUrl, youtubeId, quote, author, addedBy }) {
+    let yId = (youtubeUrl || youtubeId || '').trim();
+
+    // 1. Iframe src ichidan qidirish
+    const iframeMatch = yId.match(/src=["']([^"']+)["']/i);
+    if (iframeMatch) {
+      yId = iframeMatch[1];
+    }
+
+    // 2. Aniq YouTube URL patternlari
+    const match = yId.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+?&v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/);
     if (match) {
       yId = match[1];
     } else if (/^[a-zA-Z0-9_-]{11}$/.test(yId)) {
-      // Alla qachon 11 belgili to'g'ri ID
+      // Allaqachon 11 belgili to'g'ri ID
     } else if (yId.includes('v=')) {
       yId = yId.split('v=')[1].split('&')[0];
     } else if (yId.includes('youtu.be/')) {
       yId = yId.split('youtu.be/')[1].split('?')[0];
+    }
+
+    // 3. Agar 11 belgili bo'lmasa, umumiy regex
+    if (!yId || yId.length !== 11) {
+      const anyMatch = yId.match(/([a-zA-Z0-9_-]{11})/);
+      if (anyMatch) yId = anyMatch[1];
+    }
+
+    // Xavfsizlik fallback:
+    if (!yId || yId.length !== 11) {
+      yId = "NmS8_Ls9qyU";
     }
 
     const newVideo = {
@@ -912,7 +953,7 @@ class StorageManager {
       title: (title || '').trim() || "Thomas Shelby — Intizom Saboqlari",
       author: author?.trim() || "Thomas Shelby / Peaky Blinders",
       youtubeId: yId,
-      embedUrl: `https://www.youtube.com/embed/${yId}`,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${yId}`,
       quote: quote?.trim() || "Intizom — bu o'z his-tuyg'ularing ustidan mutlaq g'alabadir.",
       likes: Math.floor(Math.random() * 50) + 120,
       addedBy: addedBy || "Admin",

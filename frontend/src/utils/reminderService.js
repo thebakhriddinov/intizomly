@@ -116,23 +116,84 @@ class ReminderService {
 
   /**
    * Send OS-level push notification if browser supports and allows it
+   * Supports both ServiceWorker showNotification (for phones / Android / PWA) and direct Notification
    */
-  sendNativeNotification(title, body) {
-    if (typeof window === 'undefined' || !('Notification' in window)) return;
+  async sendNativeNotification(title, body, extra = {}) {
+    if (typeof window === 'undefined') return;
+
+    // 1. Play authentic Apple iPhone "Ding" text chime
+    try {
+      audioManager.playNotification();
+    } catch (_) { }
+
+    // 2. Hardware vibration on phone
+    try {
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate([200, 100, 200, 100, 200]);
+      }
+    } catch (_) { }
+
+    // 3. Dispatch native OS/mobile notification
+    if (!('Notification' in window)) return;
 
     if (Notification.permission === 'granted') {
+      const options = {
+        body: body || '',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        tag: 'intizomly-reminder-' + Date.now(),
+        renotify: true,
+        vibrate: [200, 100, 200, 100, 200],
+        silent: false,
+        requireInteraction: false,
+        data: {
+          url: extra.url || '/?tab=reminders',
+          date: Date.now()
+        }
+      };
+
+      // Priority 1: ServiceWorker (Required for phones / Android Chrome / Mobile PWA)
+      if ('serviceWorker' in navigator) {
+        try {
+          const regPromise = navigator.serviceWorker.ready;
+          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 1200));
+          const reg = await Promise.race([regPromise, timeoutPromise]);
+          if (reg && reg.showNotification) {
+            await reg.showNotification(title, options);
+            return;
+          }
+        } catch (swErr) {
+          try {
+            const reg = await navigator.serviceWorker.getRegistration();
+            if (reg && reg.showNotification) {
+              await reg.showNotification(title, options);
+              return;
+            }
+          } catch (_) { }
+        }
+      }
+
+      // Priority 2: Standard desktop browser constructor
       try {
-        new Notification(title, {
-          body,
-          icon: '/favicon.ico',
-          badge: '/favicon.ico',
-          tag: 'intizomly-reminder-' + Date.now(),
-          renotify: true
-        });
+        const notif = new Notification(title, options);
+        notif.onclick = () => {
+          try {
+            window.focus();
+            notif.close();
+          } catch (_) { }
+        };
       } catch (err) {
         console.warn('Native notification dispatch failed:', err);
       }
     }
+  }
+
+  /**
+   * Alias for sendNativeNotification
+   */
+  async showNotification(title, options = {}) {
+    const body = typeof options === 'string' ? options : (options.body || '');
+    return this.sendNativeNotification(title, body, options);
   }
 
   /**
@@ -145,6 +206,15 @@ class ReminderService {
 
     try {
       const res = await Notification.requestPermission();
+      if (res === 'granted') {
+        // Send instant test notification on phone
+        setTimeout(() => {
+          this.sendNativeNotification(
+            "🔔 Bildirishnomalar faollashtirildi!",
+            "Intizomly: Telefoningizga eslatmalar va iPhone 'Ding' tovushi keladi."
+          );
+        }, 200);
+      }
       return res;
     } catch (err) {
       console.warn('Permission request error:', err);
@@ -160,31 +230,32 @@ class ReminderService {
   }
 
   /**
-   * Manually test a reminder right now
+   * Manually test a reminder or trigger immediate test notification on phone
    */
-  testReminder(rem) {
-    if (!rem) return;
+  async testReminder(rem) {
+    const reminderItem = rem || {
+      title: "Kundalik intizom eslatmasi",
+      time: this.getCurrentTimeStr(),
+      category: "Intizom"
+    };
 
-    // 1. Play sound
-    audioManager.playNotification();
-
-    // 2. Send native notification
-    this.sendNativeNotification(
-      `⏰ ${rem.time} — ${rem.title}`,
-      `Sinov eslatmasi: ${rem.category} vazifasi. Tovush va bildirishnoma to'g'ri ishlamoqda!`
+    // 1. Send native phone notification + play iPhone ding + vibrate
+    await this.sendNativeNotification(
+      `🔔 ${reminderItem.time} — ${reminderItem.title}`,
+      `Intizomly: ${reminderItem.category} vaqti bo'ldi! Qat'iyat va intizomni saqlang.`
     );
 
-    // 3. Broadcast to UI
+    // 2. Broadcast to UI
     const payload = {
-      title: `🔔 Sinov: ${rem.time} — ${rem.title}`,
-      message: `Sinov eslatmasi muvaffaqiyatli chalindi! Tovush va bildirishnoma faol.`,
-      reminder: rem
+      title: `🔔 Sinov: ${reminderItem.time} — ${reminderItem.title}`,
+      message: `Haqiqiy bildirishnoma va iPhone "Ding" ovozi muvaffaqiyatli yuborildi!`,
+      reminder: reminderItem
     };
 
     this.callbacks.forEach((cb) => {
       try {
         cb(payload);
-      } catch (_) {}
+      } catch (_) { }
     });
 
     return payload;

@@ -95,13 +95,17 @@ class AudioManager {
     if (!this.ctx) return;
 
     try {
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
       const now = this.ctx.currentTime;
-      // Authentic iPhone SMS "Ding" - crystal strike with harmonic overtone shimmer
+      // Authentic iPhone SMS "Ding" (Note / Bell chime)
+      // Crystal strike with lingering harmonic overtone resonance
       const harmonics = [
-        { freq: 1318.51, gain: 0.38, decay: 0.85 }, // Fundamental (E6)
-        { freq: 2637.02, gain: 0.20, decay: 0.50 }, // 2nd harmonic (E7)
-        { freq: 3951.07, gain: 0.09, decay: 0.32 }, // 3rd harmonic (B7)
-        { freq: 5274.04, gain: 0.05, decay: 0.16 }  // Crisp metallic strike transient
+        { freq: 1318.51, gain: 0.42, decay: 0.90 }, // Fundamental E6
+        { freq: 2637.02, gain: 0.24, decay: 0.55 }, // 2nd harmonic E7
+        { freq: 3951.07, gain: 0.11, decay: 0.35 }, // 3rd harmonic B7
+        { freq: 5274.04, gain: 0.07, decay: 0.18 }  // 4th harmonic E8 crisp strike transient
       ];
 
       harmonics.forEach(({ freq, gain, decay }) => {
@@ -126,6 +130,13 @@ class AudioManager {
     } catch (e) {
       console.warn('Audio play error:', e);
     }
+  }
+
+  /**
+   * Alias for iPhone "Ding" chime
+   */
+  playDing() {
+    this.playNotification();
   }
 
   /**

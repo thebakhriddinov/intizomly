@@ -1,6 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import { useHabits } from '../../context/HabitsContext';
 import { storage } from '../../utils/storage';
+import { IconFlame, IconTarget, HabitGlyphIcon } from '../Common/AppIcons';
 
 function HabitCardComponent({ habit, onEdit, onDelete }) {
   const { dateKey, history, toggleHabit } = useHabits();
@@ -58,11 +59,14 @@ function HabitCardComponent({ habit, onEdit, onDelete }) {
         <div className="habit-body">
           <div className="habit-header-badge-row">
             <span className="habit-category-tag">{habit.category}</span>
-            <span className="habit-target-tag">🎯 {habit.target || '1 marta'}</span>
+            <span className="habit-target-tag">
+              <IconTarget size={12} color="#8B5CF6" />
+              <span>{habit.target || '1 marta'}</span>
+            </span>
           </div>
 
           <div className="habit-title-row">
-            <span className="habit-emoji">{habit.emoji || '🎯'}</span>
+            <HabitGlyphIcon emoji={habit.emoji} category={habit.category} title={habit.title} size={16} />
             <span className="habit-title">{habit.title}</span>
           </div>
 
@@ -75,7 +79,7 @@ function HabitCardComponent({ habit, onEdit, onDelete }) {
       <div className="habit-bottom-row">
         {/* Habit-specific streak pill */}
         <div className="habit-streak-pill" title="Ushbu odat bo'yicha uzluksiz streak">
-          <span>🔥</span>
+          <IconFlame size={14} />
           <span>{streak} kun</span>
         </div>
 

@@ -145,45 +145,48 @@ export function App() {
                 <span>Sahifa yuklanmoqda...</span>
               </div>
             }>
-              {/* TAB 1: HOME (Dashboard, Habits, Heatmap) */}
-              {activeTab === 'home' && (
-                <>
-                  {/* Mobile Date Navigator (Visible only on mobile/phone screens) */}
-                  <DateNavigator className="mobile-date-bar" />
-                  <WeekStrip />
-                  <StatsOverview />
-                  <Heatmap />
-                  <HabitList
-                    onOpenAddHabit={handleOpenAddHabit}
-                    onEditHabit={handleEditHabit}
-                  />
-                </>
-              )}
+              {/* Desktop & Mobile Tab Page Animated Transition Container */}
+              <div key={activeTab} className="tab-page-transition">
+                {/* TAB 1: HOME (Dashboard, Habits, Heatmap) */}
+                {activeTab === 'home' && (
+                  <>
+                    {/* Mobile Date Navigator (Visible only on mobile/phone screens) */}
+                    <DateNavigator className="mobile-date-bar" />
+                    <WeekStrip />
+                    <StatsOverview />
+                    <Heatmap />
+                    <HabitList
+                      onOpenAddHabit={handleOpenAddHabit}
+                      onEditHabit={handleEditHabit}
+                    />
+                  </>
+                )}
 
-              {/* TAB 2: MOTIVATION (Thomas Shelby Videos, Quotes, Principles) */}
-              {activeTab === 'motivation' && (
-                <MotivationPage />
-              )}
+                {/* TAB 2: MOTIVATION (Thomas Shelby Videos, Quotes, Principles) */}
+                {activeTab === 'motivation' && (
+                  <MotivationPage />
+                )}
 
-              {/* TAB 3: FOCUS (Focus Timer, Study Sessions, Reminders & Silent Notes) */}
-              {(activeTab === 'focus' || activeTab === 'reminder') && (
-                <ReminderPage />
-              )}
+                {/* TAB 3: FOCUS (Focus Timer, Study Sessions, Reminders & Silent Notes) */}
+                {(activeTab === 'focus' || activeTab === 'reminder') && (
+                  <ReminderPage />
+                )}
 
-              {/* TAB 4: RANKINGS (Group Challenges & Unlocked Leaderboards) */}
-              {activeTab === 'rankings' && (
-                <RankingsPage />
-              )}
+                {/* TAB 4: RANKINGS (Group Challenges & Unlocked Leaderboards) */}
+                {activeTab === 'rankings' && (
+                  <RankingsPage />
+                )}
 
-              {/* TAB 5: YOU (Standalone Profile Page with Settings, Avatar, Socials, Badges) */}
-              {activeTab === 'you' && (
-                <ProfilePage onOpenSettings={handleOpenSettings} />
-              )}
+                {/* TAB 5: YOU (Standalone Profile Page with Settings, Avatar, Socials, Badges) */}
+                {activeTab === 'you' && (
+                  <ProfilePage onOpenSettings={handleOpenSettings} />
+                )}
 
-              {/* TAB 6: ADMIN (Dedicated Full View) */}
-              {activeTab === 'admin' && (
-                <AdminDashboard onClose={() => setActiveTab('home')} />
-              )}
+                {/* TAB 6: ADMIN (Dedicated Full View) */}
+                {activeTab === 'admin' && (
+                  <AdminDashboard onClose={() => setActiveTab('home')} />
+                )}
+              </div>
             </Suspense>
           </main>
 

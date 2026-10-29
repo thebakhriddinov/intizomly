@@ -1,6 +1,5 @@
 import React, { memo, useRef, useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
-import { audioManager } from '../../utils/audio';
 import { IconFocus } from '../Common/AppIcons';
 
 const NAV_TABS = [
@@ -77,9 +76,6 @@ function MobileBottomNavComponent({ activeTab = 'home', onSelectTab }) {
   const isDraggingRef = useRef(false);
 
   const handleTabClick = (tabId) => {
-    try {
-      audioManager.playUncheck();
-    } catch (_) {}
     onSelectTab?.(tabId);
   };
 

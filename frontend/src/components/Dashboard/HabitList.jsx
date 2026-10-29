@@ -3,14 +3,13 @@ import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 import { HabitCard } from './HabitCard';
+import { IconCheck, IconPending, IconLayers, IconTarget } from '../Common/AppIcons';
 
 function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
   const { habits, dateKey, history, deleteHabit, loading } = useHabits();
   const { t } = useLanguage();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'pending', 'completed'
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'completed', 'pending'
 
   // Calculate counts for filters
   const { filteredHabits, countAll, countPending, countCompleted } = useMemo(() => {
@@ -22,20 +21,9 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
       if (isDone) completed++;
       else pending++;
 
-      // Filter by status
+      // Filter by status (all, completed, pending)
       if (activeFilter === 'completed' && !isDone) return false;
       if (activeFilter === 'pending' && isDone) return false;
-
-      // Filter by category
-      if (activeCategory !== 'all' && h.category !== activeCategory) return false;
-
-      // Filter by search
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchesTitle = h.title.toLowerCase().includes(q);
-        const matchesDesc = (h.description || '').toLowerCase().includes(q);
-        if (!matchesTitle && !matchesDesc) return false;
-      }
 
       return true;
     });
@@ -46,16 +34,7 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
       countPending: pending,
       countCompleted: completed
     };
-  }, [habits, dateKey, history, activeFilter, activeCategory, searchQuery]);
-
-  // Extract unique categories
-  const categories = useMemo(() => {
-    const set = new Set();
-    habits.forEach(h => {
-      if (h.category) set.add(h.category);
-    });
-    return Array.from(set);
-  }, [habits]);
+  }, [habits, dateKey, history, activeFilter]);
 
   const handleDelete = React.useCallback((id) => {
     const h = storage.habits.find(item => item.id === id) || storage.getHabitById(id);
@@ -70,22 +49,9 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
       <div className="habits-toolbar">
         <div>
           <h2 className="section-title">{t('habitsTitle')}</h2>
-          <p className="section-subtitle">{t('habitsSubtitle')}</p>
         </div>
 
         <div className="toolbar-right">
-          {/* iOS Style Search Input */}
-          <div className="search-input-wrapper">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input
-              type="text"
-              placeholder={t('searchPlaceholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              aria-label={t('searchPlaceholder')}
-            />
-          </div>
-
           <button
             type="button"
             className="primary-btn"
@@ -96,22 +62,15 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
         </div>
       </div>
 
-      {/* Filter Chips (Status & Categories) */}
+      {/* Filter Chips: Barchasi, Bajarilgan, Bajarilmagan */}
       <div className="filter-chips-row">
         <button
           type="button"
-          className={`filter-chip ${activeFilter === 'all' && activeCategory === 'all' ? 'active' : ''}`}
-          onClick={() => { setActiveFilter('all'); setActiveCategory('all'); }}
+          className={`filter-chip ${activeFilter === 'all' ? 'active' : ''}`}
+          onClick={() => setActiveFilter('all')}
         >
-          {t('filterAll')} ({countAll})
-        </button>
-
-        <button
-          type="button"
-          className={`filter-chip ${activeFilter === 'pending' ? 'active' : ''}`}
-          onClick={() => setActiveFilter('pending')}
-        >
-          ⏳ {t('filterPending')} ({countPending})
+          <IconLayers size={14} />
+          <span>{t('filterAll')} ({countAll})</span>
         </button>
 
         <button
@@ -119,21 +78,18 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
           className={`filter-chip ${activeFilter === 'completed' ? 'active' : ''}`}
           onClick={() => setActiveFilter('completed')}
         >
-          ✅ {t('filterCompleted')} ({countCompleted})
+          <IconCheck size={14} color="#10B981" />
+          <span>{t('filterCompleted')} ({countCompleted})</span>
         </button>
 
-        <div className="filter-chip-divider"></div>
-
-        {categories.map(cat => (
-          <button
-            key={cat}
-            type="button"
-            className={`filter-chip ${activeCategory === cat ? 'active' : ''}`}
-            onClick={() => setActiveCategory(activeCategory === cat ? 'all' : cat)}
-          >
-            {cat}
-          </button>
-        ))}
+        <button
+          type="button"
+          className={`filter-chip ${activeFilter === 'pending' ? 'active' : ''}`}
+          onClick={() => setActiveFilter('pending')}
+        >
+          <IconPending size={14} color="#F59E0B" />
+          <span>{t('filterPending')} ({countPending})</span>
+        </button>
       </div>
 
       {/* Habits Grid */}
@@ -162,7 +118,9 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
         </div>
       ) : (
         <div className="empty-state-view">
-          <div className="empty-icon-box">🎯</div>
+          <div className="empty-icon-box">
+            <IconTarget size={36} color="var(--accent-primary, #B6F36B)" />
+          </div>
           <h4 className="empty-title">{t('emptyHabitsTitle')}</h4>
           <p className="empty-text">{t('emptyHabitsDesc')}</p>
           <button
