@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { usePWA } from '../../context/PWAContext';
 import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { IconApple, IconAndroid, IconDevice, IconAlarm, IconLightning } from './AppIcons';
 
 export function PWAInstallCard({ compact = false }) {
   const { isStandalone, isInstalled, canInstallPrompt, isIOS, triggerInstall } = usePWA();
@@ -73,7 +74,7 @@ export function PWAInstallCard({ compact = false }) {
           </div>
           <div className="pwa-card-title-group">
             <div className="pwa-badge-row">
-              <h4 className="pwa-card-title">Ilovani Telefonga Yuklab Olish</h4>
+              <h4 className="pwa-card-title">Ilovani o'rnatish</h4>
               <span className="pwa-status-badge recommend">
                 Tavsiya etiladi
               </span>
@@ -87,21 +88,27 @@ export function PWAInstallCard({ compact = false }) {
         {!compact && (
           <div className="pwa-features-grid">
             <div className="pwa-feature-item">
-              <div className="pwa-feat-icon">⚡</div>
+              <div className="pwa-feat-icon">
+                <IconLightning size={18} color="#B6F36B" />
+              </div>
               <div className="pwa-feat-text">
                 <strong>0MB Xotira</strong>
                 <span>Telefon xotirasini band qilmaydi</span>
               </div>
             </div>
             <div className="pwa-feature-item">
-              <div className="pwa-feat-icon">🚀</div>
+              <div className="pwa-feat-icon">
+                <IconLightning size={18} color="#06B6D4" />
+              </div>
               <div className="pwa-feat-text">
                 <strong>Bir zumda kirish</strong>
                 <span>Bosh ekrandagi belgidan to'g'ridan-to'g'ri</span>
               </div>
             </div>
             <div className="pwa-feature-item">
-              <div className="pwa-feat-icon">🔔</div>
+              <div className="pwa-feat-icon">
+                <IconAlarm size={18} color="#F59E0B" />
+              </div>
               <div className="pwa-feat-text">
                 <strong>Avtonom Eslatmalar</strong>
                 <span>Odatlar va intizom streak signallari</span>
@@ -122,7 +129,7 @@ export function PWAInstallCard({ compact = false }) {
               <polyline points="7 10 12 15 17 10" strokeLinecap="round" strokeLinejoin="round" />
               <line x1="12" y1="15" x2="12" y2="3" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span>{isIOS ? "🍏 iPhone ga O'rnatish" : "📲 Telefonga O'rnatish"}</span>
+            <span>Ilovani o'rnatish</span>
           </button>
 
           <button
@@ -169,22 +176,28 @@ export function PWAInstallCard({ compact = false }) {
                   type="button"
                   className={`segmented-btn ${guideTab === 'ios' ? 'active' : ''}`}
                   onClick={() => setGuideTab('ios')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
-                  🍏 iPhone (iOS / Safari)
+                  <IconApple size={14} />
+                  <span>iPhone (iOS / Safari)</span>
                 </button>
                 <button
                   type="button"
                   className={`segmented-btn ${guideTab === 'android' ? 'active' : ''}`}
                   onClick={() => setGuideTab('android')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
-                  🤖 Android (Chrome)
+                  <IconAndroid size={14} />
+                  <span>Android (Chrome)</span>
                 </button>
                 <button
                   type="button"
                   className={`segmented-btn ${guideTab === 'desktop' ? 'active' : ''}`}
                   onClick={() => setGuideTab('desktop')}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
-                  💻 Kompyuter (PC / Mac)
+                  <IconDevice size={14} />
+                  <span>Kompyuter (PC / Mac)</span>
                 </button>
               </div>
 

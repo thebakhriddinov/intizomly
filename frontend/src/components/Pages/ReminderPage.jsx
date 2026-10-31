@@ -209,6 +209,8 @@ function ReminderPageComponent() {
     setNotifPermission(res);
     if (res === 'granted') {
       triggerBanner("✅ Ruxsat berildi", "Endi eslatmalar telefon va kompyuteringiz ekranida chiqadi!");
+    } else if (res === 'denied') {
+      triggerBanner("⚠️ Ruxsat bloklangan", "Telefon brauzeringiz sozlamalaridan bildirishnomalarga ruxsat bering");
     }
   };
 

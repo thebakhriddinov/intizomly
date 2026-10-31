@@ -137,13 +137,14 @@ class ReminderService {
     if (!('Notification' in window)) return;
 
     if (Notification.permission === 'granted') {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const options = {
         body: body || '',
-        icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
+        icon: `${origin}/icons/icon-192.png`,
+        badge: `${origin}/icons/icon-192.png`,
         tag: 'intizomly-reminder-' + Date.now(),
         renotify: true,
-        vibrate: [200, 100, 200, 100, 200],
+        vibrate: [300, 150, 300, 150, 300],
         silent: false,
         requireInteraction: false,
         data: {
@@ -152,25 +153,37 @@ class ReminderService {
         }
       };
 
-      // Priority 1: ServiceWorker (Required for phones / Android Chrome / Mobile PWA)
+      // Priority 1: ServiceWorker Registration (Essential for Android & iOS PWA on phones)
       if ('serviceWorker' in navigator) {
         try {
-          const regPromise = navigator.serviceWorker.ready;
-          const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 1200));
-          const reg = await Promise.race([regPromise, timeoutPromise]);
+          const reg = await navigator.serviceWorker.getRegistration();
           if (reg && reg.showNotification) {
             await reg.showNotification(title, options);
             return;
           }
-        } catch (swErr) {
-          try {
-            const reg = await navigator.serviceWorker.getRegistration();
-            if (reg && reg.showNotification) {
-              await reg.showNotification(title, options);
+        } catch (_) { }
+
+        try {
+          if (navigator.serviceWorker.ready) {
+            const readyReg = await navigator.serviceWorker.ready;
+            if (readyReg && readyReg.showNotification) {
+              await readyReg.showNotification(title, options);
               return;
             }
-          } catch (_) { }
-        }
+          }
+        } catch (_) { }
+
+        // Fallback: Post message directly to active SW
+        try {
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              type: 'SHOW_NOTIFICATION',
+              title,
+              options
+            });
+            return;
+          }
+        } catch (_) { }
       }
 
       // Priority 2: Standard desktop browser constructor

@@ -5,7 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { storage } from '../../utils/storage';
 
 import { BrandLogo } from '../Common/BrandLogo';
-import { IconFocus } from '../Common/AppIcons';
+import { IconFocus, IconControl } from '../Common/AppIcons';
 
 function SidebarComponent({
   activeTab = 'home',
@@ -91,7 +91,18 @@ function SidebarComponent({
             <span className="sidebar-badge-shelby" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}>20m</span>
           </button>
 
-          {/* Tab 4: Rankings */}
+          {/* Tab 4: Control (Screen Time & Limits) */}
+          <button
+            type="button"
+            className={`sidebar-nav-item ${activeTab === 'control' ? 'active' : ''}`}
+            onClick={() => onSelectTab?.('control')}
+          >
+            <IconControl size={18} />
+            <span>{t('navControl') || 'Control'}</span>
+            <span className="sidebar-badge-shelby" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}>Limit</span>
+          </button>
+
+          {/* Tab 5: Rankings */}
           <button
             type="button"
             className={`sidebar-nav-item ${activeTab === 'rankings' ? 'active' : ''}`}

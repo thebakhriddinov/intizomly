@@ -14,11 +14,13 @@ import { DynamicIslandBanner } from './components/Feedback/DynamicIslandBanner';
 import { ToastContainer } from './components/Feedback/ToastContainer';
 import { EnvWarningBanner } from './components/Feedback/EnvWarningBanner';
 import { BrandLogo } from './components/Common/BrandLogo';
+import { ErrorBoundary } from './components/Common/ErrorBoundary';
 
 // Lazy-loaded pages for fast initial bundle
 const MotivationPage = lazy(() => import('./components/Pages/MotivationPage').then(m => ({ default: m.MotivationPage })));
 const ReminderPage = lazy(() => import('./components/Pages/ReminderPage').then(m => ({ default: m.ReminderPage })));
 const RankingsPage = lazy(() => import('./components/Pages/RankingsPage').then(m => ({ default: m.RankingsPage })));
+const ControlPage = lazy(() => import('./components/Pages/ControlPage').then(m => ({ default: m.ControlPage })));
 const ProfilePage = lazy(() => import('./components/Pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const AdminDashboard = lazy(() => import('./components/Admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 
@@ -139,55 +141,62 @@ export function App() {
           <EnvWarningBanner />
 
           <main className="app-main">
-            <Suspense fallback={
-              <div className="page-loading-skeleton">
-                <div className="loading-spinner"></div>
-                <span>Sahifa yuklanmoqda...</span>
-              </div>
-            }>
-              {/* Desktop & Mobile Tab Page Animated Transition Container */}
-              <div key={activeTab} className="tab-page-transition">
-                {/* TAB 1: HOME (Dashboard, Habits, Heatmap) */}
-                {activeTab === 'home' && (
-                  <>
-                    {/* Mobile Date Navigator (Visible only on mobile/phone screens) */}
-                    <DateNavigator className="mobile-date-bar" />
-                    <WeekStrip />
-                    <StatsOverview />
-                    <Heatmap />
-                    <HabitList
-                      onOpenAddHabit={handleOpenAddHabit}
-                      onEditHabit={handleEditHabit}
-                    />
-                  </>
-                )}
+            <ErrorBoundary key={activeTab}>
+              <Suspense fallback={
+                <div className="page-loading-skeleton">
+                  <div className="loading-spinner"></div>
+                  <span>Sahifa yuklanmoqda...</span>
+                </div>
+              }>
+                {/* Desktop & Mobile Tab Page Animated Transition Container */}
+                <div className="tab-page-transition">
+                  {/* TAB 1: HOME (Dashboard, Habits, Heatmap) */}
+                  {activeTab === 'home' && (
+                    <>
+                      {/* Mobile Date Navigator (Visible only on mobile/phone screens) */}
+                      <DateNavigator className="mobile-date-bar" />
+                      <WeekStrip />
+                      <StatsOverview />
+                      <Heatmap />
+                      <HabitList
+                        onOpenAddHabit={handleOpenAddHabit}
+                        onEditHabit={handleEditHabit}
+                      />
+                    </>
+                  )}
 
-                {/* TAB 2: MOTIVATION (Thomas Shelby Videos, Quotes, Principles) */}
-                {activeTab === 'motivation' && (
-                  <MotivationPage />
-                )}
+                  {/* TAB 2: MOTIVATION (Thomas Shelby Videos, Quotes, Principles) */}
+                  {activeTab === 'motivation' && (
+                    <MotivationPage />
+                  )}
 
-                {/* TAB 3: FOCUS (Focus Timer, Study Sessions, Reminders & Silent Notes) */}
-                {(activeTab === 'focus' || activeTab === 'reminder') && (
-                  <ReminderPage />
-                )}
+                  {/* TAB 3: FOCUS (Focus Timer, Study Sessions, Reminders & Silent Notes) */}
+                  {(activeTab === 'focus' || activeTab === 'reminder') && (
+                    <ReminderPage />
+                  )}
 
-                {/* TAB 4: RANKINGS (Group Challenges & Unlocked Leaderboards) */}
-                {activeTab === 'rankings' && (
-                  <RankingsPage />
-                )}
+                  {/* TAB: CONTROL (Screen Time, App Restrictions & Auto Kick-out) */}
+                  {activeTab === 'control' && (
+                    <ControlPage />
+                  )}
 
-                {/* TAB 5: YOU (Standalone Profile Page with Settings, Avatar, Socials, Badges) */}
-                {activeTab === 'you' && (
-                  <ProfilePage onOpenSettings={handleOpenSettings} />
-                )}
+                  {/* TAB 4: RANKINGS (Group Challenges & Unlocked Leaderboards) */}
+                  {activeTab === 'rankings' && (
+                    <RankingsPage />
+                  )}
 
-                {/* TAB 6: ADMIN (Dedicated Full View) */}
-                {activeTab === 'admin' && (
-                  <AdminDashboard onClose={() => setActiveTab('home')} />
-                )}
-              </div>
-            </Suspense>
+                  {/* TAB 5: YOU (Standalone Profile Page with Settings, Avatar, Socials, Badges) */}
+                  {activeTab === 'you' && (
+                    <ProfilePage onOpenSettings={handleOpenSettings} />
+                  )}
+
+                  {/* TAB 6: ADMIN (Dedicated Full View) */}
+                  {activeTab === 'admin' && (
+                    <AdminDashboard onClose={() => setActiveTab('home')} />
+                  )}
+                </div>
+              </Suspense>
+            </ErrorBoundary>
           </main>
 
           {/* 4. Footer */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useHabits } from '../../context/HabitsContext';
@@ -381,10 +382,10 @@ function ProfilePageComponent({ onOpenSettings }) {
               setNetworkModalTab('followers');
               setShowNetworkModal(true);
             }}
-            title="Kuzatuvchilarni ko'rish"
+            title={lang === 'ru' ? "Подписчики" : "Followers"}
           >
             <span className="net-stat-num">{profileExtras.followers?.length || 0}</span>
-            <span className="net-stat-lbl">Kuzatuvchilar</span>
+            <span className="net-stat-lbl">{lang === 'ru' ? 'Подписчики' : 'Followers'}</span>
           </div>
           <div className="net-stat-divider"></div>
           <div
@@ -393,10 +394,10 @@ function ProfilePageComponent({ onOpenSettings }) {
               setNetworkModalTab('following');
               setShowNetworkModal(true);
             }}
-            title="Kuzatilayotganlarni ko'rish"
+            title={lang === 'ru' ? "Подписки" : "Following"}
           >
             <span className="net-stat-num">{profileExtras.following?.length || 0}</span>
-            <span className="net-stat-lbl">Kuzatilyapti</span>
+            <span className="net-stat-lbl">{lang === 'ru' ? 'Подписки' : 'Following'}</span>
           </div>
           <div className="net-stat-divider"></div>
           <div className="net-stat-item">
@@ -413,9 +414,6 @@ function ProfilePageComponent({ onOpenSettings }) {
         <div className="section-info-row">
           <div>
             <h3 className="subtab-heading">Intizom Mukofotlari va Badgelar</h3>
-            <p className="subtab-desc">
-              Har kuni odatlaringizni bajarib boring va maxsus 10, 20, 50, 70, 90, 100 kunlik unvonlarni oching!
-            </p>
           </div>
           <div className="streak-current-badge">
             <IconFlame size={16} />
@@ -487,8 +485,8 @@ function ProfilePageComponent({ onOpenSettings }) {
       </div>
 
       {/* --- NETWORK / FOLLOWERS MODAL (Opens only when clicking followers or following) --- */}
-      {showNetworkModal && (
-        <div className="modal-overlay" onClick={() => setShowNetworkModal(false)} style={{ zIndex: 1050 }}>
+      {showNetworkModal && createPortal(
+        <div className="modal-overlay" onClick={() => setShowNetworkModal(false)} style={{ zIndex: 9999 }}>
           <div className="modal-card network-dialog-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-wrap">
@@ -496,7 +494,7 @@ function ProfilePageComponent({ onOpenSettings }) {
                   <IconUsers size={20} color="#10B981" />
                 </div>
                 <div>
-                  <h3 className="modal-title">Do'stlar va Kuzatuvchilar</h3>
+                  <h3 className="modal-title">{lang === 'ru' ? "Подписчики и Подписки" : "Followers & Following"}</h3>
                   <p className="modal-subtitle">Intizomli do'stlaringiz tarmog'i</p>
                 </div>
               </div>
@@ -504,6 +502,7 @@ function ProfilePageComponent({ onOpenSettings }) {
                 type="button"
                 className="modal-close-btn"
                 onClick={() => setShowNetworkModal(false)}
+                aria-label="Yopish"
               >
                 &times;
               </button>
@@ -516,14 +515,14 @@ function ProfilePageComponent({ onOpenSettings }) {
                 className={`net-dialog-tab ${networkModalTab === 'followers' ? 'active' : ''}`}
                 onClick={() => setNetworkModalTab('followers')}
               >
-                Kuzatuvchilar ({profileExtras.followers?.length || 0})
+                {lang === 'ru' ? 'Подписчики' : 'Followers'} ({profileExtras.followers?.length || 0})
               </button>
               <button
                 type="button"
                 className={`net-dialog-tab ${networkModalTab === 'following' ? 'active' : ''}`}
                 onClick={() => setNetworkModalTab('following')}
               >
-                Kuzatilyapti ({profileExtras.following?.length || 0})
+                {lang === 'ru' ? 'Подписки' : 'Following'} ({profileExtras.following?.length || 0})
               </button>
               <button
                 type="button"
@@ -550,7 +549,7 @@ function ProfilePageComponent({ onOpenSettings }) {
                   {profileExtras.followers?.length === 0 ? (
                     <div className="empty-dialog-state">
                       <IconUsers size={32} color="#64748B" />
-                      <span>Hozircha sizda kuzatuvchilar yo'q</span>
+                      <span>{lang === 'ru' ? 'У вас пока нет подписчиков' : "Hozircha followers yo'q"}</span>
                     </div>
                   ) : (
                     profileExtras.followers.map((usr) => (
@@ -576,7 +575,7 @@ function ProfilePageComponent({ onOpenSettings }) {
                   {profileExtras.following?.length === 0 ? (
                     <div className="empty-dialog-state">
                       <IconUsers size={32} color="#64748B" />
-                      <span>Siz hali hech kimni kuzatmayapsiz</span>
+                      <span>{lang === 'ru' ? 'Вы пока ни на кого не подписаны' : "Hozircha following yo'q"}</span>
                     </div>
                   ) : (
                     profileExtras.following.map((usr) => (
@@ -672,13 +671,14 @@ function ProfilePageComponent({ onOpenSettings }) {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* --- ADD SOCIAL ACCOUNT MODAL --- */}
-      {showAddSocialModal && (
-        <div className="modal-overlay" onClick={() => setShowAddSocialModal(false)} style={{ zIndex: 1050 }}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+      {showAddSocialModal && createPortal(
+        <div className="modal-overlay" onClick={() => setShowAddSocialModal(false)} style={{ zIndex: 9999 }}>
+          <div className="modal-card social-dialog-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-wrap">
                 <div className="modal-icon-badge-glow">
@@ -693,6 +693,7 @@ function ProfilePageComponent({ onOpenSettings }) {
                 type="button"
                 className="modal-close-btn"
                 onClick={() => setShowAddSocialModal(false)}
+                aria-label="Yopish"
               >
                 &times;
               </button>
@@ -722,14 +723,15 @@ function ProfilePageComponent({ onOpenSettings }) {
                   <span className="username-at">@</span>
                   <input
                     type="text"
-                    className="form-input"
+                    className="form-control social-username-input"
                     placeholder="foydalanuvchi_nomi"
                     value={socialUsername}
                     onChange={(e) => setSocialUsername(e.target.value)}
                     required
+                    autoFocus
                   />
                 </div>
-                <span className="form-hint">Profil havolangiz avtomatik yaratiladi</span>
+                <span className="form-hint">Havolangiz profilingizda chiroyli tugma shaklida chiqadi</span>
               </div>
 
               <div className="modal-footer-btns">
@@ -750,7 +752,8 @@ function ProfilePageComponent({ onOpenSettings }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,8 +1,23 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabaseService } from '../services/supabaseService';
-import { isSupabaseConfigured, getSupabaseConfigStatus } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, getSupabaseConfigStatus } from '../lib/supabase';
 
 const AuthContext = createContext(null);
+
+const getCachedPassword = () => {
+  try {
+    return localStorage.getItem('intizomly_user_pwd') || '';
+  } catch {
+    return '';
+  }
+};
+
+const setCachedPassword = (pwd) => {
+  try {
+    if (pwd) localStorage.setItem('intizomly_user_pwd', pwd);
+    else localStorage.removeItem('intizomly_user_pwd');
+  } catch {}
+};
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -22,11 +37,13 @@ export function AuthProvider({ children }) {
 
       try {
         const session = await supabaseService.getSession();
+        const cachedPwd = getCachedPassword();
         if (session?.user) {
           const profile = await supabaseService.getProfile(session.user.id);
           if (profile) {
             setCurrentUser({
               ...profile,
+              password: cachedPwd || profile.password || '',
               isSupabaseUser: true
             });
           } else {
@@ -37,6 +54,7 @@ export function AuthProvider({ children }) {
               lastName: session.user.user_metadata?.last_name || '',
               phone: session.user.user_metadata?.phone || '',
               email: session.user.email,
+              password: cachedPwd || '',
               role: 'user',
               avatarGradient: 'linear-gradient(135deg, #10b981, #3b82f6)',
               createdAt: new Date().toISOString().split('T')[0],
@@ -56,11 +74,13 @@ export function AuthProvider({ children }) {
       // Listen for auth state changes
       try {
         const { data } = supabaseService.onAuthStateChange(async (event, session) => {
+          const cachedPwd = getCachedPassword();
           if (event === 'SIGNED_IN' && session?.user) {
             const profile = await supabaseService.getProfile(session.user.id);
             if (profile) {
               setCurrentUser({
                 ...profile,
+                password: cachedPwd || profile.password || '',
                 isSupabaseUser: true
               });
             } else {
@@ -70,6 +90,7 @@ export function AuthProvider({ children }) {
                 lastName: session.user.user_metadata?.last_name || '',
                 phone: session.user.user_metadata?.phone || '',
                 email: session.user.email,
+                password: cachedPwd || '',
                 role: 'user',
                 avatarGradient: 'linear-gradient(135deg, #10b981, #3b82f6)',
                 createdAt: new Date().toISOString().split('T')[0],
@@ -116,6 +137,7 @@ export function AuthProvider({ children }) {
       const authData = await supabaseService.signIn({ phone, password });
 
       if (authData?.user) {
+        setCachedPassword(password);
         let profile = await supabaseService.getProfile(authData.user.id);
         if (!profile) {
           profile = {
@@ -132,6 +154,7 @@ export function AuthProvider({ children }) {
 
         const loggedInUser = {
           ...profile,
+          password: password,
           isSupabaseUser: true
         };
 
@@ -150,6 +173,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(async () => {
+    setCachedPassword('');
     if (isSupabaseConfigured) {
       try {
         await supabaseService.signOut();
@@ -170,6 +194,7 @@ export function AuthProvider({ children }) {
       const authData = await supabaseService.signUp({ firstName, lastName, phone, password });
 
       if (authData?.user) {
+        setCachedPassword(password);
         // Auto-login to establish session immediately
         let userProfile = null;
         try {
@@ -196,6 +221,7 @@ export function AuthProvider({ children }) {
 
         const loggedInUser = {
           ...userProfile,
+          password: password,
           isSupabaseUser: true
         };
 
@@ -223,16 +249,27 @@ export function AuthProvider({ children }) {
     try {
       if (isSupabaseConfigured && currentUser.id) {
         const updated = await supabaseService.updateProfile(currentUser.id, data);
-        if (updated) {
-          const merged = { ...currentUser, ...updated };
-          setCurrentUser(merged);
-          return { success: true, user: merged };
+        if (data.password && data.password.trim() && supabase) {
+          try {
+            await supabase.auth.updateUser({ password: data.password.trim() });
+          } catch (pwdErr) {
+            console.warn('[Auth] Supabase auth password update error:', pwdErr);
+          }
         }
+        if (data.password && data.password.trim()) {
+          setCachedPassword(data.password.trim());
+        }
+        const merged = { ...currentUser, ...data, ...(updated || {}) };
+        setCurrentUser(merged);
+        return { success: true, user: merged };
       }
     } catch (e) {
       console.error('[Auth] Profile update error:', e);
     }
 
+    if (data.password && data.password.trim()) {
+      setCachedPassword(data.password.trim());
+    }
     const merged = { ...currentUser, ...data };
     setCurrentUser(merged);
     return { success: true, user: merged };

@@ -18,7 +18,8 @@ import {
   IconTrash,
   IconSearch,
   IconLock,
-  IconCheck
+  IconCheck,
+  IconUsers
 } from '../Common/AppIcons';
 
 // Helper to render high-end challenge vector emblem
@@ -38,7 +39,13 @@ function RankingsPageComponent() {
   const { t } = useLanguage();
   const { triggerBanner, addToast } = useHabits();
 
-  const [challenges, setChallenges] = useState([]);
+  const [challenges, setChallenges] = useState(() => {
+    try {
+      return storage.getChallenges() || [];
+    } catch {
+      return [];
+    }
+  });
   const [selectedChallengeId, setSelectedChallengeId] = useState('ch_no_sugar');
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -122,7 +129,7 @@ const loadChallenges = useCallback(async () => {
 
     return {
       ...ch,
-      participantsCount: Math.max(challengeLeaderboard.length, ch.participantsCount || 0),
+      participantsCount: challengeLeaderboard.length,
       leaderboard: challengeLeaderboard
     };
   });
@@ -235,64 +242,31 @@ return (
         Reyting natijalari va o'zaro o'rinlarni ko'rish uchun avval ushbu guruhga a'zo bo'ling!
       </p>
 
-      {/* 4-Challenge Limit Indicator Banner */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '8px 16px',
-            borderRadius: '14px',
-            background: joinedCount >= 4 ? 'rgba(245, 158, 11, 0.16)' : 'rgba(182, 243, 107, 0.12)',
-            border: `1px solid ${joinedCount >= 4 ? 'rgba(245, 158, 11, 0.45)' : 'rgba(182, 243, 107, 0.3)'}`
-          }}
-        >
-          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-            Faol Musobaqalaringiz:
+      {/* 4-Challenge Limit Indicator Banner - Single clean row on all screens */}
+      <div className="active-competitions-banner">
+        <div className="active-comp-left">
+          <IconTrophy size={16} color={joinedCount >= 4 ? '#F59E0B' : 'var(--primary-accent)'} />
+          <span className="active-comp-label">Faol musobaqalar:</span>
+          <span className="active-comp-badge" style={{ color: joinedCount >= 4 ? '#F59E0B' : 'var(--primary-accent)' }}>
+            {joinedCount}/4
           </span>
-          <span
-            style={{
-              fontSize: '14px',
-              fontWeight: 800,
-              color: joinedCount >= 4 ? '#F59E0B' : '#B6F36B',
-              fontFamily: 'monospace'
-            }}
-          >
-            {joinedCount} / 4 ta
-          </span>
-
-          {/* 4 dots slot indicator */}
-          <div style={{ display: 'flex', gap: '5px', alignItems: 'center', marginLeft: '4px' }}>
+          <div className="active-comp-dots">
             {[0, 1, 2, 3].map(idx => (
               <span
                 key={idx}
-                style={{
-                  width: '9px',
-                  height: '9px',
-                  borderRadius: '50%',
-                  background: idx < joinedCount ? (joinedCount >= 4 ? '#F59E0B' : '#B6F36B') : 'rgba(255, 255, 255, 0.2)',
-                  boxShadow: idx < joinedCount ? `0 0 8px ${joinedCount >= 4 ? '#F59E0B' : '#B6F36B'}` : 'none',
-                  transition: 'all 0.2s'
-                }}
+                className={`comp-dot ${idx < joinedCount ? 'filled' : ''} ${joinedCount >= 4 ? 'warning' : ''}`}
               />
             ))}
           </div>
-
-          {joinedCount >= 4 ? (
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#F59E0B', marginLeft: '6px' }}>
-              (LIMIT TO'LDI)
-            </span>
-          ) : (
-            <span style={{ fontSize: '11px', color: '#B6F36B', marginLeft: '4px' }}>
-              ({4 - joinedCount} ta bo'sh joy)
-            </span>
-          )}
         </div>
 
-        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-          ⚡ Bir vaqtda maksimal 4 ta musobaqaga a'zo bo'lish mumkin
-        </span>
+        <div className="active-comp-right">
+          {joinedCount >= 4 ? (
+            <span className="comp-limit-tag warning">Limit to'ldi (4/4)</span>
+          ) : (
+            <span className="comp-limit-tag success">{4 - joinedCount} ta bo'sh joy</span>
+          )}
+        </div>
       </div>
     </div>
 
@@ -694,7 +668,7 @@ return (
                     <>
                       {/* Podium for top 3 */}
                       <div className="podium-row">
-                        {selectedChallenge.leaderboard.slice(0, 3).map((item, idx) => {
+                        {(selectedChallenge.leaderboard || []).slice(0, 3).map((item, idx) => {
                           const rankNum = idx + 1;
                           return (
                             <div
@@ -735,7 +709,7 @@ return (
                             </tr>
                           </thead>
                           <tbody>
-                            {selectedChallenge.leaderboard.map((row) => (
+                            {(selectedChallenge.leaderboard || []).map((row) => (
                               <tr
                                 key={row.id || row.rank}
                                 className={`leaderboard-row ${row.isCurrent ? 'is-current-user-row' : ''}`}

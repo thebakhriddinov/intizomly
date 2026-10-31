@@ -113,6 +113,16 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
+// Receive direct notification request from app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const { title, options } = event.data;
+    event.waitUntil(
+      self.registration.showNotification(title || 'Intizomly Eslatmasi 🔥', options || {})
+    );
+  }
+});
+
 // Push notifications
 self.addEventListener('push', (event) => {
   let data = {

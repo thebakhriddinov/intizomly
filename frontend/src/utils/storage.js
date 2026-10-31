@@ -15,8 +15,73 @@ export const STORAGE_KEYS = {
   REMINDERS: 'intizomly_reminders_v2',
   NOTES: 'intizomly_notes_v2',
   CHALLENGES: 'intizomly_challenges_v2',
-  PROFILE_EXTRAS: 'intizomly_profile_extras_v2'
+  PROFILE_EXTRAS: 'intizomly_profile_extras_v2',
+  APP_LIMITS: 'intizomly_app_limits_v2',
+  SCREEN_TIME: 'intizomly_screen_time_v2'
 };
+
+export const DEFAULT_APP_LIMITS = [
+  {
+    id: 'app_instagram',
+    name: 'Instagram',
+    category: 'Ijtimoiy tarmoq',
+    icon: 'instagram',
+    color: '#E1306C',
+    url: 'https://www.instagram.com',
+    appScheme: 'instagram://app',
+    timeSpent: 25,
+    limit: 60,
+    enabled: true
+  },
+  {
+    id: 'app_telegram',
+    name: 'Telegram',
+    category: 'Messenjer & Aloqa',
+    icon: 'telegram',
+    color: '#229ED9',
+    url: 'https://web.telegram.org/k/',
+    appScheme: 'tg://resolve',
+    timeSpent: 30,
+    limit: 90,
+    enabled: true
+  },
+  {
+    id: 'app_youtube',
+    name: 'YouTube',
+    category: 'Video & Darslar',
+    icon: 'youtube',
+    color: '#FF0000',
+    url: 'https://www.youtube.com',
+    appScheme: 'vnd.youtube://',
+    timeSpent: 20,
+    limit: 45,
+    enabled: true
+  },
+  {
+    id: 'app_tiktok',
+    name: 'TikTok',
+    category: 'Qisqa videolar',
+    icon: 'tiktok',
+    color: '#00F2FE',
+    url: 'https://www.tiktok.com',
+    appScheme: 'snssdk1233://',
+    timeSpent: 35,
+    limit: 30,
+    enabled: true
+  },
+  {
+    id: 'app_browser',
+    name: 'Brauzer & Web',
+    category: 'Internet & Qidiruv',
+    icon: 'web',
+    color: '#10B981',
+    url: 'https://www.google.com',
+    appScheme: '',
+    timeSpent: 15,
+    limit: 60,
+    enabled: false
+  }
+];
 
 export const DEFAULT_USERS = [
   {
@@ -293,7 +358,7 @@ export const DEFAULT_CHALLENGES = [
     title: "No Sugar Challenge (30 Kun)",
     emoji: "🚫🍬",
     description: "Ortiqcha shakar, gazli shirin ichimliklar va shirinliklardan butunlay xalos bo'lish ligasi.",
-    participantsCount: 84,
+    participantsCount: 5,
     badgeName: "Shakar Qotili 🛡️",
     joined: false,
     leaderboard: [
@@ -309,7 +374,7 @@ export const DEFAULT_CHALLENGES = [
     title: "Early Birds 06:00 AM (Tonggi Baraka)",
     emoji: "⏰",
     description: "Har kuni tongda 06:00 dan kechikmasdan uyg'onib, kuningizni unumli boshlash musobaqasi.",
-    participantsCount: 128,
+    participantsCount: 3,
     badgeName: "Tonggi Lochin 🦅",
     joined: false,
     leaderboard: [
@@ -323,7 +388,7 @@ export const DEFAULT_CHALLENGES = [
     title: "Hydro Master 2 Litr",
     emoji: "💧",
     description: "Tanani toza va tetik saqlash uchun har kuni kamida 2 litr toza suv ichish chempionati.",
-    participantsCount: 195,
+    participantsCount: 2,
     badgeName: "Suv Manbai 🌊",
     joined: false,
     leaderboard: [
@@ -336,7 +401,7 @@ export const DEFAULT_CHALLENGES = [
     title: "Kitobxonlar 20 Bet Marafoni",
     emoji: "📖",
     description: "Kuniga kamida 20 bet kitob mutolaa qilib, aql va zakovatni charxlash ligasi.",
-    participantsCount: 76,
+    participantsCount: 2,
     badgeName: "Donolik Maskani 📚",
     joined: false,
     leaderboard: [
@@ -1130,15 +1195,14 @@ class StorageManager {
     }
 
     ch.joined = true;
-    ch.participantsCount = (ch.participantsCount || 0) + 1;
 
     const currentName = currentUser
       ? `${currentUser.firstName || 'Men'} ${currentUser.lastName || ''}`.trim()
       : 'Siz (Foydalanuvchi)';
-    const exists = ch.leaderboard?.some(row => row.isCurrent || row.name === currentName);
+    if (!Array.isArray(ch.leaderboard)) ch.leaderboard = [];
+    const exists = ch.leaderboard.some(row => row.isCurrent || row.name === currentName);
     if (!exists) {
       const curStreak = this.getGlobalStreak() || 12;
-      if (!Array.isArray(ch.leaderboard)) ch.leaderboard = [];
       ch.leaderboard.push({
         rank: ch.leaderboard.length + 1,
         name: currentName,
@@ -1151,6 +1215,7 @@ class StorageManager {
       ch.leaderboard.sort((a, b) => b.points - a.points);
       ch.leaderboard.forEach((item, index) => { item.rank = index + 1; });
     }
+    ch.participantsCount = ch.leaderboard.length;
 
     this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
     return { success: true, challenge: ch };
@@ -1161,9 +1226,9 @@ class StorageManager {
     const ch = this.challenges.find(item => item.id === id);
     if (!ch) return null;
     ch.joined = false;
-    ch.participantsCount = Math.max(1, (ch.participantsCount || 1) - 1);
     ch.leaderboard = (ch.leaderboard || []).filter(row => !row.isCurrent);
     ch.leaderboard.forEach((item, index) => { item.rank = index + 1; });
+    ch.participantsCount = ch.leaderboard.length;
 
     this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
     return ch;
@@ -1286,6 +1351,75 @@ class StorageManager {
         currentStreak: streak
       };
     });
+  }
+
+  // ==================== CONTROL & APP LIMITS ENGINE ====================
+  getAppLimits() {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.APP_LIMITS);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    this.saveAppLimits(DEFAULT_APP_LIMITS);
+    return DEFAULT_APP_LIMITS;
+  }
+
+  saveAppLimits(limits) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.APP_LIMITS, JSON.stringify(limits));
+    } catch (e) {}
+    return limits;
+  }
+
+  toggleAppLimit(id) {
+    const limits = this.getAppLimits();
+    const updated = limits.map(app => app.id === id ? { ...app, enabled: !app.enabled } : app);
+    this.saveAppLimits(updated);
+    return updated;
+  }
+
+  updateAppLimit(id, limitMinutes) {
+    const limits = this.getAppLimits();
+    const updated = limits.map(app => app.id === id ? { ...app, limit: Number(limitMinutes) } : app);
+    this.saveAppLimits(updated);
+    return updated;
+  }
+
+  addAppLimit(newApp) {
+    const limits = this.getAppLimits();
+    const item = {
+      id: 'app_' + Date.now(),
+      name: newApp.name || 'Yangi Ilova',
+      category: newApp.category || 'Boshqa',
+      icon: newApp.icon || 'web',
+      color: newApp.color || '#10B981',
+      url: newApp.url || 'https://www.google.com',
+      appScheme: newApp.appScheme || '',
+      timeSpent: Number(newApp.timeSpent) || 0,
+      limit: Number(newApp.limit) || 30,
+      enabled: true
+    };
+    const updated = [...limits, item];
+    this.saveAppLimits(updated);
+    return updated;
+  }
+
+  deleteAppLimit(id) {
+    const limits = this.getAppLimits();
+    const updated = limits.filter(app => app.id !== id);
+    this.saveAppLimits(updated);
+    return updated;
+  }
+
+  incrementAppTime(id, minutes = 1) {
+    const limits = this.getAppLimits();
+    const updated = limits.map(app => app.id === id ? { ...app, timeSpent: (app.timeSpent || 0) + minutes } : app);
+    this.saveAppLimits(updated);
+    return updated;
   }
 }
 

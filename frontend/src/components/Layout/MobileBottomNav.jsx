@@ -1,6 +1,6 @@
 import React, { memo, useRef, useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
-import { IconFocus } from '../Common/AppIcons';
+import { IconFocus, IconControl } from '../Common/AppIcons';
 
 const NAV_TABS = [
   {
@@ -31,6 +31,14 @@ const NAV_TABS = [
     defaultLabel: 'Focus',
     icon: (
       <IconFocus size={21} />
+    )
+  },
+  {
+    id: 'control',
+    labelKey: 'navControl',
+    defaultLabel: 'Control',
+    icon: (
+      <IconControl size={20} />
     )
   },
   {
@@ -110,9 +118,8 @@ function MobileBottomNavComponent({ activeTab = 'home', onSelectTab }) {
     isDraggingRef.current = false;
   };
 
-  // Calculate indicator position
-  // 5 tabs => each is 20% width
-  const indicatorLeftPercent = activeIndex * 20;
+  // Calculate dynamic indicator position based on actual tabs count
+  const tabWidthPct = 100 / (NAV_TABS.length || 6);
 
   return (
     <nav
@@ -127,8 +134,8 @@ function MobileBottomNavComponent({ activeTab = 'home', onSelectTab }) {
       <div
         className="liquid-nav-indicator"
         style={{
-          width: '20%',
-          transform: `translateX(${indicatorLeftPercent * 5}%)`
+          width: `${tabWidthPct}%`,
+          transform: `translateX(${activeIndex * 100}%)`
         }}
       >
         <div className="liquid-pill-glow"></div>

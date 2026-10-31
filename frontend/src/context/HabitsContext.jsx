@@ -105,11 +105,15 @@ export function HabitsProvider({ children }) {
     audioManager.setEnabled(settings.soundEnabled !== false);
     document.body.setAttribute('data-theme', settings.theme || 'emerald');
 
-    if (settings.appearance === 'system') {
-      document.documentElement.removeAttribute('data-appearance');
-    } else {
-      document.documentElement.setAttribute('data-appearance', settings.appearance || 'system');
-    }
+    const isLight = settings.appearance === 'light' || 
+      (settings.appearance === 'system' && typeof window !== 'undefined' && window.matchMedia && !window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    const appearanceValue = isLight ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-appearance', appearanceValue);
+    document.documentElement.classList.toggle('theme-light', isLight);
+    document.documentElement.classList.toggle('theme-dark', !isLight);
+    document.body.classList.toggle('theme-light', isLight);
+    document.body.classList.toggle('theme-dark', !isLight);
   }, [settings]);
 
   const dateKey = useMemo(() => {
