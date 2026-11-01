@@ -6,6 +6,7 @@ import { storage } from '../../utils/storage';
 import { audioManager } from '../../utils/audio';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { AddChallengeModal } from '../Modals/AddChallengeModal';
+import { PublicProfileModal } from '../Modals/PublicProfileModal';
 import {
   IconTrophy,
   IconMedal,
@@ -50,6 +51,7 @@ function RankingsPageComponent() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUserProfile, setSelectedUserProfile] = useState(null);
 
   const joinedCount = useMemo(() => {
     return challenges.filter(c => c.joined).length;
@@ -62,77 +64,104 @@ function RankingsPageComponent() {
       return (
         ch.title.toLowerCase().includes(q) ||
         (ch.description || '').toLowerCase().includes(q) ||
-      (ch.badgeName || '').toLowerCase().includes(q)
+          (ch.badgeName || '').toLowerCase().includes(q)
       );
   });
-  }, [challenges, searchQuery]);
+}, [challenges, searchQuery]);
 
-const loadChallenges = useCallback(async () => {
-  setLoading(true);
-  const storedChallenges = storage.getChallenges();
+  const loadChallenges = useCallback(async () => {
+    setLoading(true);
+    const storedChallenges = storage.getChallenges();
 
-  // Fetch REAL database users from Supabase
-  let realLeaderboard = [];
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, role, avatar_gradient');
+        // Fetch REAL database users from Supabase
+        let realLeaderboard = [];
+        if (isSupabaseConfigured && supabase) {
+          try {
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, first_name, last_name, role, avatar_gradient');
 
-      const { data: completions } = await supabase
-        .from('habit_completions')
-        .select('user_id, date_key');
+            const { data: completions } = await supabase
+              .from('habit_completions')
+              .select('user_id, date_key');
 
-      if (Array.isArray(profiles) && profiles.length > 0) {
-        const completionsByUser = {};
-        (completions || []).forEach(c => {
-          if (!completionsByUser[c.user_id]) completionsByUser[c.user_id] = new Set();
-          completionsByUser[c.user_id].add(c.date_key);
-        });
+              if (Array.isArray(profiles) && profiles.length > 0) {
+                const completionsByUser = {};
+                (completions || []).forEach(c => {
+                  if (!completionsByUser[c.user_id]) completionsByUser[c.user_id] = new Set();
+                  completionsByUser[c.user_id].add(c.date_key);
+                });
 
-        realLeaderboard = profiles.map(p => {
-          const activeDays = (completionsByUser[p.id] || new Set()).size;
-          const streak = activeDays; // Real streak / days completed
-          const points = streak * 50;
-          return {
-            id: p.id,
-            name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Foydalanuvchi',
-            streak,
-            completionRate: activeDays > 0 ? Math.min(100, Math.round((activeDays / 30) * 100)) : 0,
-            points,
-            avatarGradient: p.avatar_gradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
-            role: p.role || 'user'
-          };
-        });
-      }
-    } catch (err) {
-      console.warn('Real users load for rankings error:', err);
-    }
-  }
+                  realLeaderboard = profiles.map(p => {
+                    const activeDays = (completionsByUser[p.id] || new Set()).size;
+                    const streak = activeDays; // Real streak / days completed
+                    const points = streak * 50;
+                    const pub = storage.getPublicProfile(p.id, p);
+                    const avatarUrl = p.avatarUrl || pub?.avatarUrl || (p.avatar_gradient && (p.avatar_gradient.startsWith('data:image') || p.avatar_gradient.startsWith('http')) ? p.avatar_gradient : '');
 
-  // Populate each challenge with REAL users
-  const updatedChallenges = storedChallenges.map(ch => {
-    let challengeLeaderboard = [...realLeaderboard];
+                    return {
+                      id: p.id,
+                      name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Foydalanuvchi',
+                      streak,
+                      completionRate: activeDays > 0 ? Math.min(100, Math.round((activeDays / 30) * 100)) : 0,
+                      points,
+                      avatarGradient: p.avatar_gradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
+                      avatarUrl,
+                      role: p.role || 'user'
+                    };
+                  });
+                }
+      } catch (err) {
+                console.warn('Real users load for rankings error:', err);
+              }
+            }
 
-    // If no users in database yet, preserve existing or empty
-    if (challengeLeaderboard.length === 0 && Array.isArray(ch.leaderboard)) {
-      challengeLeaderboard = [...ch.leaderboard];
-    }
+            // Populate each challenge with REAL users
+            const updatedChallenges = storedChallenges.map(ch => {
+              let challengeLeaderboard = [...realLeaderboard];
 
-    // Sort by points descending, then streak
-    challengeLeaderboard.sort((a, b) => b.points - a.points || b.streak - a.streak);
-    challengeLeaderboard = challengeLeaderboard.map((u, idx) => ({
-      ...u,
-      rank: idx + 1,
-      isCurrent: currentUser ? u.id === currentUser.id : false
-    }));
+              // If no users in database yet, preserve existing or fall back to public profiles
+              if (challengeLeaderboard.length === 0 && Array.isArray(ch.leaderboard)) {
+                challengeLeaderboard = ch.leaderboard.map(u => {
+                  const pub = storage.getPublicProfile(u.id, u);
+                  return {
+            ...u,
+                    avatarUrl: u.avatarUrl || pub?.avatarUrl || '',
+                    avatarGradient: u.avatarGradient || pub?.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)'
+                  };
+                });
+              }
 
-    return {
-      ...ch,
-      participantsCount: challengeLeaderboard.length,
-      leaderboard: challengeLeaderboard
-    };
-  });
+            // If current user is logged in, sync current user avatarUrl into their row
+            if (currentUser) {
+              const myExtras = storage.getProfileExtras();
+              const myPub = storage.getPublicProfile(currentUser.id);
+              const myAvatar = myExtras?.avatarUrl || myPub?.avatarUrl || currentUser.avatarUrl || '';
+              challengeLeaderboard = challengeLeaderboard.map(u => {
+                if (u.id === currentUser.id) {
+                  return {
+                    ...u,
+                    avatarUrl: myAvatar || u.avatarUrl
+                  };
+                }
+                return u;
+              });
+            }
+
+            // Sort by points descending, then streak
+            challengeLeaderboard.sort((a, b) => b.points - a.points || b.streak - a.streak);
+            challengeLeaderboard = challengeLeaderboard.map((u, idx) => ({
+              ...u,
+              rank: idx + 1,
+              isCurrent: currentUser ? u.id === currentUser.id : false
+            }));
+
+            return {
+              ...ch,
+              participantsCount: challengeLeaderboard.length,
+              leaderboard: challengeLeaderboard
+            };
+          });
 
   setChallenges(updatedChallenges);
   setLoading(false);
@@ -277,504 +306,535 @@ return (
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-          gap: '14px',
+        gap: '14px',
         marginBottom: '16px'
       }}
     >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '12px',
-              background: 'rgba(16, 185, 129, 0.14)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#10B981',
-              flexShrink: 0
-            }}
-          >
-            <IconTrophy size={18} />
-          </div>
-          <div>
-            <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>
-              Challengelar
-            </h3>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              Faol guruhlar va musobaqalar ro'yxati ({challenges.length} ta)
-            </span>
-          </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '12px',
+            background: 'rgba(16, 185, 129, 0.14)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#10B981',
+            flexShrink: 0
+          }}
+        >
+          <IconTrophy size={18} />
         </div>
-
-        {/* Search input */}
-        <div style={{ position: 'relative', width: '280px', maxWidth: '100%' }}>
-          <span
-            style={{
-              position: 'absolute',
-              left: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              pointerEvents: 'none',
-              display: 'flex',
-              alignItems: 'center'
-            }}
-          >
-            <IconSearch size={15} color="var(--text-muted)" />
+        <div>
+          <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.3px' }}>
+            Challengelar
+          </h3>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            Faol guruhlar va musobaqalar ro'yxati ({challenges.length} ta)
           </span>
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Guruh qidirish..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              paddingLeft: '36px',
-              paddingRight: searchQuery ? '32px' : '12px',
-              fontSize: '13px',
-              borderRadius: '12px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              width: '100%',
-              color: 'var(--text-primary)'
-            }}
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              &times;
-            </button>
-          )}
         </div>
       </div>
 
-        {/* 3. Challenge List in Column Layout */}
-        <div className="challenges-column-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginBottom: '24px' }}>
-          {filteredChallenges.length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                Qidiruv bo'yicha hech qanday challenge topilmadi.
-              </div>
-              ) : (
-          filteredChallenges.map((ch) => {
-            const isSelected = selectedChallengeId === ch.id;
-                  return (
-                  <div
-                    key={ch.id}
-                    onClick={() => setSelectedChallengeId(ch.id)}
-                    className={`challenge-column-card ${isSelected ? 'active' : ''}`}
-                    role="button"
-                    tabIndex={0}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '14px 18px',
-                      borderRadius: '16px',
-                      background: isSelected
-                        ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(6, 182, 212, 0.08) 100%)'
-                        : 'var(--bg-card, rgba(18, 24, 38, 0.75))',
-                      border: `1px solid ${isSelected ? 'var(--primary-accent, #10B981)' : 'var(--border-subtle, rgba(255, 255, 255, 0.08))'}`,
-                      boxShadow: isSelected
-                        ? '0 0 20px rgba(16, 185, 129, 0.25), 0 4px 16px rgba(0, 0, 0, 0.3)'
-                        : '0 4px 14px rgba(0, 0, 0, 0.2)',
-                      cursor: 'pointer',
-                      transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
-                      width: '100%',
-                      gap: '14px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
-                      <div className="chip-emblem-wrap" style={{
-                        width: '42px',
-                        height: '42px',
-                        borderRadius: '12px',
-                        background: isSelected ? 'rgba(16, 185, 129, 0.22)' : 'rgba(255, 255, 255, 0.06)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0
-                      }}>
-                        <ChallengeEmblem id={ch.id} emoji={ch.emoji} size={22} />
-                      </div>
-
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                            {ch.title}
-                          </span>
-                          {ch.joined ? (
-                            <span style={{
-                              fontSize: '11px',
-                              fontWeight: 700,
-                              padding: '2px 8px',
-                              borderRadius: '8px',
-                              background: 'rgba(16, 185, 129, 0.15)',
-                              color: '#10B981',
-                              border: '1px solid rgba(16, 185, 129, 0.3)'
-                            }}>
-                              A'zo bo'lingan
-                            </span>
-                          ) : (
-                            <span style={{
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              padding: '2px 8px',
-                              borderRadius: '8px',
-                              background: 'rgba(255, 255, 255, 0.06)',
-                              color: 'var(--text-muted)'
-                            }}>
-                              Qo'shilish mumkin
-                            </span>
-                          )}
-                        </div>
-                        {ch.description && (
-                          <p style={{
-                            fontSize: '12.5px',
-                            color: 'var(--text-muted)',
-                            margin: '3px 0 0 0',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                          }}>
-                            {ch.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <IconUsers size={14} color="var(--text-muted)" />
-                        <span>{ch.participantsCount || 0} nafar</span>
-                      </span>
-
-                      <div style={{
-                        width: '28px',
-                        height: '28px',
-                        borderRadius: '8px',
-                        background: isSelected ? 'var(--primary-accent, #10B981)' : 'rgba(255, 255, 255, 0.06)',
-                        color: isSelected ? '#080D05' : 'var(--text-muted)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.2s'
-                      }}>
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-              );
-          })
+      {/* Search input */}
+      <div style={{ position: 'relative', width: '280px', maxWidth: '100%' }}>
+        <span
+          style={{
+            position: 'absolute',
+            left: '12px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            pointerEvents: 'none',
+            display: 'flex',
+            alignItems: 'center'
+          }}
+        >
+          <IconSearch size={15} color="var(--text-muted)" />
+        </span>
+        <input
+          type="text"
+          className="form-control"
+          placeholder="Guruh qidirish..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{
+            paddingLeft: '36px',
+            paddingRight: searchQuery ? '32px' : '12px',
+            fontSize: '13px',
+            borderRadius: '12px',
+            background: 'rgba(255, 255, 255, 0.04)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            width: '100%',
+            color: 'var(--text-primary)'
+          }}
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            &times;
+          </button>
         )}
+      </div>
+    </div>
 
-              {isAdmin && (
+    {/* 3. Challenge List in Column Layout */}
+    <div className="challenges-column-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', marginBottom: '24px' }}>
+      {filteredChallenges.length === 0 ? (
+        <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          Qidiruv bo'yicha hech qanday challenge topilmadi.
+        </div>
+      ) : (
+        filteredChallenges.map((ch) => {
+          const isSelected = selectedChallengeId === ch.id;
+          return (
+            <div
+              key={ch.id}
+              onClick={() => setSelectedChallengeId(ch.id)}
+              className={`challenge-column-card ${isSelected ? 'active' : ''}`}
+              role="button"
+              tabIndex={0}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 18px',
+                borderRadius: '16px',
+                background: isSelected
+                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(6, 182, 212, 0.08) 100%)'
+                  : 'var(--bg-card, rgba(18, 24, 38, 0.75))',
+                border: `1px solid ${isSelected ? 'var(--primary-accent, #10B981)' : 'var(--border-subtle, rgba(255, 255, 255, 0.08))'}`,
+                boxShadow: isSelected
+                  ? '0 0 20px rgba(16, 185, 129, 0.25), 0 4px 16px rgba(0, 0, 0, 0.3)'
+                  : '0 4px 14px rgba(0, 0, 0, 0.2)',
+                cursor: 'pointer',
+                transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+                width: '100%',
+                gap: '14px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
+                <div className="chip-emblem-wrap" style={{
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  background: isSelected ? 'rgba(16, 185, 129, 0.22)' : 'rgba(255, 255, 255, 0.06)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <ChallengeEmblem id={ch.id} emoji={ch.emoji} size={22} />
+                </div>
+
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {ch.title}
+                    </span>
+                    {ch.joined ? (
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '8px',
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        color: '#10B981',
+                        border: '1px solid rgba(16, 185, 129, 0.3)'
+                      }}>
+                        A'zo bo'lingan
+                      </span>
+                    ) : (
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        padding: '2px 8px',
+                        borderRadius: '8px',
+                        background: 'rgba(255, 255, 255, 0.06)',
+                        color: 'var(--text-muted)'
+                      }}>
+                        Qo'shilish mumkin
+                      </span>
+                    )}
+                  </div>
+                  {ch.description && (
+                    <p style={{
+                      fontSize: '12.5px',
+                      color: 'var(--text-muted)',
+                      margin: '3px 0 0 0',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                      {ch.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <IconUsers size={14} color="var(--text-muted)" />
+                  <span>{ch.participantsCount || 0} nafar</span>
+                </span>
+
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '8px',
+                  background: isSelected ? 'var(--primary-accent, #10B981)' : 'rgba(255, 255, 255, 0.06)',
+                  color: isSelected ? '#080D05' : 'var(--text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s'
+                }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          );
+        })
+      )}
+
+      {isAdmin && (
+        <button
+          type="button"
+          className="challenge-column-card"
+          onClick={() => setShowAddModal(true)}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            padding: '14px',
+            borderRadius: '16px',
+            background: 'rgba(16, 185, 129, 0.05)',
+            border: '1.5px dashed rgba(16, 185, 129, 0.4)',
+            color: 'var(--primary-accent, #10B981)',
+            cursor: 'pointer',
+            fontWeight: 700,
+            fontSize: '14px',
+            width: '100%',
+            transition: 'all 0.2s'
+          }}
+        >
+          <IconPlus size={16} />
+          <span>Yangi Challenge Qo'shish</span>
+        </button>
+      )}
+    </div>
+
+    {/* 4. Selected Challenge Details */}
+    {selectedChallenge && (
+      <div className="challenge-main-card">
+        <div className="challenge-card-header">
+          <div className="challenge-header-left">
+            <div className="challenge-big-emblem">
+              <ChallengeEmblem id={selectedChallenge.id} emoji={selectedChallenge.emoji} size={38} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <h3 className="challenge-heading">{selectedChallenge.title}</h3>
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteChallenge(selectedChallenge.id, selectedChallenge.title)}
+                    className="icon-action-btn"
+                    style={{ color: '#ef4444', padding: '4px' }}
+                    title="Challengeni o'chirish"
+                  >
+                    <IconTrash size={16} />
+                  </button>
+                )}
+              </div>
+              <p className="challenge-description">{selectedChallenge.description}</p>
+              <div className="challenge-meta-row">
+                <span className="meta-pill">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                  </svg>
+                  <span>{selectedChallenge.participantsCount} nafar ishtirokchi</span>
+                </span>
+                <span className="meta-pill">
+                  <IconTrophy size={14} />
+                  <span>Mukofot: {selectedChallenge.badgeName}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="challenge-header-right">
+            {selectedChallenge.joined ? (
+              <div className="joined-action-box">
+                <span className="joined-status-badge">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10B981" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span>Siz guruh a'zosisiz</span>
+                </span>
                 <button
                   type="button"
-                  className="challenge-column-card"
-                  onClick={() => setShowAddModal(true)}
+                  className="btn-leave-challenge"
+                  onClick={() => handleLeave(selectedChallenge.id)}
+                >
+                  Guruhdan chiqish
+                </button>
+              </div>
+            ) : joinedCount >= 4 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                <button
+                  type="button"
+                  className="btn-join-challenge"
+                  onClick={() => handleJoin(selectedChallenge.id)}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px',
-                    padding: '14px',
-                    borderRadius: '16px',
-                    background: 'rgba(16, 185, 129, 0.05)',
-                    border: '1.5px dashed rgba(16, 185, 129, 0.4)',
-                    color: 'var(--primary-accent, #10B981)',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: '14px',
-                    width: '100%',
-                    transition: 'all 0.2s'
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.2))',
+                    border: '1px solid rgba(245, 158, 11, 0.45)',
+                    color: '#F59E0B',
+                    cursor: 'pointer'
+                  }}
+                  title="Maksimal 4 ta musobaqaga a'zo bo'lingan"
+                >
+                  <IconLock size={16} color="#F59E0B" />
+                  <span>Limit To'ldi (4/4)</span>
+                </button>
+                <span style={{ fontSize: '11px', color: '#F59E0B', textAlign: 'right' }}>
+                  Qo'shilish uchun avval boshqasidan chiqing
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="btn-join-challenge"
+                onClick={() => handleJoin(selectedChallenge.id)}
+              >
+                <span className="join-glow"></span>
+                <IconTrophy size={16} />
+                <span>Guruhga A'zo Bo'lish ({joinedCount}/4)</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* 5. LEADERBOARD: ONLY DISPLAY IF JOINED (Strict Requirement) */}
+        {!selectedChallenge.joined ? (
+          /* LOCKED STATE */
+          <div className="leaderboard-locked-card">
+            <div className="lock-icon-circle">
+              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            <h4 className="locked-title">Reyting Natijalari Yashirin</h4>
+            <p className="locked-desc">
+              Ushbu musobaqa peshqadamlari va ishtirokchilar natijalarini ko'rish uchun yuqoridagi <strong>"Guruhga A'zo Bo'lish"</strong> tugmasini bosing!
+            </p>
+            {joinedCount >= 4 ? (
+              <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn-join-challenge-inline"
+                  onClick={() => handleJoin(selectedChallenge.id)}
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.2)',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    color: '#F59E0B'
                   }}
                 >
-                  <IconPlus size={16} />
-                  <span>Yangi Challenge Qo'shish</span>
+                  <IconLock size={16} color="#F59E0B" />
+                  <span>Limitga Yetildi (4/4 ta musobaqada a'zosiz)</span>
                 </button>
-              )}
-            </div>
-
-      {/* 4. Selected Challenge Details */}
-          {selectedChallenge && (
-            <div className="challenge-main-card">
-              <div className="challenge-card-header">
-                <div className="challenge-header-left">
-                  <div className="challenge-big-emblem">
-                    <ChallengeEmblem id={selectedChallenge.id} emoji={selectedChallenge.emoji} size={38} />
-                  </div>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <h3 className="challenge-heading">{selectedChallenge.title}</h3>
-                      {isAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteChallenge(selectedChallenge.id, selectedChallenge.title)}
-                          className="icon-action-btn"
-                          style={{ color: '#ef4444', padding: '4px' }}
-                          title="Challengeni o'chirish"
-                        >
-                          <IconTrash size={16} />
-                        </button>
-                      )}
-                    </div>
-                    <p className="challenge-description">{selectedChallenge.description}</p>
-                    <div className="challenge-meta-row">
-                      <span className="meta-pill">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                          <circle cx="9" cy="7" r="4" />
-                          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                        </svg>
-                        <span>{selectedChallenge.participantsCount} nafar ishtirokchi</span>
-                      </span>
-                      <span className="meta-pill">
-                        <IconTrophy size={14} />
-                        <span>Mukofot: {selectedChallenge.badgeName}</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="challenge-header-right">
-                  {selectedChallenge.joined ? (
-                    <div className="joined-action-box">
-                      <span className="joined-status-badge">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10B981" strokeWidth="2.5">
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                        <span>Siz guruh a'zosisiz</span>
-                      </span>
-                      <button
-                        type="button"
-                        className="btn-leave-challenge"
-                        onClick={() => handleLeave(selectedChallenge.id)}
-                      >
-                        Guruhdan chiqish
-                      </button>
-                    </div>
-                  ) : joinedCount >= 4 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
-                      <button
-                        type="button"
-                        className="btn-join-challenge"
-                        onClick={() => handleJoin(selectedChallenge.id)}
-                        style={{
-                          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.2))',
-                          border: '1px solid rgba(245, 158, 11, 0.45)',
-                          color: '#F59E0B',
-                          cursor: 'pointer'
-                        }}
-                        title="Maksimal 4 ta musobaqaga a'zo bo'lingan"
-                      >
-                        <IconLock size={16} color="#F59E0B" />
-                        <span>Limit To'ldi (4/4)</span>
-                      </button>
-                      <span style={{ fontSize: '11px', color: '#F59E0B', textAlign: 'right' }}>
-                        Qo'shilish uchun avval boshqasidan chiqing
-                      </span>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn-join-challenge"
-                      onClick={() => handleJoin(selectedChallenge.id)}
-                    >
-                      <span className="join-glow"></span>
-                      <IconTrophy size={16} />
-                      <span>Guruhga A'zo Bo'lish ({joinedCount}/4)</span>
-                    </button>
-                  )}
-                </div>
+                <span style={{ fontSize: '12px', color: '#F59E0B' }}>
+                  Boshqa musobaqaga qo'shilish uchun avval a'zo bo'lganlaringizdan biridan chiqing
+                </span>
               </div>
-
-              {/* 5. LEADERBOARD: ONLY DISPLAY IF JOINED (Strict Requirement) */}
-              {!selectedChallenge.joined ? (
-                /* LOCKED STATE */
-                <div className="leaderboard-locked-card">
-                  <div className="lock-icon-circle">
-                    <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  </div>
-                  <h4 className="locked-title">Reyting Natijalari Yashirin</h4>
-                  <p className="locked-desc">
-                    Ushbu musobaqa peshqadamlari va ishtirokchilar natijalarini ko'rish uchun yuqoridagi <strong>"Guruhga A'zo Bo'lish"</strong> tugmasini bosing!
-                  </p>
-                  {joinedCount >= 4 ? (
-                    <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                      <button
-                        type="button"
-                        className="btn-join-challenge-inline"
-                        onClick={() => handleJoin(selectedChallenge.id)}
-                        style={{
-                          background: 'rgba(245, 158, 11, 0.2)',
-                          border: '1px solid rgba(245, 158, 11, 0.4)',
-                          color: '#F59E0B'
-                        }}
-                      >
-                        <IconLock size={16} color="#F59E0B" />
-                        <span>Limitga Yetildi (4/4 ta musobaqada a'zosiz)</span>
-                      </button>
-                      <span style={{ fontSize: '12px', color: '#F59E0B' }}>
-                        Boshqa musobaqaga qo'shilish uchun avval a'zo bo'lganlaringizdan biridan chiqing
-                      </span>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn-join-challenge-inline"
-                      onClick={() => handleJoin(selectedChallenge.id)}
-                    >
-                      <IconTrophy size={16} />
-                      <span>Guruhga Qo'shilish va Natijalarni Ochish ({joinedCount}/4)</span>
-                    </button>
-                  )}
-                </div>
-              ) : (
-                /* UNLOCKED STATE: FULL LEADERBOARD */
-                <div className="leaderboard-unlocked-container">
-                  <div className="leaderboard-header-bar">
-                    <h4 className="leaderboard-title">Guruh Peshqadamlari (Top Natijalar)</h4>
-                    <span className="live-pill">
-                      <span className="pulse-dot"></span>
-                      <span>Haqiqiy Foydalanuvchilar</span>
-                    </span>
-                  </div>
-
-                  {selectedChallenge.leaderboard && selectedChallenge.leaderboard.length === 0 ? (
-                    <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                      Hozircha guruhda faol intizomchilar yo'q. Birinchi bo'lib odat bajaring!
-                    </div>
-                  ) : (
-                    <>
-                      {/* Podium for top 3 */}
-                      <div className="podium-row">
-                        {(selectedChallenge.leaderboard || []).slice(0, 3).map((item, idx) => {
-                          const rankNum = idx + 1;
-                          return (
-                            <div
-                              key={item.id || idx}
-                              className={`podium-card podium-rank-${rankNum} ${item.isCurrent ? 'is-user-podium' : ''}`}
-                            >
-                              <div className="podium-medal-wrap">
-                                <IconMedal rank={rankNum} size={28} />
-                              </div>
-                              <div
-                                className="podium-avatar"
-                                style={{ background: item.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)' }}
-                              >
-                                {item.name?.[0] || 'U'}
-                              </div>
-                              <h5 className="podium-name">{item.name}</h5>
-                              <span className="podium-streak">
-                                <IconFlame size={14} />
-                                <span>{item.streak} kun streak</span>
-                              </span>
-                              <span className="podium-points">{item.points} ball</span>
-                              {item.isCurrent && <span className="podium-you-tag">Siz</span>}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Table of all ranks */}
-                      <div className="leaderboard-table-wrap">
-                        <table className="leaderboard-table">
-                          <thead>
-                            <tr>
-                              <th>O'rin</th>
-                              <th>Ishtirokchi</th>
-                              <th>Streak</th>
-                              <th>Bajarilish</th>
-                              <th>Ball</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(selectedChallenge.leaderboard || []).map((row) => (
-                              <tr
-                                key={row.id || row.rank}
-                                className={`leaderboard-row ${row.isCurrent ? 'is-current-user-row' : ''}`}
-                              >
-                                <td className="rank-col">
-                                  {row.rank <= 3 ? (
-                                    <IconMedal rank={row.rank} size={22} />
-                                  ) : (
-                                    <span className="rank-badge rank-num">#{row.rank}</span>
-                                  )}
-                                </td>
-                                <td className="user-col">
-                                  <div className="user-cell">
-                                    <div
-                                      className="user-cell-avatar"
-                                      style={{ background: row.avatarGradient || 'linear-gradient(135deg, #6366f1, #a855f7)' }}
-                                    >
-                                      {row.name?.[0] || 'U'}
-                                    </div>
-                                    <div className="user-cell-info">
-                                      <span className="user-cell-name">{row.name}</span>
-                                      {row.isCurrent && <span className="user-cell-you-badge">Siz</span>}
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="streak-col">
-                                  <span className="table-streak-pill">
-                                    <IconFlame size={13} />
-                                    <span>{row.streak} kun</span>
-                                  </span>
-                                </td>
-                                <td className="rate-col">
-                                  <div className="completion-bar-wrap">
-                                    <div
-                                      className="completion-fill"
-                                      style={{ width: `${row.completionRate || 0}%` }}
-                                    ></div>
-                                    <span className="completion-text">{row.completionRate || 0}%</span>
-                                  </div>
-                                </td>
-                                <td className="points-col">
-                                  <strong className="points-num">{row.points}</strong>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
+            ) : (
+              <button
+                type="button"
+                className="btn-join-challenge-inline"
+                onClick={() => handleJoin(selectedChallenge.id)}
+              >
+                <IconTrophy size={16} />
+                <span>Guruhga Qo'shilish va Natijalarni Ochish ({joinedCount}/4)</span>
+              </button>
+            )}
+          </div>
+        ) : (
+          /* UNLOCKED STATE: FULL LEADERBOARD */
+          <div className="leaderboard-unlocked-container">
+            <div className="leaderboard-header-bar">
+              <h4 className="leaderboard-title">Guruh Peshqadamlari (Top Natijalar)</h4>
+              <span className="live-pill">
+                <span className="pulse-dot"></span>
+                <span>Haqiqiy Foydalanuvchilar</span>
+              </span>
             </div>
-          )}
 
-          {/* Admin Add Challenge Modal */}
-          {showAddModal && (
-            <AddChallengeModal
-              isOpen={showAddModal}
-              onClose={() => setShowAddModal(false)}
-              onSave={handleSaveChallenge}
-            />
-          )}
-        </div>
-        );
+            {selectedChallenge.leaderboard && selectedChallenge.leaderboard.length === 0 ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                Hozircha guruhda faol intizomchilar yo'q. Birinchi bo'lib odat bajaring!
+              </div>
+            ) : (
+              <>
+                {/* Podium for top 3 */}
+                <div className="podium-row">
+                  {(selectedChallenge.leaderboard || []).slice(0, 3).map((item, idx) => {
+                    const rankNum = idx + 1;
+                    return (
+                      <div
+                        key={item.id || idx}
+                        className={`podium-card podium-rank-${rankNum} ${item.isCurrent ? 'is-user-podium' : ''}`}
+                        onClick={() => setSelectedUserProfile(item)}
+                        role="button"
+                        tabIndex={0}
+                        style={{ cursor: 'pointer' }}
+                        title="Foydalanuvchi profilini ko'rish"
+                      >
+                        <div className="podium-medal-wrap">
+                          <IconMedal rank={rankNum} size={28} />
+                        </div>
+                        <div
+                          className="podium-avatar"
+                          style={{
+                            background: item.avatarUrl ? 'transparent' : (item.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)'),
+                            overflow: 'hidden'
+                          }}
+                        >
+                          {item.avatarUrl ? (
+                            <img src={item.avatarUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            item.name?.[0] || 'U'
+                          )}
+                        </div>
+                        <h5 className="podium-name">{item.name}</h5>
+                        <span className="podium-streak">
+                          <IconFlame size={14} />
+                          <span>{item.streak} kun streak</span>
+                        </span>
+                        <span className="podium-points">{item.points} ball</span>
+                        {item.isCurrent && <span className="podium-you-tag">Siz</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Table of all ranks */}
+                <div className="leaderboard-table-wrap">
+                  <table className="leaderboard-table">
+                    <thead>
+                      <tr>
+                        <th>O'rin</th>
+                        <th>Ishtirokchi</th>
+                        <th>Streak</th>
+                        <th>Bajarilish</th>
+                        <th>Ball</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(selectedChallenge.leaderboard || []).map((row) => (
+                        <tr
+                          key={row.id || row.rank}
+                          className={`leaderboard-row ${row.isCurrent ? 'is-current-user-row' : ''}`}
+                          onClick={() => setSelectedUserProfile(row)}
+                          style={{ cursor: 'pointer' }}
+                          title="Foydalanuvchi profilini ko'rish"
+                        >
+                          <td className="rank-col">
+                            {row.rank <= 3 ? (
+                              <IconMedal rank={row.rank} size={22} />
+                            ) : (
+                              <span className="rank-badge rank-num">#{row.rank}</span>
+                            )}
+                          </td>
+                          <td className="user-col">
+                            <div className="user-cell">
+                              <div
+                                className="user-cell-avatar"
+                                style={{
+                                  background: row.avatarUrl ? 'transparent' : (row.avatarGradient || 'linear-gradient(135deg, #6366f1, #a855f7)'),
+                                  overflow: 'hidden'
+                                }}
+                              >
+                                {row.avatarUrl ? (
+                                  <img src={row.avatarUrl} alt={row.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ) : (
+                                  row.name?.[0] || 'U'
+                                )}
+                              </div>
+                              <div className="user-cell-info">
+                                <span className="user-cell-name">{row.name}</span>
+                                {row.isCurrent && <span className="user-cell-you-badge">Siz</span>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="streak-col">
+                            <span className="table-streak-pill">
+                              <IconFlame size={13} />
+                              <span>{row.streak} kun</span>
+                            </span>
+                          </td>
+                          <td className="rate-col">
+                            <div className="completion-bar-wrap">
+                              <div
+                                className="completion-fill"
+                                style={{ width: `${row.completionRate || 0}%` }}
+                              ></div>
+                              <span className="completion-text">{row.completionRate || 0}%</span>
+                            </div>
+                          </td>
+                          <td className="points-col">
+                            <strong className="points-num">{row.points}</strong>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* Admin Add Challenge Modal */}
+    {showAddModal && (
+      <AddChallengeModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSave={handleSaveChallenge}
+      />
+    )}
+
+    {/* Public Profile View Modal */}
+    <PublicProfileModal
+      user={selectedUserProfile}
+      isOpen={!!selectedUserProfile}
+      onClose={() => setSelectedUserProfile(null)}
+      currentUser={currentUser}
+      onFollowChange={loadChallenges}
+    />
+  </div>
+);
 }
 
-        export const RankingsPage = memo(RankingsPageComponent);
+export const RankingsPage = memo(RankingsPageComponent);

@@ -135,12 +135,22 @@ function HeaderComponent({ onSelectTab, onOpenProfile, onOpenAdmin, onOpenAuth, 
           tabIndex={0}
           title={t('navYou') || "Profil"}
         >
-          <div className="avatar-circle" style={{ background: currentUser?.avatarGradient || 'var(--bg-secondary)' }}>
-            <span>{initials}</span>
+            <div
+              className="avatar-circle"
+              style={{
+                background: currentUser?.avatarUrl ? 'transparent' : (currentUser?.avatarGradient || 'var(--bg-secondary)'),
+                overflow: 'hidden'
+              }}
+            >
+              {currentUser?.avatarUrl ? (
+                <img src={currentUser.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span>{initials}</span>
+              )}
+            </div>
+            <span className="avatar-online-dot"></span>
           </div>
-          <span className="avatar-online-dot"></span>
         </div>
-      </div>
     </header>
   );
 }

@@ -16,6 +16,7 @@ export const STORAGE_KEYS = {
   NOTES: 'intizomly_notes_v2',
   CHALLENGES: 'intizomly_challenges_v2',
   PROFILE_EXTRAS: 'intizomly_profile_extras_v2',
+  PUBLIC_PROFILES: 'intizomly_public_profiles_v2',
   APP_LIMITS: 'intizomly_app_limits_v2',
   SCREEN_TIME: 'intizomly_screen_time_v2'
 };
@@ -130,7 +131,7 @@ export const saveUserPassword = (key, password) => {
       if (digits.length === 9) map['998' + digits] = cleanPass;
     }
     localStorage.setItem('intizomly_user_passwords', JSON.stringify(map));
-  } catch (e) {}
+  } catch (e) { }
 };
 
 export const getUserPassword = (userOrId) => {
@@ -165,16 +166,16 @@ export const getUserPassword = (userOrId) => {
       const digits = phone.replace(/\D/g, '');
 
       const found = map[id] || presets[id] ||
-                    map[email] || presets[email] ||
-                    map[digits] || presets[digits] ||
-                    map[phone] || presets[phone];
+        map[email] || presets[email] ||
+        map[digits] || presets[digits] ||
+        map[phone] || presets[phone];
       if (found) return found;
 
       if (userOrId.role === 'admin') return 'bratan';
       if (userOrId.role === 'premium') return 'premium123';
       return 'user123';
     }
-  } catch (e) {}
+  } catch (e) { }
   return 'user123';
 };
 
@@ -424,6 +425,80 @@ export const DEFAULT_PROFILE_EXTRAS = {
   followRequests: []
 };
 
+export const DEFAULT_PUBLIC_PROFILES = {
+  'usr_admin': {
+    id: 'usr_admin',
+    name: 'Mustafo Bakhriddinov',
+    firstName: 'Mustafo',
+    lastName: 'Bakhriddinov',
+    phone: '+998 70 126 57 59',
+    bio: "Intizom — bu o'z xohishlaringiz ustidan mutlaq g'alaba qozonishdir. Har kuni 1% yaxshiroq! 🚀",
+    avatarUrl: '',
+    avatarGradient: 'linear-gradient(135deg, #10b981, #06b6d4)',
+    role: 'admin',
+    streak: 45,
+    points: 2250,
+    socialLinks: [
+      { id: 'soc_tg_adm', platform: 'telegram', username: 'thebakhriddinov', label: 'Telegram' },
+      { id: 'soc_ig_adm', platform: 'instagram', username: 'thebakhriddinov', label: 'Instagram' },
+      { id: 'soc_gh_adm', platform: 'github', username: 'thebakhriddinov', label: 'GitHub' }
+    ],
+    following: [
+      { id: 'usr_premium', name: 'Malika Karimova', streak: 28, avatarGradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
+      { id: 'usr_free', name: 'Alisher Qodirov', streak: 16, avatarGradient: 'linear-gradient(135deg, #6366f1, #a855f7)' }
+    ],
+    followers: [
+      { id: 'usr_premium', name: 'Malika Karimova', streak: 28, avatarGradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' }
+    ]
+  },
+  'usr_premium': {
+    id: 'usr_premium',
+    name: 'Malika Karimova',
+    firstName: 'Malika',
+    lastName: 'Karimova',
+    phone: '+998 93 555 20 10',
+    bio: "Dasturchi va kitobxon. 5:00 da uyg'onish odati va har kuni yangi bilim! 🌅",
+    avatarUrl: '',
+    avatarGradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
+    role: 'premium',
+    streak: 28,
+    points: 1400,
+    socialLinks: [
+      { id: 'soc_tg_m', platform: 'telegram', username: 'malika_karimova', label: 'Telegram' },
+      { id: 'soc_ig_m', platform: 'instagram', username: 'malika.karimova', label: 'Instagram' }
+    ],
+    following: [
+      { id: 'usr_admin', name: 'Mustafo Bakhriddinov', streak: 45, avatarGradient: 'linear-gradient(135deg, #10b981, #06b6d4)' }
+    ],
+    followers: [
+      { id: 'usr_admin', name: 'Mustafo Bakhriddinov', streak: 45, avatarGradient: 'linear-gradient(135deg, #10b981, #06b6d4)' },
+      { id: 'usr_free', name: 'Alisher Qodirov', streak: 16, avatarGradient: 'linear-gradient(135deg, #6366f1, #a855f7)' }
+    ]
+  },
+  'usr_free': {
+    id: 'usr_free',
+    name: 'Alisher Qodirov',
+    firstName: 'Alisher',
+    lastName: 'Qodirov',
+    phone: '+998 97 444 11 22',
+    bio: "Sport va sog'lom hayot tarzi tarafdori. Har kuni 10 000 qadam va toza ovqatlanish 👟",
+    avatarUrl: '',
+    avatarGradient: 'linear-gradient(135deg, #6366f1, #a855f7)',
+    role: 'user',
+    streak: 16,
+    points: 800,
+    socialLinks: [
+      { id: 'soc_tg_a', platform: 'telegram', username: 'alisher_qodirov', label: 'Telegram' }
+    ],
+    following: [
+      { id: 'usr_admin', name: 'Mustafo Bakhriddinov', streak: 45, avatarGradient: 'linear-gradient(135deg, #10b981, #06b6d4)' }
+    ],
+    followers: [
+      { id: 'usr_admin', name: 'Mustafo Bakhriddinov', streak: 45, avatarGradient: 'linear-gradient(135deg, #10b981, #06b6d4)' }
+    ]
+  }
+};
+
 export const BADGES_CONFIG = [
   {
     streakReq: 10,
@@ -599,21 +674,21 @@ class StorageManager {
     }
 
     // 7. Motivation Videos (Avtomatik tozalash va yangilash)
-    const hasBrokenVideos = Array.isArray(this.videos) && this.videos.some(v => 
-      !v.youtubeId || 
-      v.youtubeId.trim().length !== 11 || 
-      v.youtubeId === '5r3Cj9YhJtM' || 
+    const hasBrokenVideos = Array.isArray(this.videos) && this.videos.some(v =>
+      !v.youtubeId ||
+      v.youtubeId.trim().length !== 11 ||
+      v.youtubeId === '5r3Cj9YhJtM' ||
       v.youtubeId === 'fD3qZ8_U9lA'
     );
     if (!this.videos || !Array.isArray(this.videos) || this.videos.length === 0 || hasBrokenVideos) {
       const customVideos = Array.isArray(this.videos)
-        ? this.videos.filter(v => 
-            v.youtubeId && 
-            v.youtubeId.trim().length === 11 && 
-            v.youtubeId !== '5r3Cj9YhJtM' && 
-            v.youtubeId !== 'fD3qZ8_U9lA' && 
-            !DEFAULT_MOTIVATION_VIDEOS.some(dv => dv.youtubeId === v.youtubeId)
-          )
+        ? this.videos.filter(v =>
+          v.youtubeId &&
+          v.youtubeId.trim().length === 11 &&
+          v.youtubeId !== '5r3Cj9YhJtM' &&
+          v.youtubeId !== 'fD3qZ8_U9lA' &&
+          !DEFAULT_MOTIVATION_VIDEOS.some(dv => dv.youtubeId === v.youtubeId)
+        )
         : [];
       this.videos = [...DEFAULT_MOTIVATION_VIDEOS, ...customVideos];
       this.save(STORAGE_KEYS.MOTIVATION_VIDEOS, this.videos);
@@ -1306,123 +1381,272 @@ class StorageManager {
     return extras;
   }
 
-  followUser(userToFollow) {
-    const extras = this.getProfileExtras();
-    if (!Array.isArray(extras.following)) extras.following = [];
-    const exists = extras.following.some(f => f.id === userToFollow.id);
-    if (!exists) {
-      extras.following.push(userToFollow);
-      this.updateProfileExtras(extras);
+    // ==================== PUBLIC PROFILES & SOCIAL GRAPH ====================
+    getAllPublicProfiles() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.PUBLIC_PROFILES);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch (e) { }
+      return { ...DEFAULT_PUBLIC_PROFILES };
     }
-    return extras;
-  }
 
-  unfollowUser(userId) {
-    const extras = this.getProfileExtras();
-    extras.following = (extras.following || []).filter(f => f.id !== userId);
-    this.updateProfileExtras(extras);
-    return extras;
-  }
-
-  acceptFollowRequest(reqId) {
-    const extras = this.getProfileExtras();
-    const req = extras.followRequests?.find(r => r.id === reqId);
-    if (req) {
-      extras.followRequests = extras.followRequests.filter(r => r.id !== reqId);
-      extras.followers = [
-        ...(extras.followers || []),
-        { id: req.id, name: req.name, streak: req.streak, avatarGradient: "linear-gradient(135deg, #10b981, #06b6d4)", role: 'user' }
-      ];
-      this.updateProfileExtras(extras);
+    saveAllPublicProfiles(profilesMap) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.PUBLIC_PROFILES, JSON.stringify(profilesMap));
+      } catch (e) { }
     }
-    return extras;
-  }
 
-  // ==================== BADGES ENGINE ====================
-  getBadgesStatus(currentStreak) {
-    const streak = currentStreak || 0;
-    return BADGES_CONFIG.map(badge => {
-      const isUnlocked = streak >= badge.streakReq;
-      const progressPct = isUnlocked ? 100 : Math.min(100, Math.round((streak / badge.streakReq) * 100));
-      return {
-        ...badge,
-        isUnlocked,
-        progressPct,
-        currentStreak: streak
-      };
-    });
-  }
+    getPublicProfile(userId, fallback = {}) {
+      if (!userId) return null;
+      const all = this.getAllPublicProfiles();
+      let profile = all[userId];
 
-  // ==================== CONTROL & APP LIMITS ENGINE ====================
-  getAppLimits() {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.APP_LIMITS);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+      if (!profile) {
+        const fullName = (fallback.name || `${fallback.firstName || ''} ${fallback.lastName || ''}`).trim() || 'Foydalanuvchi';
+        profile = {
+          id: userId,
+          name: fullName,
+          firstName: fallback.firstName || fullName.split(' ')[0] || 'Foydalanuvchi',
+          lastName: fallback.lastName || fullName.split(' ').slice(1).join(' ') || '',
+          phone: fallback.phone || '+998 -- --- -- --',
+          bio: fallback.bio || "Intizomli hayot tarafdori 🎯 Har kuni yangi maqsad sari olg'a!",
+          avatarUrl: fallback.avatarUrl || '',
+          avatarGradient: fallback.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
+          role: fallback.role || 'user',
+          streak: Number(fallback.streak) || 0,
+          points: Number(fallback.points) || (Number(fallback.streak) || 0) * 50,
+          socialLinks: fallback.socialLinks || [
+            { id: 'soc_tg_def_' + userId, platform: 'telegram', username: fullName.toLowerCase().replace(/\s+/g, '_'), label: 'Telegram' }
+          ],
+          followers: Array.isArray(fallback.followers) ? fallback.followers : [],
+          following: Array.isArray(fallback.following) ? fallback.following : []
+        };
+        all[userId] = profile;
+        this.saveAllPublicProfiles(all);
+      } else {
+        let changed = false;
+        if (fallback.avatarUrl && fallback.avatarUrl !== profile.avatarUrl) {
+          profile.avatarUrl = fallback.avatarUrl;
+          changed = true;
+        }
+        if (fallback.streak !== undefined && Number(fallback.streak) !== profile.streak) {
+          profile.streak = Number(fallback.streak);
+          profile.points = profile.streak * 50;
+          changed = true;
+        }
+        if (fallback.phone && fallback.phone !== profile.phone && fallback.phone !== '+998 -- --- -- --') {
+          profile.phone = fallback.phone;
+          changed = true;
+        }
+        if (fallback.bio && fallback.bio !== profile.bio) {
+          profile.bio = fallback.bio;
+          changed = true;
+        }
+        if (changed) {
+          all[userId] = profile;
+          this.saveAllPublicProfiles(all);
         }
       }
-    } catch (e) {}
-    this.saveAppLimits(DEFAULT_APP_LIMITS);
-    return DEFAULT_APP_LIMITS;
-  }
 
-  saveAppLimits(limits) {
-    try {
-      localStorage.setItem(STORAGE_KEYS.APP_LIMITS, JSON.stringify(limits));
-    } catch (e) {}
-    return limits;
-  }
+      return profile;
+    }
 
-  toggleAppLimit(id) {
-    const limits = this.getAppLimits();
-    const updated = limits.map(app => app.id === id ? { ...app, enabled: !app.enabled } : app);
-    this.saveAppLimits(updated);
-    return updated;
-  }
+    savePublicProfile(profile) {
+      if (!profile || !profile.id) return;
+      const all = this.getAllPublicProfiles();
+      all[profile.id] = { ...(all[profile.id] || {}), ...profile };
+      this.saveAllPublicProfiles(all);
+      return all[profile.id];
+    }
 
-  updateAppLimit(id, limitMinutes) {
-    const limits = this.getAppLimits();
-    const updated = limits.map(app => app.id === id ? { ...app, limit: Number(limitMinutes) } : app);
-    this.saveAppLimits(updated);
-    return updated;
-  }
+    isFollowing(targetUserId, currentUserId) {
+      if (!targetUserId || !currentUserId) return false;
+      const extras = this.getProfileExtras();
+      if (extras.following?.some(f => f.id === targetUserId)) return true;
+      const target = this.getPublicProfile(targetUserId);
+      return target?.followers?.some(f => f.id === currentUserId) || false;
+    }
 
-  addAppLimit(newApp) {
-    const limits = this.getAppLimits();
-    const item = {
-      id: 'app_' + Date.now(),
-      name: newApp.name || 'Yangi Ilova',
-      category: newApp.category || 'Boshqa',
-      icon: newApp.icon || 'web',
-      color: newApp.color || '#10B981',
-      url: newApp.url || 'https://www.google.com',
-      appScheme: newApp.appScheme || '',
-      timeSpent: Number(newApp.timeSpent) || 0,
-      limit: Number(newApp.limit) || 30,
-      enabled: true
-    };
-    const updated = [...limits, item];
-    this.saveAppLimits(updated);
-    return updated;
-  }
+    followUser(userToFollow, currentUser) {
+      if (!userToFollow || !userToFollow.id) return;
+      const extras = this.getProfileExtras();
+      if (!Array.isArray(extras.following)) extras.following = [];
 
-  deleteAppLimit(id) {
-    const limits = this.getAppLimits();
-    const updated = limits.filter(app => app.id !== id);
-    this.saveAppLimits(updated);
-    return updated;
-  }
+        const currentId = currentUser?.id || 'usr_current';
+        const currentName = currentUser ? `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Siz' : 'Siz';
+        const currentAvatar = extras.avatarUrl || currentUser?.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)';
 
-  incrementAppTime(id, minutes = 1) {
-    const limits = this.getAppLimits();
-    const updated = limits.map(app => app.id === id ? { ...app, timeSpent: (app.timeSpent || 0) + minutes } : app);
-    this.saveAppLimits(updated);
-    return updated;
-  }
-}
+        if (!extras.following.some(f => f.id === userToFollow.id)) {
+          extras.following.push({
+            id: userToFollow.id,
+            name: userToFollow.name || `${userToFollow.firstName || ''} ${userToFollow.lastName || ''}`.trim() || 'Foydalanuvchi',
+            streak: userToFollow.streak || 0,
+            avatarGradient: userToFollow.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
+            avatarUrl: userToFollow.avatarUrl || ''
+          });
+          this.updateProfileExtras(extras);
+        }
 
-export const storage = new StorageManager();
-export { StorageManager };
-export default storage;
+        const targetProf = this.getPublicProfile(userToFollow.id, userToFollow);
+        if (!targetProf.followers.some(f => f.id === currentId)) {
+          targetProf.followers.push({
+            id: currentId,
+            name: currentName,
+            streak: this.getGlobalStreak(),
+            avatarGradient: currentAvatar,
+            avatarUrl: extras.avatarUrl || ''
+          });
+          this.savePublicProfile(targetProf);
+        }
+
+        const myProf = this.getPublicProfile(currentId, {
+          id: currentId,
+          name: currentName,
+          phone: currentUser?.phone,
+          bio: extras.bio,
+          avatarUrl: extras.avatarUrl,
+          streak: this.getGlobalStreak()
+        });
+        if (!myProf.following.some(f => f.id === userToFollow.id)) {
+          myProf.following.push({
+            id: userToFollow.id,
+            name: userToFollow.name || `${userToFollow.firstName || ''} ${userToFollow.lastName || ''}`.trim() || 'Foydalanuvchi',
+            streak: userToFollow.streak || 0,
+            avatarGradient: userToFollow.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
+            avatarUrl: userToFollow.avatarUrl || ''
+          });
+          this.savePublicProfile(myProf);
+        }
+
+        return extras;
+      }
+
+        unfollowUser(userIdToUnfollow, currentUserId) {
+          if (!userIdToUnfollow) return;
+          const extras = this.getProfileExtras();
+          extras.following = (extras.following || []).filter(f => f.id !== userIdToUnfollow);
+          this.updateProfileExtras(extras);
+
+          const myId = currentUserId || 'usr_current';
+
+          const targetProf = this.getPublicProfile(userIdToUnfollow);
+          if (targetProf) {
+            targetProf.followers = (targetProf.followers || []).filter(f => f.id !== myId);
+            this.savePublicProfile(targetProf);
+          }
+
+          const myProf = this.getPublicProfile(myId);
+          if (myProf) {
+            myProf.following = (myProf.following || []).filter(f => f.id !== myId);
+            this.savePublicProfile(myProf);
+          }
+
+          return extras;
+        }
+
+        acceptFollowRequest(reqId) {
+          const extras = this.getProfileExtras();
+          const req = extras.followRequests?.find(r => r.id === reqId);
+          if (req) {
+            extras.followRequests = extras.followRequests.filter(r => r.id !== reqId);
+            extras.followers = [
+              ...(extras.followers || []),
+              { id: req.id, name: req.name, streak: req.streak, avatarGradient: "linear-gradient(135deg, #10b981, #06b6d4)", role: 'user' }
+            ];
+            this.updateProfileExtras(extras);
+          }
+          return extras;
+        }
+
+        // ==================== BADGES ENGINE ====================
+        getBadgesStatus(currentStreak) {
+          const streak = currentStreak || 0;
+          return BADGES_CONFIG.map(badge => {
+            const isUnlocked = streak >= badge.streakReq;
+            const progressPct = isUnlocked ? 100 : Math.min(100, Math.round((streak / badge.streakReq) * 100));
+            return {
+              ...badge,
+              unlocked: isUnlocked,
+              isUnlocked,
+              progressPct,
+              currentStreak: streak
+            };
+          });
+        }
+
+        // ==================== CONTROL & APP LIMITS ENGINE ====================
+        getAppLimits() {
+          try {
+            const stored = localStorage.getItem(STORAGE_KEYS.APP_LIMITS);
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+              }
+            }
+          } catch (e) { }
+          this.saveAppLimits(DEFAULT_APP_LIMITS);
+          return DEFAULT_APP_LIMITS;
+        }
+
+        saveAppLimits(limits) {
+          try {
+            localStorage.setItem(STORAGE_KEYS.APP_LIMITS, JSON.stringify(limits));
+          } catch (e) { }
+          return limits;
+        }
+
+        toggleAppLimit(id) {
+          const limits = this.getAppLimits();
+          const updated = limits.map(app => app.id === id ? { ...app, enabled: !app.enabled } : app);
+          this.saveAppLimits(updated);
+          return updated;
+        }
+
+        updateAppLimit(id, limitMinutes) {
+          const limits = this.getAppLimits();
+          const updated = limits.map(app => app.id === id ? { ...app, limit: Number(limitMinutes) } : app);
+          this.saveAppLimits(updated);
+          return updated;
+        }
+
+        addAppLimit(newApp) {
+          const limits = this.getAppLimits();
+          const item = {
+            id: 'app_' + Date.now(),
+            name: newApp.name || 'Yangi Ilova',
+            category: newApp.category || 'Boshqa',
+            icon: newApp.icon || 'web',
+            color: newApp.color || '#10B981',
+            url: newApp.url || 'https://www.google.com',
+            appScheme: newApp.appScheme || '',
+            timeSpent: Number(newApp.timeSpent) || 0,
+            limit: Number(newApp.limit) || 30,
+            enabled: true
+          };
+          const updated = [...limits, item];
+          this.saveAppLimits(updated);
+          return updated;
+        }
+
+        deleteAppLimit(id) {
+          const limits = this.getAppLimits();
+          const updated = limits.filter(app => app.id !== id);
+          this.saveAppLimits(updated);
+          return updated;
+        }
+
+        incrementAppTime(id, minutes = 1) {
+          const limits = this.getAppLimits();
+          const updated = limits.map(app => app.id === id ? { ...app, timeSpent: (app.timeSpent || 0) + minutes } : app);
+          this.saveAppLimits(updated);
+          return updated;
+        }
+      }
+
+      export const storage = new StorageManager();
+      export { StorageManager };
+      export default storage;

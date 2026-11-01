@@ -24,14 +24,14 @@ function SidebarComponent({
   const roleBadge = isAdmin
     ? <span className="user-role-badge role-admin">{t('roleAdmin')}</span>
     : isPremium
-    ? <span className="user-role-badge role-premium">{t('rolePremium')}</span>
-    : null;
+      ? <span className="user-role-badge role-premium">{t('rolePremium')}</span>
+      : null;
 
   const roleText = isAdmin
     ? t('roleAdminDesc')
     : isPremium
-    ? t('rolePremiumDesc')
-    : t('roleUserDesc');
+      ? t('rolePremiumDesc')
+      : t('roleUserDesc');
 
   const initials = currentUser
     ? `${currentUser.firstName?.[0] || 'U'}${currentUser.lastName?.[0] || ''}`.toUpperCase()
@@ -195,31 +195,41 @@ function SidebarComponent({
           tabIndex={0}
           title={t('navProfile')}
         >
-          <div className="avatar-circle" style={{ background: currentUser?.avatarGradient || 'var(--bg-surface-elevated)' }}>
-            <span>{initials}</span>
+            <div
+              className="avatar-circle"
+              style={{
+                background: currentUser?.avatarUrl ? 'transparent' : (currentUser?.avatarGradient || 'var(--bg-surface-elevated)'),
+                overflow: 'hidden'
+              }}
+            >
+              {currentUser?.avatarUrl ? (
+                <img src={currentUser.avatarUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span>{initials}</span>
+              )}
+            </div>
+            <div className="sidebar-user-details">
+              <span className="sidebar-user-name">
+                {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Foydalanuvchi'}
+              </span>
+              <span className="sidebar-user-role-text">{roleText}</span>
+            </div>
           </div>
-          <div className="sidebar-user-details">
-            <span className="sidebar-user-name">
-              {currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'Foydalanuvchi'}
-            </span>
-            <span className="sidebar-user-role-text">{roleText}</span>
-          </div>
-        </div>
 
-        <button
-          type="button"
-          className="sidebar-logout-btn"
-          onClick={logout}
-          title={t('navLogout')}
-          aria-label={t('navLogout')}
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-        </button>
-      </div>
+          <button
+            type="button"
+            className="sidebar-logout-btn"
+            onClick={logout}
+            title={t('navLogout')}
+            aria-label={t('navLogout')}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
+        </div>
     </aside>
   );
 }
