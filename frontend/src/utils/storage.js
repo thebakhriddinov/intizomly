@@ -136,47 +136,34 @@ export const saveUserPassword = (key, password) => {
 
 export const getUserPassword = (userOrId) => {
   try {
-    const raw = localStorage.getItem('intizomly_user_passwords');
-    const map = raw ? JSON.parse(raw) : {};
-
-    const presets = {
-      'usr_admin': 'bratan',
-      'usr_premium': 'premium123',
-      'usr_free': 'user123',
-      '998701265759': 'bratan',
-      '701265759': 'bratan',
-      'admin@intizomly.uz': 'bratan',
-      'premium@intizomly.uz': 'premium123',
-      'oddiy@intizomly.uz': 'user123'
-    };
-
-    if (typeof userOrId === 'string') {
-      const q = userOrId.toLowerCase().trim();
-      const digits = q.replace(/\D/g, '');
-      return map[q] || presets[q] || map[digits] || presets[digits] || '';
-    }
-
     if (userOrId && typeof userOrId === 'object') {
       if (userOrId.password && typeof userOrId.password === 'string' && userOrId.password.trim()) {
         return userOrId.password.trim();
       }
+    }
+
+    const raw = localStorage.getItem('intizomly_user_passwords');
+    const map = raw ? JSON.parse(raw) : {};
+
+    if (typeof userOrId === 'string') {
+      const q = userOrId.toLowerCase().trim();
+      const digits = q.replace(/\D/g, '');
+      return map[q] || map[digits] || '';
+    }
+
+    if (userOrId && typeof userOrId === 'object') {
       const id = String(userOrId.id || '').toLowerCase();
       const email = String(userOrId.email || '').toLowerCase();
       const phone = String(userOrId.phone || '');
       const digits = phone.replace(/\D/g, '');
 
-      const found = map[id] || presets[id] ||
-        map[email] || presets[email] ||
-        map[digits] || presets[digits] ||
-        map[phone] || presets[phone];
+      const found = map[id] || map[email] || map[digits] || map[phone];
       if (found) return found;
 
-      if (userOrId.role === 'admin') return 'bratan';
-      if (userOrId.role === 'premium') return 'premium123';
-      return 'user123';
+      return '';
     }
   } catch (e) { }
-  return 'user123';
+  return '';
 };
 
 export const DEFAULT_HABITS = [
@@ -187,6 +174,7 @@ export const DEFAULT_HABITS = [
     description: "Kun davomida qo'shimcha shakar, shirinliklar va shakarli ichimliklardan butunlay voz kechish",
     category: "Sog'liq",
     target: "Kun bo'yi toza",
+    time: "20:00",
     createdAt: Date.now() - 86400000 * 7
   },
   {
@@ -196,6 +184,7 @@ export const DEFAULT_HABITS = [
     description: "Shaxsiy rivojlanish, intellekt yoki badiiy adabiyotdan kamida 20 bet mutolaa qilish",
     category: "O'qish",
     target: "20 bet",
+    time: "14:00",
     createdAt: Date.now() - 86400000 * 7
   },
   {
@@ -205,6 +194,7 @@ export const DEFAULT_HABITS = [
     description: "Har 1.5 - 2 soatda 1 stakan toza suv ichib, ichki organizmni tetik saqlash",
     category: "Sog'liq",
     target: "2 litr",
+    time: "16:00",
     createdAt: Date.now() - 86400000 * 7
   },
   {
@@ -214,6 +204,7 @@ export const DEFAULT_HABITS = [
     description: "Ertalabki yugurish, turnik yoki kuchaytirilgan gimnastika mashqlari",
     category: "Sport",
     target: "30 daqiqa",
+    time: "07:30",
     createdAt: Date.now() - 86400000 * 7
   },
   {
@@ -223,6 +214,7 @@ export const DEFAULT_HABITS = [
     description: "Kunning barakali qismini qo'ldan boy bermaslik va rejalarni unumli boshlash",
     category: "Tartib",
     target: "06:30 da",
+    time: "06:30",
     createdAt: Date.now() - 86400000 * 7
   }
 ];
@@ -361,7 +353,7 @@ export const DEFAULT_CHALLENGES = [
     description: "Ortiqcha shakar, gazli shirin ichimliklar va shirinliklardan butunlay xalos bo'lish ligasi.",
     participantsCount: 5,
     badgeName: "Shakar Qotili 🛡️",
-    joined: false,
+    joined: true,
     leaderboard: [
       { rank: 1, name: "Mustafo Bakhriddinov", streak: 38, completionRate: 100, points: 1950, isCurrent: false, avatarGradient: "linear-gradient(135deg, #10b981, #06b6d4)" },
       { rank: 2, name: "Malika Karimova", streak: 29, completionRate: 96, points: 1450, isCurrent: false, avatarGradient: "linear-gradient(135deg, #f59e0b, #ef4444)" },
@@ -414,90 +406,14 @@ export const DEFAULT_CHALLENGES = [
 
 export const DEFAULT_PROFILE_EXTRAS = {
   avatarUrl: "",
-  bio: "Intizom — bu o'z xohishlaringiz ustidan mutlaq g'alaba qozonishdir. Har kuni 1% yaxshiroq! 🚀",
-  socialLinks: [
-    { id: 'soc_tg', platform: 'telegram', username: 'thebakhriddinov', label: 'Telegram', icon: 'tg' },
-    { id: 'soc_ig', platform: 'instagram', username: 'bakhriddinov_m', label: 'Instagram', icon: 'ig' },
-    { id: 'soc_gh', platform: 'github', username: 'thebakhriddinov', label: 'GitHub', icon: 'gh' }
-  ],
+  bio: "",
+  socialLinks: [],
   followers: [],
   following: [],
   followRequests: []
 };
 
-export const DEFAULT_PUBLIC_PROFILES = {
-  'usr_admin': {
-    id: 'usr_admin',
-    name: 'Mustafo Bakhriddinov',
-    firstName: 'Mustafo',
-    lastName: 'Bakhriddinov',
-    phone: '+998 70 126 57 59',
-    bio: "Intizom — bu o'z xohishlaringiz ustidan mutlaq g'alaba qozonishdir. Har kuni 1% yaxshiroq! 🚀",
-    avatarUrl: '',
-    avatarGradient: 'linear-gradient(135deg, #10b981, #06b6d4)',
-    role: 'admin',
-    streak: 45,
-    points: 2250,
-    socialLinks: [
-      { id: 'soc_tg_adm', platform: 'telegram', username: 'thebakhriddinov', label: 'Telegram' },
-      { id: 'soc_ig_adm', platform: 'instagram', username: 'thebakhriddinov', label: 'Instagram' },
-      { id: 'soc_gh_adm', platform: 'github', username: 'thebakhriddinov', label: 'GitHub' }
-    ],
-    following: [
-      { id: 'usr_premium', name: 'Malika Karimova', streak: 28, avatarGradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' },
-      { id: 'usr_free', name: 'Alisher Qodirov', streak: 16, avatarGradient: 'linear-gradient(135deg, #6366f1, #a855f7)' }
-    ],
-    followers: [
-      { id: 'usr_premium', name: 'Malika Karimova', streak: 28, avatarGradient: 'linear-gradient(135deg, #f59e0b, #ef4444)' }
-    ]
-  },
-  'usr_premium': {
-    id: 'usr_premium',
-    name: 'Malika Karimova',
-    firstName: 'Malika',
-    lastName: 'Karimova',
-    phone: '+998 93 555 20 10',
-    bio: "Dasturchi va kitobxon. 5:00 da uyg'onish odati va har kuni yangi bilim! 🌅",
-    avatarUrl: '',
-    avatarGradient: 'linear-gradient(135deg, #f59e0b, #ef4444)',
-    role: 'premium',
-    streak: 28,
-    points: 1400,
-    socialLinks: [
-      { id: 'soc_tg_m', platform: 'telegram', username: 'malika_karimova', label: 'Telegram' },
-      { id: 'soc_ig_m', platform: 'instagram', username: 'malika.karimova', label: 'Instagram' }
-    ],
-    following: [
-      { id: 'usr_admin', name: 'Mustafo Bakhriddinov', streak: 45, avatarGradient: 'linear-gradient(135deg, #10b981, #06b6d4)' }
-    ],
-    followers: [
-      { id: 'usr_admin', name: 'Mustafo Bakhriddinov', streak: 45, avatarGradient: 'linear-gradient(135deg, #10b981, #06b6d4)' },
-      { id: 'usr_free', name: 'Alisher Qodirov', streak: 16, avatarGradient: 'linear-gradient(135deg, #6366f1, #a855f7)' }
-    ]
-  },
-  'usr_free': {
-    id: 'usr_free',
-    name: 'Alisher Qodirov',
-    firstName: 'Alisher',
-    lastName: 'Qodirov',
-    phone: '+998 97 444 11 22',
-    bio: "Sport va sog'lom hayot tarzi tarafdori. Har kuni 10 000 qadam va toza ovqatlanish 👟",
-    avatarUrl: '',
-    avatarGradient: 'linear-gradient(135deg, #6366f1, #a855f7)',
-    role: 'user',
-    streak: 16,
-    points: 800,
-    socialLinks: [
-      { id: 'soc_tg_a', platform: 'telegram', username: 'alisher_qodirov', label: 'Telegram' }
-    ],
-    following: [
-      { id: 'usr_admin', name: 'Mustafo Bakhriddinov', streak: 45, avatarGradient: 'linear-gradient(135deg, #10b981, #06b6d4)' }
-    ],
-    followers: [
-      { id: 'usr_admin', name: 'Mustafo Bakhriddinov', streak: 45, avatarGradient: 'linear-gradient(135deg, #10b981, #06b6d4)' }
-    ]
-  }
-};
+export const DEFAULT_PUBLIC_PROFILES = {};
 
 export const BADGES_CONFIG = [
   {
@@ -707,9 +623,19 @@ class StorageManager {
     }
 
     // 10. Challenges & Rankings
-    if (!this.challenges || !Array.isArray(this.challenges)) {
+    if (!this.challenges || !Array.isArray(this.challenges) || this.challenges.length === 0) {
       this.challenges = JSON.parse(JSON.stringify(DEFAULT_CHALLENGES));
       this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
+    } else {
+      // Ensure default requirements: if all challenges are unjoined, join only ch_no_sugar
+      const joinedCount = this.challenges.filter(c => c.joined).length;
+      if (joinedCount === 0) {
+        this.challenges = this.challenges.map(c => ({
+          ...c,
+          joined: c.id === 'ch_no_sugar'
+        }));
+        this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
+      }
     }
 
     // 11. Profile Extras
@@ -874,7 +800,7 @@ class StorageManager {
     return this.habits.find(h => h.id === id);
   }
 
-  addHabit({ title, emoji, description, category, target }) {
+  addHabit({ title, emoji, description, category, target, time, isPinned }) {
     const newHabit = {
       id: 'habit_' + Date.now(),
       title: title.trim(),
@@ -882,6 +808,8 @@ class StorageManager {
       description: (description || '').trim(),
       category: category || "Kundalik",
       target: target || "1 marta",
+      time: (time || '').trim(),
+      isPinned: !!isPinned,
       createdAt: Date.now()
     };
 
@@ -890,18 +818,63 @@ class StorageManager {
     return newHabit;
   }
 
-  updateHabit(id, { title, emoji, description, category, target }) {
+  updateHabit(id, { title, emoji, description, category, target, time, isPinned }) {
     const h = this.habits.find(item => item.id === id);
     if (!h) return null;
 
-    h.title = title.trim();
-    if (emoji) h.emoji = emoji;
-    h.description = (description || '').trim();
-    if (category) h.category = category;
-    if (target) h.target = target;
+    if (title !== undefined) h.title = title.trim();
+    if (emoji !== undefined) h.emoji = emoji;
+    if (description !== undefined) h.description = (description || '').trim();
+    if (category !== undefined) h.category = category;
+    if (target !== undefined) h.target = target;
+    if (time !== undefined) h.time = (time || '').trim();
+    if (isPinned !== undefined) h.isPinned = !!isPinned;
 
     this.save(STORAGE_KEYS.HABITS, this.habits);
     return h;
+  }
+
+  getActiveCurrentHabitId(habitsList, historyMap, dateKey) {
+    const list = Array.isArray(habitsList) ? habitsList : this.habits;
+    if (!list || list.length === 0) return null;
+
+    const now = new Date();
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    // 1. Manually pinned habit that is uncompleted today
+    const manualPinned = list.find(h => h.isPinned && !this.isHabitCompleted(dateKey, h.id));
+    if (manualPinned) return manualPinned.id;
+
+    // 2. Uncompleted habits with a scheduled time
+    const uncompletedWithTime = list.filter(h => {
+      const isDone = this.isHabitCompleted(dateKey, h.id);
+      return !isDone && h.time && /^\d{1,2}:\d{2}$/.test(h.time);
+    });
+
+    if (uncompletedWithTime.length === 0) {
+      return null;
+    }
+
+    // 3. Find habit whose scheduled time is active or closest to current time
+    let bestHabit = null;
+    let minScore = Infinity;
+
+    uncompletedWithTime.forEach(h => {
+      const parts = h.time.split(':').map(Number);
+      const habitMins = parts[0] * 60 + parts[1];
+      const diff = Math.abs(currentMinutes - habitMins);
+
+      // Give high priority if currently within active time window (-30 min before to +60 min after)
+      const inActiveWindow = (currentMinutes >= habitMins - 30 && currentMinutes <= habitMins + 75);
+      const score = inActiveWindow ? diff : diff + 500;
+
+      if (score < minScore) {
+        minScore = score;
+        bestHabit = h;
+      }
+    });
+
+    return bestHabit ? bestHabit.id : uncompletedWithTime[0].id;
   }
 
   deleteHabit(id) {
@@ -1270,6 +1243,9 @@ class StorageManager {
     }
 
     ch.joined = true;
+    if (currentUser?.id) {
+      this.saveChallengeParticipant(id, currentUser.id);
+    }
 
     const currentName = currentUser
       ? `${currentUser.firstName || 'Men'} ${currentUser.lastName || ''}`.trim()
@@ -1280,12 +1256,14 @@ class StorageManager {
       const curStreak = this.getGlobalStreak() || 12;
       ch.leaderboard.push({
         rank: ch.leaderboard.length + 1,
+        id: currentUser?.id || 'usr_current',
         name: currentName,
         streak: curStreak,
         completionRate: 95,
         points: curStreak * 50,
         isCurrent: true,
-        avatarGradient: currentUser?.avatarGradient || "linear-gradient(135deg, #10b981, #b6f36b)"
+        avatarGradient: currentUser?.avatarGradient || "linear-gradient(135deg, #10b981, #b6f36b)",
+        avatarUrl: currentUser?.avatarUrl || ''
       });
       ch.leaderboard.sort((a, b) => b.points - a.points);
       ch.leaderboard.forEach((item, index) => { item.rank = index + 1; });
@@ -1296,17 +1274,55 @@ class StorageManager {
     return { success: true, challenge: ch };
   }
 
-  leaveChallenge(id) {
+  leaveChallenge(id, currentUser) {
     if (!Array.isArray(this.challenges)) return null;
     const ch = this.challenges.find(item => item.id === id);
     if (!ch) return null;
     ch.joined = false;
-    ch.leaderboard = (ch.leaderboard || []).filter(row => !row.isCurrent);
+    if (currentUser?.id) {
+      this.removeChallengeParticipant(id, currentUser.id);
+    }
+    ch.leaderboard = (ch.leaderboard || []).filter(row => !row.isCurrent && row.id !== currentUser?.id);
     ch.leaderboard.forEach((item, index) => { item.rank = index + 1; });
     ch.participantsCount = ch.leaderboard.length;
 
     this.save(STORAGE_KEYS.CHALLENGES, this.challenges);
     return ch;
+  }
+
+  getChallengeParticipants(challengeId) {
+    try {
+      const raw = localStorage.getItem('intizomly_challenge_participants');
+      const all = raw ? JSON.parse(raw) : {};
+      return all[challengeId] || [];
+    } catch {
+      return [];
+    }
+  }
+
+  saveChallengeParticipant(challengeId, userId) {
+    if (!challengeId || !userId) return;
+    try {
+      const raw = localStorage.getItem('intizomly_challenge_participants');
+      const all = raw ? JSON.parse(raw) : {};
+      if (!Array.isArray(all[challengeId])) all[challengeId] = [];
+      if (!all[challengeId].includes(userId)) {
+        all[challengeId].push(userId);
+      }
+      localStorage.setItem('intizomly_challenge_participants', JSON.stringify(all));
+    } catch { }
+  }
+
+  removeChallengeParticipant(challengeId, userId) {
+    if (!challengeId || !userId) return;
+    try {
+      const raw = localStorage.getItem('intizomly_challenge_participants');
+      const all = raw ? JSON.parse(raw) : {};
+      if (Array.isArray(all[challengeId])) {
+        all[challengeId] = all[challengeId].filter(id => id !== userId);
+        localStorage.setItem('intizomly_challenge_participants', JSON.stringify(all));
+      }
+    } catch { }
   }
 
   addChallenge({ title, emoji, description, badgeName, targetDays = 30 }) {
@@ -1404,23 +1420,34 @@ class StorageManager {
       const all = this.getAllPublicProfiles();
       let profile = all[userId];
 
+      const rawFirst = (fallback.firstName || fallback.first_name || '').trim();
+      const rawLast = (fallback.lastName || fallback.last_name || '').trim();
+      let fullName = (fallback.name || `${rawFirst} ${rawLast}`).trim();
+      if (!fullName && fallback.phone && fallback.phone !== '+998 -- --- -- --') {
+        fullName = formatUzbekPhone(fallback.phone) || fallback.phone;
+      }
+      if (!fullName) {
+        fullName = 'Foydalanuvchi';
+      }
+
+      const realSocials = Array.isArray(fallback.socialLinks)
+        ? fallback.socialLinks
+        : (Array.isArray(fallback.socials) ? fallback.socials : []);
+
       if (!profile) {
-        const fullName = (fallback.name || `${fallback.firstName || ''} ${fallback.lastName || ''}`).trim() || 'Foydalanuvchi';
         profile = {
           id: userId,
           name: fullName,
-          firstName: fallback.firstName || fullName.split(' ')[0] || 'Foydalanuvchi',
-          lastName: fallback.lastName || fullName.split(' ').slice(1).join(' ') || '',
-          phone: fallback.phone || '+998 -- --- -- --',
-          bio: fallback.bio || "Intizomli hayot tarafdori 🎯 Har kuni yangi maqsad sari olg'a!",
-          avatarUrl: fallback.avatarUrl || '',
-          avatarGradient: fallback.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
+          firstName: rawFirst || (fullName !== 'Foydalanuvchi' ? fullName.split(' ')[0] : ''),
+          lastName: rawLast || (fullName !== 'Foydalanuvchi' ? fullName.split(' ').slice(1).join(' ') : ''),
+          phone: fallback.phone && fallback.phone !== '+998 -- --- -- --' ? fallback.phone : '',
+          bio: (fallback.bio || '').trim(),
+          avatarUrl: fallback.avatarUrl || fallback.avatar_url || '',
+          avatarGradient: fallback.avatarGradient || fallback.avatar_gradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
           role: fallback.role || 'user',
           streak: Number(fallback.streak) || 0,
           points: Number(fallback.points) || (Number(fallback.streak) || 0) * 50,
-          socialLinks: fallback.socialLinks || [
-            { id: 'soc_tg_def_' + userId, platform: 'telegram', username: fullName.toLowerCase().replace(/\s+/g, '_'), label: 'Telegram' }
-          ],
+          socialLinks: realSocials,
           followers: Array.isArray(fallback.followers) ? fallback.followers : [],
           following: Array.isArray(fallback.following) ? fallback.following : []
         };
@@ -1428,21 +1455,44 @@ class StorageManager {
         this.saveAllPublicProfiles(all);
       } else {
         let changed = false;
+
+        // Clean out legacy fake default bios if present
+        if (profile.bio && (profile.bio.includes("Intizom — bu o'z xohishlaringiz") || profile.bio.includes("Intizomli hayot tarafdori"))) {
+          profile.bio = (fallback.bio || '').trim();
+          changed = true;
+        }
+
+        // Clean out legacy fake default telegram handles
+        if (Array.isArray(profile.socialLinks) && profile.socialLinks.some(s => s.id?.startsWith('soc_tg_def_') || s.username === 'thebakhriddinov' || s.username === 'foydalanuvchi')) {
+          profile.socialLinks = realSocials;
+          changed = true;
+        }
+
         if (fallback.avatarUrl && fallback.avatarUrl !== profile.avatarUrl) {
           profile.avatarUrl = fallback.avatarUrl;
+          changed = true;
+        }
+        if (fallback.bio !== undefined && fallback.bio !== profile.bio) {
+          profile.bio = String(fallback.bio).trim();
+          changed = true;
+        }
+        if (fullName && fullName !== 'Foydalanuvchi' && profile.name !== fullName) {
+          profile.name = fullName;
+          if (rawFirst) profile.firstName = rawFirst;
+          if (rawLast) profile.lastName = rawLast;
+          changed = true;
+        }
+        if (fallback.phone && fallback.phone !== '+998 -- --- -- --' && fallback.phone !== profile.phone) {
+          profile.phone = fallback.phone;
+          changed = true;
+        }
+        if (realSocials.length > 0) {
+          profile.socialLinks = realSocials;
           changed = true;
         }
         if (fallback.streak !== undefined && Number(fallback.streak) !== profile.streak) {
           profile.streak = Number(fallback.streak);
           profile.points = profile.streak * 50;
-          changed = true;
-        }
-        if (fallback.phone && fallback.phone !== profile.phone && fallback.phone !== '+998 -- --- -- --') {
-          profile.phone = fallback.phone;
-          changed = true;
-        }
-        if (fallback.bio && fallback.bio !== profile.bio) {
-          profile.bio = fallback.bio;
           changed = true;
         }
         if (changed) {

@@ -109,6 +109,54 @@ class ReminderService {
           });
         }
       });
+
+      // 4. Check scheduled habits with specific times (SMS / vaqt eslatmasi)
+      const habits = typeof storage.getHabits === 'function' ? storage.getHabits() : (storage.habits || []);
+      if (Array.isArray(habits)) {
+        habits.forEach((habit) => {
+          if (!habit || !habit.time) return;
+
+          // If already completed today, don't disturb
+          const isDone = typeof storage.isHabitCompleted === 'function' ? storage.isHabitCompleted(dateKey, habit.id) : false;
+          if (isDone) return;
+
+          if (habit.time === timeStr) {
+            const fireKey = `habit_${habit.id}_${dateKey}_${timeStr}`;
+            if (this.firedMinutes.has(fireKey)) return;
+            this.firedMinutes.add(fireKey);
+
+            if (this.firedMinutes.size > 120) {
+              const arr = Array.from(this.firedMinutes);
+              this.firedMinutes = new Set(arr.slice(60));
+            }
+
+            // Play authentic Apple chime & vibrate
+            audioManager.playNotification();
+
+            // Send native push / SMS styled alert to phone
+            this.sendNativeNotification(
+              `📩 SMS / Eslatma: ${habit.title}`,
+              `Vaqt bo'ldi (${habit.time})! ${habit.emoji || '🎯'} "${habit.title}" odatini bajarish vaqti keldi.`
+            );
+
+            // Notify app components (Dynamic Island Banner)
+            const payload = {
+              title: `📩 SMS Eslatma: ${habit.emoji || '🎯'} ${habit.title}`,
+              message: `Hozir ushbu odatni bajarish vaqti (${habit.time}) keldi! Hoziroq bajaring 🚀`,
+              habit: habit,
+              isSms: true
+            };
+
+            this.callbacks.forEach((cb) => {
+              try {
+                cb(payload);
+              } catch (err) {
+                console.error('Habit reminder callback error:', err);
+              }
+            });
+          }
+        });
+      }
     } catch (e) {
       console.warn('Reminder check error:', e);
     }

@@ -20,7 +20,6 @@ import { ErrorBoundary } from './components/Common/ErrorBoundary';
 const MotivationPage = lazy(() => import('./components/Pages/MotivationPage').then(m => ({ default: m.MotivationPage })));
 const ReminderPage = lazy(() => import('./components/Pages/ReminderPage').then(m => ({ default: m.ReminderPage })));
 const RankingsPage = lazy(() => import('./components/Pages/RankingsPage').then(m => ({ default: m.RankingsPage })));
-const ControlPage = lazy(() => import('./components/Pages/ControlPage').then(m => ({ default: m.ControlPage })));
 const ProfilePage = lazy(() => import('./components/Pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const AdminDashboard = lazy(() => import('./components/Admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
 
@@ -173,11 +172,6 @@ export function App() {
                   {/* TAB 3: FOCUS (Focus Timer, Study Sessions, Reminders & Silent Notes) */}
                   {(activeTab === 'focus' || activeTab === 'reminder') && (
                     <ReminderPage />
-                  )}
-
-                  {/* TAB: CONTROL (Screen Time, App Restrictions & Auto Kick-out) */}
-                  {activeTab === 'control' && (
-                    <ControlPage />
                   )}
 
                   {/* TAB 4: RANKINGS (Group Challenges & Unlocked Leaderboards) */}

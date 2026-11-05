@@ -1,6 +1,6 @@
 import React, { memo, useRef, useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
-import { IconFocus, IconControl } from '../Common/AppIcons';
+import { IconFocus } from '../Common/AppIcons';
 
 const NAV_TABS = [
   {
@@ -31,14 +31,6 @@ const NAV_TABS = [
     defaultLabel: 'Focus',
     icon: (
       <IconFocus size={21} />
-    )
-  },
-  {
-    id: 'control',
-    labelKey: 'navControl',
-    defaultLabel: 'Control',
-    icon: (
-      <IconControl size={20} />
     )
   },
   {

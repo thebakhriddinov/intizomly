@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabaseService } from '../services/supabaseService';
 import { supabase, isSupabaseConfigured, getSupabaseConfigStatus } from '../lib/supabase';
+import { storage } from '../utils/storage';
+import { formatUzbekPhone } from '../utils/phone';
 
 const AuthContext = createContext(null);
 
@@ -261,6 +263,22 @@ export function AuthProvider({ children }) {
         }
         const merged = { ...currentUser, ...data, ...(updated || {}) };
         setCurrentUser(merged);
+
+        if (currentUser.id) {
+          const rawFirst = (merged.firstName || '').trim();
+          const rawLast = (merged.lastName || '').trim();
+          const realName = `${rawFirst} ${rawLast}`.trim() || (merged.phone ? formatUzbekPhone(merged.phone) : '') || 'Foydalanuvchi';
+          storage.savePublicProfile({
+            id: currentUser.id,
+            name: realName,
+            firstName: rawFirst,
+            lastName: rawLast,
+            phone: merged.phone || '',
+            bio: merged.bio || '',
+            avatarUrl: merged.avatarUrl || ''
+          });
+        }
+
         return { success: true, user: merged };
       }
     } catch (e) {
@@ -272,6 +290,22 @@ export function AuthProvider({ children }) {
     }
     const merged = { ...currentUser, ...data };
     setCurrentUser(merged);
+
+    if (currentUser.id) {
+      const rawFirst = (merged.firstName || '').trim();
+      const rawLast = (merged.lastName || '').trim();
+      const realName = `${rawFirst} ${rawLast}`.trim() || (merged.phone ? formatUzbekPhone(merged.phone) : '') || 'Foydalanuvchi';
+      storage.savePublicProfile({
+        id: currentUser.id,
+        name: realName,
+        firstName: rawFirst,
+        lastName: rawLast,
+        phone: merged.phone || '',
+        bio: merged.bio || '',
+        avatarUrl: merged.avatarUrl || ''
+      });
+    }
+
     return { success: true, user: merged };
   }, [currentUser]);
 

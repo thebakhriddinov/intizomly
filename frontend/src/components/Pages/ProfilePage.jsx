@@ -188,9 +188,14 @@ const handleAvatarFileChange = (e) => {
 
           // 2. Save in public profiles registry so everyone sees it
           if (currentUser?.id) {
+            const rawFirst = (currentUser.firstName || '').trim();
+            const rawLast = (currentUser.lastName || '').trim();
+            const realName = `${rawFirst} ${rawLast}`.trim() || (currentUser.phone ? formatUzbekPhone(currentUser.phone) : '') || 'Foydalanuvchi';
             storage.savePublicProfile({
               id: currentUser.id,
-              name: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Foydalanuvchi',
+              name: realName,
+              firstName: rawFirst,
+              lastName: rawLast,
               avatarUrl: compressedBase64,
               phone: currentUser.phone || '',
               bio: bioText || profileExtras.bio || '',
@@ -220,9 +225,14 @@ const handleAvatarFileChange = (e) => {
       storage.updateProfileExtras({ bio: cleanBio });
 
       if (currentUser?.id) {
+        const rawFirst = (currentUser.firstName || '').trim();
+        const rawLast = (currentUser.lastName || '').trim();
+        const realName = `${rawFirst} ${rawLast}`.trim() || (currentUser.phone ? formatUzbekPhone(currentUser.phone) : '') || 'Foydalanuvchi';
         storage.savePublicProfile({
           id: currentUser.id,
-          name: `${currentUser.firstName || ''} ${currentUser.lastName || ''}`.trim() || 'Foydalanuvchi',
+          name: realName,
+          firstName: rawFirst,
+          lastName: rawLast,
           bio: cleanBio,
           phone: currentUser.phone || '',
           avatarUrl: profileExtras.avatarUrl || '',
@@ -253,11 +263,14 @@ const handleAvatarFileChange = (e) => {
           username: cleanUsername
         });
 
-        if(currentUser?.id) {
+        if (currentUser?.id) {
           storage.savePublicProfile({
             id: currentUser.id,
             socialLinks: updated.socialLinks
           });
+          if (typeof updateProfile === 'function') {
+            updateProfile({ socialLinks: updated.socialLinks, socials: updated.socialLinks });
+          }
         }
 
     setSocialUsername('');
@@ -274,6 +287,9 @@ const handleAvatarFileChange = (e) => {
         id: currentUser.id,
         socialLinks: updated.socialLinks
       });
+      if (typeof updateProfile === 'function') {
+        updateProfile({ socialLinks: updated.socialLinks, socials: updated.socialLinks });
+      }
     }
     loadData();
   };

@@ -415,7 +415,7 @@ export function UsersTab({ onShowToast }) {
                             fontSize: '12px',
                             fontWeight: revealedPasswords[u.id] ? 700 : 400,
                             letterSpacing: revealedPasswords[u.id] ? '0.04em' : '0.15em',
-                            color: revealedPasswords[u.id] ? '#B6F36B' : 'var(--text-muted)',
+                            color: revealedPasswords[u.id] ? (u.password ? '#B6F36B' : 'var(--text-muted)') : 'var(--text-muted)',
                             background: 'rgba(255, 255, 255, 0.05)',
                             padding: '3px 8px',
                             borderRadius: '6px',
@@ -423,7 +423,7 @@ export function UsersTab({ onShowToast }) {
                             userSelect: 'all'
                           }}
                         >
-                          {revealedPasswords[u.id] ? (u.password || 'user123') : '••••••••'}
+                          {revealedPasswords[u.id] ? (u.password || "Ko'rsatilmagan") : '••••••••'}
                         </span>
                         <button
                           type="button"

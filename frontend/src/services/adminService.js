@@ -222,13 +222,15 @@ export const adminService = {
     // Foydalanuvchilarni to'ldirish
     let enriched = (rawProfiles || []).map(p => {
       const phone = p.phone || (p.email && p.email.includes('@phone.intizomly.uz') ? p.email.replace('@phone.intizomly.uz', '') : '') || '';
-      const password = getUserPassword({
+      const rawPassword = (p.password || '').trim();
+      const localPassword = getUserPassword({
         id: p.id,
         phone,
         email: p.email,
         role: p.role,
-        password: p.password
+        password: rawPassword
       });
+      const password = rawPassword || localPassword || '';
 
       return {
         id: p.id,
@@ -313,21 +315,42 @@ export const adminService = {
     saveUserPassword(v.normalized, cleanPass);
     saveUserPassword(`${v.normalized}@phone.intizomly.uz`, cleanPass);
 
-    const res = await this.fetchAdminApi('/api/admin/users', {
-      method: 'POST',
-      body: JSON.stringify({
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+    try {
+      const res = await this.fetchAdminApi('/api/admin/users', {
+        method: 'POST',
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          phone: v.normalized,
+          password: cleanPass,
+          role
+        })
+      });
+
+      if (res?.user?.id) {
+        saveUserPassword(res.user.id, cleanPass);
+      }
+      return res;
+    } catch (err) {
+      console.warn('[AdminService] Direct Supabase fallback for user creation:', err.message);
+      const authData = await supabaseService.signUp({
         phone: v.normalized,
         password: cleanPass,
-        role
-      })
-    });
-
-    if (res?.user?.id) {
-      saveUserPassword(res.user.id, cleanPass);
+        firstName: firstName.trim(),
+        lastName: lastName.trim()
+      });
+      if (authData?.user?.id) {
+        saveUserPassword(authData.user.id, cleanPass);
+        if (role && role !== 'user') {
+          await supabaseService.updateUserRole(authData.user.id, role);
+        }
+        await supabase
+          .from('profiles')
+          .update({ password: cleanPass })
+          .eq('id', authData.user.id);
+      }
+      return { success: true, user: authData?.user };
     }
-    return res;
   },
 
   /**
@@ -337,10 +360,22 @@ export const adminService = {
     if (data?.password && String(data.password).trim()) {
       saveUserPassword(userId, String(data.password).trim());
     }
-    return await this.fetchAdminApi(`/api/admin/users/${userId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
+    try {
+      return await this.fetchAdminApi(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+    } catch (err) {
+      console.warn('[AdminService] Direct Supabase fallback for user update:', err.message);
+      const updates = {};
+      if (data.firstName !== undefined) updates.firstName = data.firstName;
+      if (data.lastName !== undefined) updates.lastName = data.lastName;
+      if (data.phone !== undefined) updates.phone = data.phone;
+      if (data.password !== undefined) updates.password = data.password;
+      if (data.role !== undefined) await supabaseService.updateUserRole(userId, data.role);
+      await supabaseService.updateProfile(userId, updates);
+      return { success: true };
+    }
   },
 
   /**

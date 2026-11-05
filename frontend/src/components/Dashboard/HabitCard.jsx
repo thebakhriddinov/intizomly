@@ -1,9 +1,9 @@
 import React, { memo, useMemo } from 'react';
 import { useHabits } from '../../context/HabitsContext';
 import { storage } from '../../utils/storage';
-import { IconFlame, IconTarget, HabitGlyphIcon } from '../Common/AppIcons';
+import { IconFlame, IconTarget, HabitGlyphIcon, IconClock, IconPin } from '../Common/AppIcons';
 
-function HabitCardComponent({ habit, onEdit, onDelete }) {
+function HabitCardComponent({ habit, onEdit, onDelete, isPinned = false, isCurrentActive = false }) {
   const { dateKey, history, toggleHabit } = useHabits();
 
   // Instant O(1) completion lookup
@@ -28,7 +28,7 @@ function HabitCardComponent({ habit, onEdit, onDelete }) {
 
   return (
     <div
-      className={`habit-card ${isCompleted ? 'is-completed' : ''}`}
+      className={`habit-card ${isCompleted ? 'is-completed' : ''} ${isPinned || isCurrentActive ? 'is-pinned-active' : ''}`}
       onClick={(e) => {
         // Prevent toggling when clicking action buttons
         if (e.target.closest('.habit-actions') || e.target.closest('.action-icon-btn')) {
@@ -39,6 +39,18 @@ function HabitCardComponent({ habit, onEdit, onDelete }) {
       role="button"
       tabIndex={0}
     >
+      {/* Pinned / Active Time Ribbon */}
+      {(isPinned || isCurrentActive) && (
+        <div className="habit-pinned-banner">
+          <span className="pinned-pulse-dot"></span>
+          <IconPin size={12} color="#10B981" />
+          <span className="pinned-title-text">
+            {isCurrentActive ? `Hozir bajarish vaqti (${habit.time || 'Aktiv'})` : "Qadalgan odat"}
+          </span>
+          <span className="pinned-chip-tag">PIN</span>
+        </div>
+      )}
+
       <div className="habit-top-row">
         {/* Apple Reminders / Liquid Jelly Checkbox */}
         <button
@@ -63,6 +75,12 @@ function HabitCardComponent({ habit, onEdit, onDelete }) {
               <IconTarget size={12} color="#8B5CF6" />
               <span>{habit.target || '1 marta'}</span>
             </span>
+            {habit.time && (
+              <span className={`habit-time-badge ${isCurrentActive ? 'is-active-now' : ''}`} title={`Rejalashtirilgan vaqt: ${habit.time}`}>
+                <IconClock size={11} color={isCurrentActive ? '#10B981' : 'var(--text-muted)'} />
+                <span>{habit.time}</span>
+              </span>
+            )}
           </div>
 
           <div className="habit-title-row">

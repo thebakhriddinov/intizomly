@@ -96,7 +96,7 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
 
   const formattedPhone = currentProfile.phone && currentProfile.phone !== '+998 -- --- -- --'
     ? (formatUzbekPhone(currentProfile.phone) || currentProfile.phone)
-    : '+998 (90) 123-45-67';
+    : '';
 
   return createPortal(
     <div className="modal-overlay public-profile-overlay" onClick={onClose} style={{ zIndex: 10000 }}>
@@ -181,14 +181,16 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
             </div>
 
             {/* Phone Number (Raqam) */}
-            <div className="pub-phone-badge">
-              <IconPhone size={13} color="#10B981" />
-              <span>{formattedPhone}</span>
-            </div>
+            {formattedPhone ? (
+              <div className="pub-phone-badge">
+                <IconPhone size={13} color="#10B981" />
+                <span>{formattedPhone}</span>
+              </div>
+            ) : null}
 
             {/* Bio Text */}
-            <p className="pub-bio-paragraph">
-              {currentProfile.bio || "Foydalanuvchi hali bio yozmagan."}
+            <p className="pub-bio-paragraph" style={{ fontStyle: currentProfile.bio ? 'normal' : 'italic', opacity: currentProfile.bio ? 1 : 0.75 }}>
+              {currentProfile.bio || "Foydalanuvchi hali bio kiritmagan."}
             </p>
           </div>
 

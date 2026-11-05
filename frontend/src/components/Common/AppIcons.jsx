@@ -19,6 +19,24 @@ export function IconFocus({ size = 20, className = '', color = 'currentColor' })
   );
 }
 
+export function IconClock({ size = 16, className = '', color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`app-icon app-icon-clock ${className}`}>
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+  );
+}
+
+export function IconPin({ size = 16, className = '', color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`app-icon app-icon-pin ${className}`}>
+      <line x1="12" y1="17" x2="12" y2="22"></line>
+      <path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.89A2 2 0 0 1 15 10.76V6h1a1 1 0 0 0 0-2H8a1 1 0 0 0 0 2h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.89A2 2 0 0 0 5 15.24V17z"></path>
+    </svg>
+  );
+}
+
 export function IconAlarm({ size = 20, className = '', color = 'currentColor' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={`app-icon app-icon-alarm ${className}`}>

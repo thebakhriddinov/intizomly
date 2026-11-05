@@ -5,6 +5,8 @@ import { useHabits } from '../../context/HabitsContext';
 import { storage } from '../../utils/storage';
 import { audioManager } from '../../utils/audio';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { supabaseService } from '../../services/supabaseService';
+import { formatUzbekPhone } from '../../utils/phone';
 import { AddChallengeModal } from '../Modals/AddChallengeModal';
 import { PublicProfileModal } from '../Modals/PublicProfileModal';
 import {
@@ -20,7 +22,8 @@ import {
   IconSearch,
   IconLock,
   IconCheck,
-  IconUsers
+  IconUsers,
+  IconUserPlus
 } from '../Common/AppIcons';
 
 // Helper to render high-end challenge vector emblem
@@ -73,160 +76,328 @@ function RankingsPageComponent() {
     setLoading(true);
     const storedChallenges = storage.getChallenges();
 
-        // Fetch REAL database users from Supabase
-        let realLeaderboard = [];
-        if (isSupabaseConfigured && supabase) {
-          try {
-            const { data: profiles } = await supabase
-              .from('profiles')
-              .select('id, first_name, last_name, role, avatar_gradient');
+    // 1. Fetch REAL database users from Supabase profiles
+    let realLeaderboard = [];
+    if (isSupabaseConfigured && supabase) {
+      try {
+        let profiles = null;
+        try {
+          const res = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, role, avatar_gradient, avatar_url, bio, phone, social_links');
+          if (!res.error && Array.isArray(res.data)) {
+            profiles = res.data;
+          }
+        } catch {
+          // ignore
+        }
 
-            const { data: completions } = await supabase
-              .from('habit_completions')
-              .select('user_id, date_key');
+        // Fallback to basic columns if extended table not yet migrated
+        if (!profiles) {
+          const coreRes = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, role, avatar_gradient');
+          if (!coreRes.error && Array.isArray(coreRes.data)) {
+            profiles = coreRes.data;
+          }
+        }
 
-              if (Array.isArray(profiles) && profiles.length > 0) {
-                const completionsByUser = {};
-                (completions || []).forEach(c => {
-                  if (!completionsByUser[c.user_id]) completionsByUser[c.user_id] = new Set();
-                  completionsByUser[c.user_id].add(c.date_key);
-                });
+        const { data: completions } = await supabase
+          .from('habit_completions')
+          .select('user_id, date_key');
 
-                  realLeaderboard = profiles.map(p => {
-                    const activeDays = (completionsByUser[p.id] || new Set()).size;
-                    const streak = activeDays; // Real streak / days completed
-                    const points = streak * 50;
-                    const pub = storage.getPublicProfile(p.id, p);
-                    const avatarUrl = p.avatarUrl || pub?.avatarUrl || (p.avatar_gradient && (p.avatar_gradient.startsWith('data:image') || p.avatar_gradient.startsWith('http')) ? p.avatar_gradient : '');
-
-                    return {
-                      id: p.id,
-                      name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Foydalanuvchi',
-                      streak,
-                      completionRate: activeDays > 0 ? Math.min(100, Math.round((activeDays / 30) * 100)) : 0,
-                      points,
-                      avatarGradient: p.avatar_gradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
-                      avatarUrl,
-                      role: p.role || 'user'
-                    };
-                  });
-                }
-      } catch (err) {
-                console.warn('Real users load for rankings error:', err);
-              }
-            }
-
-            // Populate each challenge with REAL users
-            const updatedChallenges = storedChallenges.map(ch => {
-              let challengeLeaderboard = [...realLeaderboard];
-
-              // If no users in database yet, preserve existing or fall back to public profiles
-              if (challengeLeaderboard.length === 0 && Array.isArray(ch.leaderboard)) {
-                challengeLeaderboard = ch.leaderboard.map(u => {
-                  const pub = storage.getPublicProfile(u.id, u);
-                  return {
-            ...u,
-                    avatarUrl: u.avatarUrl || pub?.avatarUrl || '',
-                    avatarGradient: u.avatarGradient || pub?.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)'
-                  };
-                });
-              }
-
-            // If current user is logged in, sync current user avatarUrl into their row
-            if (currentUser) {
-              const myExtras = storage.getProfileExtras();
-              const myPub = storage.getPublicProfile(currentUser.id);
-              const myAvatar = myExtras?.avatarUrl || myPub?.avatarUrl || currentUser.avatarUrl || '';
-              challengeLeaderboard = challengeLeaderboard.map(u => {
-                if (u.id === currentUser.id) {
-                  return {
-                    ...u,
-                    avatarUrl: myAvatar || u.avatarUrl
-                  };
-                }
-                return u;
-              });
-            }
-
-            // Sort by points descending, then streak
-            challengeLeaderboard.sort((a, b) => b.points - a.points || b.streak - a.streak);
-            challengeLeaderboard = challengeLeaderboard.map((u, idx) => ({
-              ...u,
-              rank: idx + 1,
-              isCurrent: currentUser ? u.id === currentUser.id : false
-            }));
-
-            return {
-              ...ch,
-              participantsCount: challengeLeaderboard.length,
-              leaderboard: challengeLeaderboard
-            };
+        if (Array.isArray(profiles) && profiles.length > 0) {
+          const completionsByUser = {};
+          (completions || []).forEach(c => {
+            if (!completionsByUser[c.user_id]) completionsByUser[c.user_id] = new Set();
+            completionsByUser[c.user_id].add(c.date_key);
           });
 
-  setChallenges(updatedChallenges);
-  setLoading(false);
-}, [currentUser]);
+          realLeaderboard = profiles.map(p => {
+            const activeDays = (completionsByUser[p.id] || new Set()).size;
+            const streak = activeDays; // Real streak / days completed
+            const points = streak * 50;
+            const pub = storage.getPublicProfile(p.id, {
+              id: p.id,
+              first_name: p.first_name,
+              last_name: p.last_name,
+              phone: p.phone,
+              bio: p.bio,
+              avatar_url: p.avatar_url,
+              avatar_gradient: p.avatar_gradient,
+              social_links: p.social_links,
+              role: p.role,
+              streak,
+              points
+            });
 
-useEffect(() => {
-  loadChallenges();
-}, [loadChallenges]);
+            const rawFirst = (p.first_name || pub?.firstName || '').trim();
+            const rawLast = (p.last_name || pub?.lastName || '').trim();
+            let displayName = `${rawFirst} ${rawLast}`.trim();
+            if (!displayName && p.phone) {
+              displayName = formatUzbekPhone(p.phone) || p.phone;
+            }
+            if (!displayName && pub?.name && pub.name !== 'Foydalanuvchi') {
+              displayName = pub.name;
+            }
+            if (!displayName) {
+              displayName = 'Foydalanuvchi';
+            }
 
-const selectedChallenge = challenges.find((c) => c.id === selectedChallengeId) || challenges[0];
+            const avatarUrl = p.avatar_url || pub?.avatarUrl || (p.avatar_gradient && (p.avatar_gradient.startsWith('data:image') || p.avatar_gradient.startsWith('http')) ? p.avatar_gradient : '');
 
-const handleJoin = (challengeId) => {
-  const res = storage.joinChallenge(challengeId, currentUser);
-  if (res?.error === 'MAX_LIMIT_REACHED') {
-    audioManager.playError?.();
-    if (addToast) {
-      addToast(
-        "Limitga yetildi! (4/4)",
-        "Siz ko'pi bilan 4 ta musobaqada bir vaqtda qatnasha olasiz. Boshqa guruhga qo'shilish uchun avval mavjudlaridan biridan chiqing.",
-        "warning"
-      );
-    } else {
-      triggerBanner(
-        "⚠️ Limitga yetildi (4/4)!",
-        "Siz bir vaqtning o'zida maksimal 4 ta musobaqaga a'zo bo'la olasiz. Yangisiga qo'shilish uchun avval boshqasidan chiqing."
-      );
+            return {
+              id: p.id,
+              name: displayName,
+              firstName: rawFirst,
+              lastName: rawLast,
+              phone: p.phone || pub?.phone || '',
+              bio: p.bio || pub?.bio || '',
+              socialLinks: pub?.socialLinks || [],
+              streak,
+              completionRate: activeDays > 0 ? Math.min(100, Math.round((activeDays / 30) * 100)) : 0,
+              points,
+              avatarGradient: p.avatar_gradient || pub?.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
+              avatarUrl,
+              role: p.role || 'user'
+            };
+          });
+        }
+      } catch (err) {
+        console.warn('Real users load for rankings error:', err);
+      }
     }
-    return;
-  }
-  loadChallenges();
-  audioManager.playCheck();
-  const updatedCount = storage.getChallenges().filter(c => c.joined).length;
-  if (addToast) {
-    addToast("🎉 Guruhga a'zo bo'ldingiz!", `Reyting jadvali ochildi. Faol musobaqalar: ${updatedCount}/4`, "success");
-  } else {
-    triggerBanner("🎉 Guruhga a'zo bo'ldingiz!", `Reyting jadvali ochildi. Faol musobaqalar: ${updatedCount}/4`);
-  }
-};
 
-const handleLeave = (challengeId) => {
-  storage.leaveChallenge(challengeId);
-  loadChallenges();
-  triggerBanner("Guruhdan chiqildi", "Reyting ma'lumotlari yashirildi.");
-};
+    // Fallback if Supabase profiles not loaded yet
+    if (realLeaderboard.length === 0) {
+      const allUsers = storage.getUsers?.() || [];
+      realLeaderboard = allUsers.map(u => {
+        const pub = storage.getPublicProfile(u.id, u);
+        const rawFirst = (u.firstName || pub?.firstName || '').trim();
+        const rawLast = (u.lastName || pub?.lastName || '').trim();
+        let displayName = `${rawFirst} ${rawLast}`.trim();
+        if (!displayName && u.phone) displayName = formatUzbekPhone(u.phone) || u.phone;
+        if (!displayName) displayName = pub?.name || 'Foydalanuvchi';
 
-// Admin: Create new challenge
-const handleSaveChallenge = (newChData) => {
-  const created = storage.addChallenge(newChData);
-  loadChallenges();
-  setSelectedChallengeId(created.id);
-  if (addToast) {
-    addToast("Musobaqa yaratildi! 🏆", created.title, "success");
-  } else {
-    triggerBanner("🏆 Yangi Challenge boshlandi!", created.title);
-  }
-};
+        return {
+          id: u.id,
+          name: displayName,
+          firstName: rawFirst,
+          lastName: rawLast,
+          phone: u.phone || '',
+          bio: u.bio || pub?.bio || '',
+          socialLinks: u.socialLinks || pub?.socialLinks || [],
+          streak: storage.getGlobalStreak() || 10,
+          completionRate: 85,
+          points: (storage.getGlobalStreak() || 10) * 50,
+          avatarGradient: u.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
+          avatarUrl: u.avatarUrl || pub?.avatarUrl || '',
+          role: u.role || 'user'
+        };
+      });
+    }
 
-// Admin: Delete challenge
-const handleDeleteChallenge = (challengeId, challengeTitle) => {
-  if (window.confirm(`"${challengeTitle}" musobaqasini o'chirmoqchimisiz?`)) {
-    storage.deleteChallenge(challengeId);
+    // 2. Query challenge_participants from Supabase
+    const participantsMap = {};
+    try {
+      const remoteParticipants = await supabaseService.getChallengeParticipants();
+      if (Array.isArray(remoteParticipants) && remoteParticipants.length > 0) {
+        remoteParticipants.forEach(row => {
+          if (!participantsMap[row.challenge_id]) {
+            participantsMap[row.challenge_id] = new Set();
+          }
+          participantsMap[row.challenge_id].add(row.user_id);
+        });
+      }
+    } catch (e) {
+      console.warn('Error fetching challenge participants:', e);
+    }
+
+    // Merge with local storage participant tracking
+    storedChallenges.forEach(ch => {
+      const localList = storage.getChallengeParticipants(ch.id);
+      if (Array.isArray(localList)) {
+        if (!participantsMap[ch.id]) participantsMap[ch.id] = new Set();
+        localList.forEach(uid => participantsMap[ch.id].add(uid));
+      }
+      if (ch.joined && currentUser?.id) {
+        if (!participantsMap[ch.id]) participantsMap[ch.id] = new Set();
+        participantsMap[ch.id].add(currentUser.id);
+      }
+    });
+
+    // Default requirement: All users participate in ch_no_sugar by default
+    if (!participantsMap['ch_no_sugar'] || participantsMap['ch_no_sugar'].size === 0) {
+      participantsMap['ch_no_sugar'] = new Set();
+      realLeaderboard.forEach(u => participantsMap['ch_no_sugar'].add(u.id));
+      if (currentUser?.id) participantsMap['ch_no_sugar'].add(currentUser.id);
+    } else if (currentUser?.id) {
+      participantsMap['ch_no_sugar'].add(currentUser.id);
+    }
+
+    // 3. Build each challenge with its SPECIFIC real participants
+    const updatedChallenges = storedChallenges.map(ch => {
+      const joinedUserIds = participantsMap[ch.id] || new Set();
+
+      // Filter to users who joined THIS specific challenge
+      let challengeMembers = realLeaderboard.filter(u => joinedUserIds.has(u.id));
+
+      // Check whether current user is joined
+      const isCurrentJoined = currentUser
+        ? (joinedUserIds.has(currentUser.id) || (ch.id === 'ch_no_sugar' ? true : Boolean(ch.joined)))
+        : false;
+
+      // If current user is joined but not in list, add them
+      if (isCurrentJoined && currentUser && !challengeMembers.some(u => u.id === currentUser.id)) {
+        const myFirst = (currentUser.firstName || '').trim();
+        const myLast = (currentUser.lastName || '').trim();
+        const myName = `${myFirst} ${myLast}`.trim() || formatUzbekPhone(currentUser.phone) || 'Siz';
+        challengeMembers.push({
+          id: currentUser.id,
+          name: myName,
+          firstName: myFirst,
+          lastName: myLast,
+          phone: currentUser.phone || '',
+          bio: currentUser.bio || '',
+          socialLinks: currentUser.socialLinks || [],
+          streak: storage.getGlobalStreak() || 12,
+          completionRate: 90,
+          points: (storage.getGlobalStreak() || 12) * 50,
+          avatarGradient: currentUser.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
+          avatarUrl: currentUser.avatarUrl || '',
+          role: currentUser.role || 'user',
+          isCurrent: true
+        });
+      }
+
+      // If current user is in members, enrich with latest profile state
+      if (currentUser) {
+        const myExtras = storage.getProfileExtras();
+        const myPub = storage.getPublicProfile(currentUser.id);
+        const myAvatar = myExtras?.avatarUrl || myPub?.avatarUrl || currentUser.avatarUrl || '';
+        const myBio = myExtras?.bio !== undefined ? myExtras.bio : (currentUser.bio || myPub?.bio || '');
+        const myFirst = (currentUser.firstName || myPub?.firstName || '').trim();
+        const myLast = (currentUser.lastName || myPub?.lastName || '').trim();
+        const myName = `${myFirst} ${myLast}`.trim() || myPub?.name || 'Siz';
+
+        challengeMembers = challengeMembers.map(u => {
+          if (u.id === currentUser.id) {
+            return {
+              ...u,
+              name: myName,
+              firstName: myFirst,
+              lastName: myLast,
+              phone: currentUser.phone || myPub?.phone || u.phone || '',
+              bio: myBio,
+              socialLinks: myExtras?.socialLinks || myPub?.socialLinks || u.socialLinks || [],
+              avatarUrl: myAvatar || u.avatarUrl,
+              isCurrent: true
+            };
+          }
+          return { ...u, isCurrent: false };
+        });
+      }
+
+      // Sort by points descending, then streak
+      challengeMembers.sort((a, b) => (b.points || 0) - (a.points || 0) || (b.streak || 0) - (a.streak || 0));
+      challengeMembers = challengeMembers.map((u, idx) => ({
+        ...u,
+        rank: idx + 1
+      }));
+
+      return {
+        ...ch,
+        joined: isCurrentJoined,
+        participantsCount: challengeMembers.length,
+        leaderboard: challengeMembers
+      };
+    });
+
+    setChallenges(updatedChallenges);
+    setLoading(false);
+  }, [currentUser]);
+
+  useEffect(() => {
     loadChallenges();
-    if (addToast) addToast("O'chirildi", "Challenge ro'yxatdan olib tashlandi", "info");
-  }
-};
+  }, [loadChallenges]);
+
+  const selectedChallenge = challenges.find((c) => c.id === selectedChallengeId) || challenges[0];
+
+  const handleJoin = async (challengeId) => {
+    if (!currentUser) return;
+
+    // Check limit in storage
+    const res = storage.joinChallenge(challengeId, currentUser);
+    if (res?.error === 'MAX_LIMIT_REACHED') {
+      audioManager.playError?.();
+      if (addToast) {
+        addToast(
+          "Limitga yetildi! (4/4)",
+          "Siz ko'pi bilan 4 ta musobaqada bir vaqtda qatnasha olasiz. Boshqa guruhga qo'shilish uchun avval mavjudlaridan biridan chiqing.",
+          "warning"
+        );
+      } else {
+        triggerBanner(
+          "⚠️ Limitga yetildi (4/4)!",
+          "Siz bir vaqtning o'zida maksimal 4 ta musobaqaga a'zo bo'la olasiz. Yangisiga qo'shilish uchun avval boshqasidan chiqing."
+        );
+      }
+      return;
+    }
+
+    // Persist to Supabase challenge_participants table
+    try {
+      await supabaseService.joinChallenge(currentUser.id, challengeId);
+    } catch (err) {
+      console.warn('[Rankings] joinChallenge supabase notice:', err?.message);
+    }
+
+    audioManager.playCheck();
+    await loadChallenges();
+
+    const updatedCount = storage.getChallenges().filter(c => c.joined).length;
+    if (addToast) {
+      addToast("🎉 Guruhga a'zo bo'ldingiz!", `Musobaqa ishtirokchisi bo'ldingiz! Faol musobaqalar: ${updatedCount}/4`, "success");
+    } else {
+      triggerBanner("🎉 Guruhga a'zo bo'ldingiz!", `Musobaqa ishtirokchisi bo'ldingiz! Faol musobaqalar: ${updatedCount}/4`);
+    }
+  };
+
+  const handleLeave = async (challengeId) => {
+    if (!currentUser) return;
+
+    storage.leaveChallenge(challengeId, currentUser);
+
+    try {
+      await supabaseService.leaveChallenge(currentUser.id, challengeId);
+    } catch (err) {
+      console.warn('[Rankings] leaveChallenge supabase notice:', err?.message);
+    }
+
+    await loadChallenges();
+    triggerBanner("Guruhdan chiqildi", "Ushbu musobaqa a'zoligingiz bekor qilindi.");
+  };
+
+  // Admin: Create new challenge
+  const handleSaveChallenge = (newChData) => {
+    const created = storage.addChallenge(newChData);
+    loadChallenges();
+    setSelectedChallengeId(created.id);
+    if (addToast) {
+      addToast("Musobaqa yaratildi! 🏆", created.title, "success");
+    } else {
+      triggerBanner("🏆 Yangi Challenge boshlandi!", created.title);
+    }
+  };
+
+  // Admin: Delete challenge
+  const handleDeleteChallenge = (challengeId, challengeTitle) => {
+    if (window.confirm(`"${challengeTitle}" musobaqasini o'chirmoqchimisiz?`)) {
+      storage.deleteChallenge(challengeId);
+      loadChallenges();
+      if (addToast) addToast("O'chirildi", "Challenge ro'yxatdan olib tashlandi", "info");
+    }
+  };
 
 return (
   <div className="rankings-page">
@@ -486,6 +657,31 @@ return (
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                {ch.leaderboard && ch.leaderboard.length > 0 && (
+                  <div className="challenge-card-avatar-stack">
+                    {ch.leaderboard.slice(0, 3).map((p, idx) => (
+                      <div
+                        key={p.id || idx}
+                        className="stacked-mini-avatar"
+                        style={{
+                          zIndex: 3 - idx,
+                          background: p.avatarUrl ? 'transparent' : (p.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)')
+                        }}
+                        title={p.name}
+                      >
+                        {p.avatarUrl ? (
+                          <img src={p.avatarUrl} alt={p.name} />
+                        ) : (
+                          <span>{(p.name || 'U')[0]}</span>
+                        )}
+                      </div>
+                    ))}
+                    {ch.leaderboard.length > 3 && (
+                      <span className="stacked-more-count">+{ch.leaderboard.length - 3}</span>
+                    )}
+                  </div>
+                )}
+
                 <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <IconUsers size={14} color="var(--text-muted)" />
                   <span>{ch.participantsCount || 0} nafar</span>
@@ -566,13 +762,8 @@ return (
               <p className="challenge-description">{selectedChallenge.description}</p>
               <div className="challenge-meta-row">
                 <span className="meta-pill">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                  <span>{selectedChallenge.participantsCount} nafar ishtirokchi</span>
+                  <IconUsers size={14} />
+                  <span>{selectedChallenge.participantsCount || 0} nafar ishtirokchi</span>
                 </span>
                 <span className="meta-pill">
                   <IconTrophy size={14} />
@@ -634,60 +825,169 @@ return (
           </div>
         </div>
 
-        {/* 5. LEADERBOARD: ONLY DISPLAY IF JOINED (Strict Requirement) */}
-        {!selectedChallenge.joined ? (
-          /* LOCKED STATE */
-          <div className="leaderboard-locked-card">
-            <div className="lock-icon-circle">
-              <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-            </div>
-            <h4 className="locked-title">Reyting Natijalari Yashirin</h4>
-            <p className="locked-desc">
-              Ushbu musobaqa peshqadamlari va ishtirokchilar natijalarini ko'rish uchun yuqoridagi <strong>"Guruhga A'zo Bo'lish"</strong> tugmasini bosing!
-            </p>
-            {joinedCount >= 4 ? (
-              <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                <button
-                  type="button"
-                  className="btn-join-challenge-inline"
-                  onClick={() => handleJoin(selectedChallenge.id)}
-                  style={{
-                    background: 'rgba(245, 158, 11, 0.2)',
-                    border: '1px solid rgba(245, 158, 11, 0.4)',
-                    color: '#F59E0B'
-                  }}
-                >
-                  <IconLock size={16} color="#F59E0B" />
-                  <span>Limitga Yetildi (4/4 ta musobaqada a'zosiz)</span>
-                </button>
-                <span style={{ fontSize: '12px', color: '#F59E0B' }}>
-                  Boshqa musobaqaga qo'shilish uchun avval a'zo bo'lganlaringizdan biridan chiqing
+        {/* 5. DEDICATED CHALLENGE PARTICIPANTS GALLERY */}
+        <div className="challenge-participants-section">
+          <div className="section-title-row">
+            <div className="section-title-left">
+              <div className="section-icon-badge">
+                <IconUsers size={16} />
+              </div>
+              <div>
+                <h4 className="participants-heading">
+                  Guruh Ishtirokchilari
+                  <span className="participants-count-tag">
+                    {selectedChallenge.participantsCount || 0} nafar
+                  </span>
+                </h4>
+                <span className="participants-subtext">
+                  Ushbu challengeda qatnashayotgan barcha a'zolar
                 </span>
               </div>
-            ) : (
+            </div>
+
+            {!selectedChallenge.joined && joinedCount < 4 && (
               <button
                 type="button"
-                className="btn-join-challenge-inline"
+                className="btn-quick-join"
                 onClick={() => handleJoin(selectedChallenge.id)}
               >
-                <IconTrophy size={16} />
-                <span>Guruhga Qo'shilish va Natijalarni Ochish ({joinedCount}/4)</span>
+                <IconUserPlus size={14} />
+                <span>Guruhga qo'shilish</span>
               </button>
             )}
           </div>
-        ) : (
-          /* UNLOCKED STATE: FULL LEADERBOARD */
-          <div className="leaderboard-unlocked-container">
-            <div className="leaderboard-header-bar">
-              <h4 className="leaderboard-title">Guruh Peshqadamlari (Top Natijalar)</h4>
-              <span className="live-pill">
-                <span className="pulse-dot"></span>
-                <span>Haqiqiy Foydalanuvchilar</span>
-              </span>
+
+          {(!selectedChallenge.leaderboard || selectedChallenge.leaderboard.length === 0) ? (
+            <div className="participants-empty-card">
+              <div className="empty-users-icon" style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: 'rgba(16, 185, 129, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#10B981',
+                margin: '0 auto 8px'
+              }}>
+                <IconUsers size={24} />
+              </div>
+              <h5 style={{ margin: '0 0 4px 0', fontSize: '14px', color: 'var(--text-primary)' }}>
+                Hozircha ishtirokchilar yo'q
+              </h5>
+              <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)' }}>
+                Ushbu challengeda birinchi bo'lib ishtirok eting va o'z o'rningizni egallang!
+              </p>
+              {joinedCount < 4 && (
+                <button
+                  type="button"
+                  className="btn-join-challenge"
+                  onClick={() => handleJoin(selectedChallenge.id)}
+                  style={{ marginTop: '12px' }}
+                >
+                  <IconTrophy size={15} />
+                  <span>Birinchi bo'lib qo'shilish</span>
+                </button>
+              )}
             </div>
+          ) : (
+            <div className="participants-cards-grid">
+              {selectedChallenge.leaderboard.map((member) => (
+                <div
+                  key={member.id}
+                  className={`participant-card ${member.isCurrent ? 'is-current-member' : ''}`}
+                  onClick={() => setSelectedUserProfile(member)}
+                  role="button"
+                  tabIndex={0}
+                  title={`${member.name} profilini ko'rish`}
+                >
+                  <div className="participant-card-avatar-wrap">
+                    <div
+                      className="participant-card-avatar"
+                      style={{
+                        background: member.avatarUrl ? 'transparent' : (member.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)')
+                      }}
+                    >
+                      {member.avatarUrl ? (
+                        <img src={member.avatarUrl} alt={member.name} />
+                      ) : (
+                        <span>{(member.name || 'U')[0]}</span>
+                      )}
+                    </div>
+                    {member.rank && member.rank <= 3 && (
+                      <span className="member-rank-medal">
+                        <IconMedal rank={member.rank} size={15} />
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="participant-card-info">
+                    <div className="participant-card-name-row">
+                      <span className="participant-card-name">{member.name}</span>
+                      {member.isCurrent && <span className="member-you-badge">Siz</span>}
+                    </div>
+                    <div className="participant-card-meta">
+                      <span className="participant-streak-pill">
+                        <IconFlame size={12} />
+                        <span>{member.streak || 0} kun</span>
+                      </span>
+                      <span className="participant-points-pill">
+                        {member.points || 0} ball
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 6. JOIN CTA BANNER (IF NOT JOINED) */}
+        {!selectedChallenge.joined && (
+          <div className="challenge-join-banner">
+            <div className="join-banner-left">
+              <div className="join-banner-emblem">
+                <IconTrophy size={20} />
+              </div>
+              <div>
+                <h5 className="join-banner-title">Guruh Reytingida O'z O'rningizni Egallang!</h5>
+                <p className="join-banner-desc">
+                  Musobaqaga qo'shiling, har kuni odatingizni bajaring va sovrinli medalni qo'lga kiritish uchun kurashing.
+                </p>
+              </div>
+            </div>
+            {joinedCount >= 4 ? (
+              <button
+                type="button"
+                className="btn-join-challenge"
+                disabled
+                style={{ opacity: 0.65, cursor: 'not-allowed', background: 'rgba(245, 158, 11, 0.2)', color: '#F59E0B' }}
+              >
+                <IconLock size={15} color="#F59E0B" />
+                <span>Limit To'ldi (4/4)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn-join-challenge"
+                onClick={() => handleJoin(selectedChallenge.id)}
+              >
+                <IconTrophy size={16} />
+                <span>Guruhga Qo'shilish ({joinedCount}/4)</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* 7. FULL LEADERBOARD & PODIUM - ALWAYS VISIBLE */}
+        <div className="leaderboard-unlocked-container">
+          <div className="leaderboard-header-bar">
+            <h4 className="leaderboard-title">Guruh Peshqadamlari & Reyting</h4>
+            <span className="live-pill">
+              <span className="pulse-dot"></span>
+              <span>Haqiqiy Foydalanuvchilar</span>
+            </span>
+          </div>
 
             {selectedChallenge.leaderboard && selectedChallenge.leaderboard.length === 0 ? (
               <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
@@ -812,7 +1112,6 @@ return (
               </>
             )}
           </div>
-        )}
       </div>
     )}
 

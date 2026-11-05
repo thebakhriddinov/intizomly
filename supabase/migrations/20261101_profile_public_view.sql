@@ -26,3 +26,7 @@ CREATE POLICY "Users can update own profile or admin can update"
   USING (auth.uid() = id OR public.is_admin(auth.uid()))
   WITH CHECK (auth.uid() = id OR public.is_admin(auth.uid()));
 
+-- 4. HABITS: Vaqt qo'shish (Vaqti kelganda eslatma/SMS va Pin qilish uchun)
+ALTER TABLE public.habits ADD COLUMN IF NOT EXISTS time TEXT;
+
+

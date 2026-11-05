@@ -170,11 +170,11 @@ export function UserDetailsModal({
                     fontSize: '15px',
                     fontWeight: 700,
                     letterSpacing: showPass ? '0.03em' : '0.2em',
-                    color: showPass ? '#B6F36B' : 'var(--text-primary)',
+                    color: showPass ? (user.password ? '#B6F36B' : 'var(--text-muted)') : 'var(--text-primary)',
                     userSelect: 'all'
                   }}
                 >
-                  {showPass ? (user.password || 'user123') : '••••••••••••'}
+                  {showPass ? (user.password || "Ko'rsatilmagan") : '••••••••••••'}
                 </span>
               </div>
             </div>
@@ -201,17 +201,23 @@ export function UserDetailsModal({
                 type="button"
                 className="btn-secondary"
                 onClick={() => {
-                  navigator.clipboard?.writeText(user.password || 'user123');
-                  setCopiedPass(true);
-                  setTimeout(() => setCopiedPass(false), 2000);
+                  if (user.password) {
+                    navigator.clipboard?.writeText(user.password);
+                    setCopiedPass(true);
+                    setTimeout(() => setCopiedPass(false), 2000);
+                  }
                 }}
+                disabled={!user.password}
+                title={user.password ? "Paroldan nusxa olish" : "Parol mavjud emas"}
                 style={{
                   padding: '6px 12px',
                   fontSize: '12px',
                   borderRadius: '8px',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  opacity: user.password ? 1 : 0.5,
+                  cursor: user.password ? 'pointer' : 'not-allowed'
                 }}
               >
                 {copiedPass ? <IconCheck size={14} color="#10B981" /> : null}

@@ -11,6 +11,7 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState("Sog'liq");
   const [target, setTarget] = useState('1 marta');
+  const [time, setTime] = useState('');
   const [emoji, setEmoji] = useState('🎯');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
@@ -25,12 +26,14 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
       setDescription(habitToEdit.description || '');
       setCategory(habitToEdit.category || "Sog'liq");
       setTarget(habitToEdit.target || '1 marta');
+      setTime(habitToEdit.time || '');
       setEmoji(habitToEdit.emoji || '🎯');
     } else {
       setTitle('');
       setDescription('');
       setCategory("Sog'liq");
       setTarget('1 marta');
+      setTime('08:00');
       setEmoji('🚫🍬');
     }
     setShowEmojiPicker(false);
@@ -52,6 +55,7 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
           description,
           category,
           target,
+          time,
           emoji
         });
       } else {
@@ -60,6 +64,7 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
           description,
           category,
           target,
+          time,
           emoji
         });
       }
@@ -141,6 +146,65 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
                 onChange={(e) => setTarget(e.target.value)}
               />
             </div>
+          </div>
+
+          {/* Bajarish Vaqti (SMS va Pin uchun) */}
+          <div className="form-group">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <label style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>⏰ Bajarish Vaqti</span>
+                <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 700 }}>(SMS & Pin)</span>
+              </label>
+              {time && (
+                <button
+                  type="button"
+                  onClick={() => setTime('')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    padding: '2px 4px'
+                  }}
+                >
+                  ✕ Vaqtni olib tashlash
+                </button>
+              )}
+            </div>
+
+            <input
+              type="time"
+              className="form-control"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              style={{
+                fontSize: '15px',
+                fontWeight: 700,
+                color: time ? '#10B981' : 'var(--text-primary)',
+                letterSpacing: '0.5px',
+                marginBottom: '8px'
+              }}
+            />
+
+            {/* Quick time chip presets */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+              {['06:30', '07:30', '09:00', '12:30', '14:00', '16:30', '18:00', '20:00', '21:30'].map(tStr => (
+                <button
+                  key={tStr}
+                  type="button"
+                  onClick={() => setTime(tStr)}
+                  className={`preset-chip-btn ${time === tStr ? 'active' : ''}`}
+                  style={{ padding: '3px 9px', fontSize: '11px', borderRadius: '8px' }}
+                >
+                  {tStr}
+                </button>
+              ))}
+            </div>
+
+            <span className="form-hint" style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block', lineHeight: 1.4 }}>
+              Shu vaqt kelganda telefoningizga SMS/xabar keladi va ilovaga kirganda bu odat eng tepada 📌 PIN bo'lib turadi.
+            </span>
           </div>
 
           {/* Emoji Picker */}

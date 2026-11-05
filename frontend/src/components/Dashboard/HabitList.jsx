@@ -11,7 +11,14 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
 
   const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'completed', 'pending'
 
-  // Calculate counts for filters
+  // Identify which habit is currently scheduled for now or pinned
+  const activeHabitId = useMemo(() => {
+    return typeof storage.getActiveCurrentHabitId === 'function'
+      ? storage.getActiveCurrentHabitId(habits, history, dateKey)
+      : null;
+  }, [habits, history, dateKey]);
+
+  // Calculate counts for filters and pin the current active habit to the top
   const { filteredHabits, countAll, countPending, countCompleted } = useMemo(() => {
     let pending = 0;
     let completed = 0;
@@ -28,13 +35,33 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
       return true;
     });
 
+    // Pin: current active habit first, then other pinned, then chronologically by time
+    list.sort((a, b) => {
+      const aIsCurrent = a.id === activeHabitId;
+      const bIsCurrent = b.id === activeHabitId;
+      if (aIsCurrent && !bIsCurrent) return -1;
+      if (!aIsCurrent && bIsCurrent) return 1;
+
+      const aPinned = !!a.isPinned;
+      const bPinned = !!b.isPinned;
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+
+      // Chronological sort if time exists
+      if (a.time && b.time) return a.time.localeCompare(b.time);
+      if (a.time && !b.time) return -1;
+      if (!a.time && b.time) return 1;
+
+      return 0;
+    });
+
     return {
       filteredHabits: list,
       countAll: habits.length,
       countPending: pending,
       countCompleted: completed
     };
-  }, [habits, dateKey, history, activeFilter]);
+  }, [habits, dateKey, history, activeFilter, activeHabitId]);
 
   const handleDelete = React.useCallback((id) => {
     const h = storage.habits.find(item => item.id === id) || storage.getHabitById(id);
@@ -113,6 +140,8 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
               habit={h}
               onEdit={onEditHabit}
               onDelete={handleDelete}
+              isPinned={h.id === activeHabitId || !!h.isPinned}
+              isCurrentActive={h.id === activeHabitId}
             />
           ))}
         </div>

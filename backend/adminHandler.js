@@ -336,6 +336,7 @@ export async function handleAdminApi(req, res) {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         email,
+        password: String(password).trim(),
         role: assignedRole,
         updated_at: new Date().toISOString()
       });
@@ -382,6 +383,7 @@ export async function handleAdminApi(req, res) {
         await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
           password: String(password).trim()
         });
+        profileUpdates.password = String(password).trim();
       }
 
       // Ism va metadata ni auth tizimida ham yangilash
