@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../../services/adminService';
 import { useHabits } from '../../../context/HabitsContext';
-import { IconMegaphone, IconRefresh, IconLightning } from '../../Common/AppIcons';
+import { IconMegaphone, IconRefresh, IconLightning, IconTrash } from '../../Common/AppIcons';
+import { audioManager } from '../../../utils/audio';
 
 export function AnnouncementsTab({ onShowToast }) {
   const { triggerBanner } = useHabits();
@@ -49,9 +50,12 @@ export function AnnouncementsTab({ onShowToast }) {
         status: 'active'
       });
 
+      // SMS qo'ng'irog'i (Ding) tovushi
+      audioManager.playNotification();
+
       // Darhol ekranga Dynamic Island bildirishnomasi chiqarish
-      triggerBanner(`📢 ${title}`, message);
-      onShowToast?.("E'lon yuborildi! 🚀", `"${title}" tizim a'zolariga yetkazildi`, "success");
+      triggerBanner(`📢 [Admin SMS]: ${title.trim()}`, message.trim());
+      onShowToast?.("SMS & E'lon yuborildi! 🚀", `"${title}" barcha foydalanuvchilar bildirishnomalariga jo'natildi`, "success");
 
       setTitle('');
       setMessage('');
@@ -63,8 +67,20 @@ export function AnnouncementsTab({ onShowToast }) {
     }
   };
 
+  const handleDeleteAnnouncement = async (id, annTitle) => {
+    if (!window.confirm(`"${annTitle}" e'lonini o'chirmoqchimisiz?`)) return;
+    try {
+      await adminService.deleteAnnouncement(id);
+      onShowToast?.("O'chirildi", `"${annTitle}" e'loni olib tashlandi`, "info");
+      loadAnnouncements();
+    } catch (err) {
+      onShowToast?.("Xatolik", "E'lonni o'chirib bo'lmadi", "warning");
+    }
+  };
+
   const handleBroadcastInstant = (ann) => {
-    triggerBanner(`📢 [Admin] ${ann.title}`, ann.message);
+    audioManager.playNotification();
+    triggerBanner(`📢 [Admin SMS] ${ann.title}`, ann.message);
     onShowToast?.("Ekranga uzatildi! ⚡", `"${ann.title}" Dynamic Island orqali ko'rsatildi`, "success");
   };
 
@@ -157,7 +173,7 @@ export function AnnouncementsTab({ onShowToast }) {
               }}
             >
               <IconMegaphone size={16} />
-              <span>{submitting ? "Yuborilmoqda..." : "E'lonni Ekranga Chiqarish"}</span>
+              <span>{submitting ? "Yuborilmoqda..." : "SMS & E'lonni Yuborish (Barcha a'zolarga)"}</span>
             </button>
           </div>
         </form>
@@ -256,6 +272,15 @@ export function AnnouncementsTab({ onShowToast }) {
                     >
                       <IconLightning size={13} color="var(--primary-accent)" />
                       <span>Ekranga uzatish</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={() => handleDeleteAnnouncement(ann.id, ann.title)}
+                      style={{ padding: '6px 10px', fontSize: '11px', display: 'flex', alignItems: 'center', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                      title="E'lonni o'chirish"
+                    >
+                      <IconTrash size={13} />
                     </button>
                   </div>
                 </div>

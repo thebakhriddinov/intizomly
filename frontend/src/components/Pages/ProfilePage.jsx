@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useHabits } from '../../context/HabitsContext';
+import { useNotifications } from '../../context/NotificationContext';
 import { storage } from '../../utils/storage';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { formatUzbekPhone } from '../../utils/phone';
@@ -21,7 +22,8 @@ import {
   IconLock,
   IconUsers,
   IconLaptop,
-  IconPhone
+  IconPhone,
+  IconMegaphone
 } from '../Common/AppIcons';
 
 function BadgeEmblem({ id, color, size = 28 }) {
@@ -47,6 +49,14 @@ function ProfilePageComponent({ onOpenSettings }) {
   const { currentUser, isAdmin, isPremium, updateProfile } = useAuth();
   const { t, lang } = useLanguage();
   const { triggerBanner } = useHabits();
+  const {
+    announcements,
+    unreadCount,
+    readIds,
+    markAsRead,
+    markAllAsRead,
+    openNotifications
+  } = useNotifications();
 
   const fileInputRef = useRef(null);
 
@@ -548,7 +558,133 @@ const handleAvatarFileChange = (e) => {
           </div>
         </div>
 
-        {/* 5. Intizom Mukofotlari va Badgelar (Pastda to'g'ridan-to'g'ri faqat badgelar turadi) */}
+        {/* 5. Tizim Xabarlari va SMS E'lonlar (Admin Announcements & Messages) */}
+        <div className="profile-announcements-section">
+          <div className="section-info-row" style={{ marginBottom: '14px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 className="subtab-heading" style={{ margin: 0 }}>
+                  {lang === 'ru' ? "Системные SMS и объявления" : lang === 'en' ? "System SMS & Announcements" : "Tizim Xabarlari & E'lonlar (SMS)"}
+                </h3>
+                {unreadCount > 0 && (
+                  <span className="notif-unread-count-pill">
+                    {unreadCount} {lang === 'ru' ? "новых" : "yangi"}
+                  </span>
+                )}
+              </div>
+              <p className="subtab-subheading" style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                {lang === 'ru'
+                  ? "Официальные сообщения от администрации Intizomly"
+                  : "Intizomly ma'muriyatidan shaxsan sizga kelgan rasmiy xabarnomalar"}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={markAllAsRead}
+                  style={{ fontSize: '12px', padding: '5px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <IconCheck size={13} color="#10B981" />
+                  <span>{lang === 'ru' ? "Прочитать все" : "Barchasini o'qish"}</span>
+                </button>
+              )}
+              {announcements.length > 0 && (
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={openNotifications}
+                  style={{ fontSize: '12px', padding: '5px 12px' }}
+                >
+                  {lang === 'ru' ? "Все сообщения" : "Barchasini ko'rish"} ({announcements.length})
+                </button>
+              )}
+            </div>
+          </div>
+
+          {announcements.length === 0 ? (
+            <div className="profile-no-announcements-card">
+              <IconMegaphone size={24} color="var(--text-muted)" />
+              <p style={{ margin: '8px 0 0', fontSize: '13.5px', color: 'var(--text-muted)' }}>
+                {lang === 'ru'
+                  ? "Пока нет сообщений от администрации."
+                  : "Hozircha ma'muriyatdan xabar yoki e'lonlar kelmagan."}
+              </p>
+            </div>
+          ) : (
+            <div className="profile-announcements-list">
+              {announcements.slice(0, 3).map((ann) => {
+                const isRead = readIds.includes(ann.id);
+                const isUrgent = ann.priority === 'urgent';
+                return (
+                  <div
+                    key={ann.id}
+                    className={`profile-announcement-card ${isRead ? 'is-read' : 'is-unread'}`}
+                    onClick={() => {
+                      if (!isRead) markAsRead(ann.id);
+                    }}
+                  >
+                    {!isRead && <span className="notif-unread-badge-dot" />}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="notif-sender-badge">
+                            <IconShield size={12} color="#10B981" />
+                            <span>Intizomly Admin</span>
+                          </span>
+                          {isUrgent ? (
+                            <span className="notif-pill-urgent">
+                              {lang === 'ru' ? "Срочно" : "Shoshilinch"}
+                            </span>
+                          ) : (
+                            <span className="notif-pill-normal">
+                              {lang === 'ru' ? "SMS" : "SMS xabar"}
+                            </span>
+                          )}
+                        </div>
+                        <span className="notif-time-text">
+                          {ann.created_at ? new Date(ann.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Yaqinda'}
+                        </span>
+                      </div>
+
+                      <h4 className="notif-item-title" style={{ margin: '0 0 4px', fontSize: '14.5px' }}>
+                        {ann.title}
+                      </h4>
+                      <p className="notif-item-body" style={{ margin: 0, fontSize: '13px' }}>
+                        {ann.message}
+                      </p>
+
+                      <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                        {!isRead ? (
+                          <button
+                            type="button"
+                            className="btn-mark-item-read"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(ann.id);
+                            }}
+                          >
+                            <IconCheck size={12} />
+                            <span>{lang === 'ru' ? "Отметить прочитанным" : "O'qilgan deb belgilash"}</span>
+                          </button>
+                        ) : (
+                          <span className="notif-read-status-lbl">
+                            <IconCheck size={12} color="#10B981" />
+                            <span>{lang === 'ru' ? "Прочитано" : "O'qildi"}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 6. Intizom Mukofotlari va Badgelar (Pastda to'g'ridan-to'g'ri faqat badgelar turadi) */}
         <div className="badges-section">
           <div className="section-info-row">
             <div>

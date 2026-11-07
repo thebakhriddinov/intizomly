@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { HabitsProvider } from './context/HabitsContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { PWAProvider } from './context/PWAContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { App } from './App';
 import './index.css';
 
@@ -44,7 +45,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <HabitsProvider>
           <PWAProvider>
-            <App />
+            <NotificationProvider>
+              <App />
+            </NotificationProvider>
           </PWAProvider>
         </HabitsProvider>
       </AuthProvider>

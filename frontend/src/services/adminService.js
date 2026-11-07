@@ -7,7 +7,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { supabaseService } from './supabaseService';
 import { validateUzbekPhone, formatUzbekPhone } from '../utils/phone';
-import { getUserPassword, saveUserPassword } from '../utils/storage';
+import { getUserPassword, saveUserPassword, storage } from '../utils/storage';
 
 export const adminService = {
   /**
@@ -502,34 +502,124 @@ export const adminService = {
   // 4. E'LONLAR VA BILDIRISHNOMALAR (ANNOUNCEMENTS CRUD)
   // ============================================================================
   async getAnnouncements() {
+    let list = [];
+
+    // 1. Try server API if available
     try {
       const res = await this.fetchAdminApi('/api/admin/announcements', { method: 'GET' });
-      if (res.success && res.announcements) return res.announcements;
+      if (res && res.success && Array.isArray(res.announcements)) {
+        list = res.announcements;
+      }
+    } catch {
+      // Server API not present, fallback
+    }
+
+    // 2. Fetch from Supabase
+    if (list.length === 0 && isSupabaseConfigured) {
+      try {
+        const broadcasts = await supabaseService.getBroadcasts();
+        if (Array.isArray(broadcasts) && broadcasts.length > 0) {
+          list = broadcasts.map(b => ({
+            id: b.id,
+            title: b.title,
+            message: b.message,
+            target: b.target || 'all',
+            status: 'active',
+            priority: b.priority || 'normal',
+            created_at: b.created_at
+          }));
+        }
+      } catch (e) {
+        console.warn('[AdminService] Supabase getBroadcasts notice:', e);
+      }
+    }
+
+    // 3. Fallback / merge with local storage
+    const localBroadcasts = storage.getBroadcasts();
+    const mergedMap = new Map();
+    list.forEach(item => mergedMap.set(item.id, item));
+    localBroadcasts.forEach(item => {
+      if (!mergedMap.has(item.id)) {
+        mergedMap.set(item.id, item);
+      }
+    });
+
+    const result = Array.from(mergedMap.values());
+    result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    return result;
+  },
+
+  async createAnnouncement({ title, message, target = 'all', priority = 'normal', status = 'active' }) {
+    // 1. Try server API if configured
+    try {
+      const res = await this.fetchAdminApi('/api/admin/announcements', {
+        method: 'POST',
+        body: JSON.stringify({ title, message, target, priority, status })
+      });
+      if (res && res.success) return res;
     } catch {
       // Fallback
     }
 
+    // 2. Direct Supabase insert
+    let created = null;
     if (isSupabaseConfigured) {
-      const broadcasts = await supabaseService.getBroadcasts();
-      return broadcasts.map(b => ({
-        id: b.id,
-        title: b.title,
-        message: b.message,
-        target: 'all',
-        status: 'active',
-        priority: 'banner',
-        created_at: b.created_at
-      }));
+      try {
+        const curUser = storage.getCurrentUser();
+        created = await supabaseService.createBroadcast(curUser?.id, title, message, priority, target);
+      } catch (e) {
+        console.warn('[AdminService] Supabase createBroadcast fallback:', e);
+      }
     }
 
-    return [];
+    // 3. Save to local storage cache
+    const newBroadcast = {
+      id: created?.id || 'broadcast_' + Date.now(),
+      title: (title || '').trim(),
+      message: (message || '').trim(),
+      target,
+      priority,
+      status,
+      created_at: created?.created_at || new Date().toISOString()
+    };
+    storage.saveBroadcast(newBroadcast);
+
+    // 4. Dispatch instant event for app-wide reactivity
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('intizomly:new_broadcast', { detail: newBroadcast }));
+    }
+
+    return { success: true, announcement: newBroadcast };
   },
 
-  async createAnnouncement({ title, message, target = 'all', priority = 'normal', status = 'active' }) {
-    return await this.fetchAdminApi('/api/admin/announcements', {
-      method: 'POST',
-      body: JSON.stringify({ title, message, target, priority, status })
-    });
+  async deleteAnnouncement(announcementId) {
+    if (!announcementId) return { success: false };
+
+    // 1. Try server API
+    try {
+      await this.fetchAdminApi(`/api/admin/announcements/${announcementId}`, { method: 'DELETE' });
+    } catch {
+      // Fallback
+    }
+
+    // 2. Direct Supabase delete
+    if (isSupabaseConfigured) {
+      try {
+        await supabaseService.deleteBroadcast(announcementId);
+      } catch (e) {
+        console.warn('[AdminService] Supabase deleteBroadcast fallback:', e);
+      }
+    }
+
+    // 3. Remove from storage
+    storage.deleteBroadcast(announcementId);
+
+    // 4. Dispatch event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('intizomly:broadcast_deleted', { detail: { id: announcementId } }));
+    }
+
+    return { success: true };
   },
 
   // ============================================================================

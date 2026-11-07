@@ -31,6 +31,7 @@ const ProfileSettingsModal = lazy(() => import('./components/Modals/ProfileSetti
 const AdminModal = lazy(() => import('./components/Modals/AdminModal').then(m => ({ default: m.AdminModal })));
 const AuthModal = lazy(() => import('./components/Modals/AuthModal').then(m => ({ default: m.AuthModal })));
 const UpgradeModal = lazy(() => import('./components/Modals/UpgradeModal').then(m => ({ default: m.UpgradeModal })));
+const NotificationCenterModal = lazy(() => import('./components/Modals/NotificationCenterModal').then(m => ({ default: m.NotificationCenterModal })));
 
 export function App() {
   const { t } = useLanguage();
@@ -290,6 +291,9 @@ export function App() {
             onClose={() => setUpgradeModalOpen(false)}
           />
         )}
+
+        {/* Global Notifications & SMS Center */}
+        <NotificationCenterModal />
       </Suspense>
 
       {/* PWA Web Install Prompt Modal */}

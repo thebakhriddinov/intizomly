@@ -769,7 +769,7 @@ export const supabaseService = {
   },
 
   // ============================================================================
-  // BROADCASTS (ADMIN)
+  // BROADCASTS (ADMIN & SMS NOTIFICATIONS)
   // ============================================================================
   async getBroadcasts() {
     if (!this.isConfigured()) return [];
@@ -779,30 +779,100 @@ export const supabaseService = {
         .from('broadcasts')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(50);
 
-      if (error) return [];
+      if (error) {
+        console.warn('[Supabase] getBroadcasts error:', error.message);
+        return [];
+      }
       return data || [];
-    } catch {
+    } catch (err) {
+      console.warn('[Supabase] getBroadcasts exception:', err);
       return [];
     }
   },
 
-  async createBroadcast(authorId, title, message) {
+  async createBroadcast(authorId, title, message, priority = 'normal', target = 'all') {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
-    const { data, error } = await supabase
-      .from('broadcasts')
-      .insert({
-        author_id: authorId,
-        title: (title || '').trim(),
-        message: (message || '').trim()
-      })
-      .select()
-      .single();
+    const cleanTitle = (title || '').trim();
+    const cleanMessage = (message || '').trim();
 
-    if (error) throw error;
-    return data;
+    // Verify if authorId is a valid UUID, otherwise pass null to avoid Postgres UUID cast errors
+    const isUuid = typeof authorId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(authorId);
+    const validAuthorId = isUuid ? authorId : null;
+
+    // 1. Try full insert with priority and target
+    try {
+      const { data, error } = await supabase
+        .from('broadcasts')
+        .insert({
+          author_id: validAuthorId,
+          title: cleanTitle,
+          message: cleanMessage,
+          priority: priority || 'normal',
+          target: target || 'all'
+        })
+        .select()
+        .single();
+
+      if (!error && data) return data;
+
+      if (error && error.message && error.message.includes('foreign key')) {
+        // Retry with author_id: null in case foreign key fails
+        const { data: retryData, error: retryErr } = await supabase
+          .from('broadcasts')
+          .insert({
+            author_id: null,
+            title: cleanTitle,
+            message: cleanMessage,
+            priority: priority || 'normal',
+            target: target || 'all'
+          })
+          .select()
+          .single();
+        if (!retryErr && retryData) return retryData;
+      }
+    } catch (e) {
+      console.warn('[Supabase] Full broadcast insert attempt notice:', e);
+    }
+
+    // 2. Fallback insert with baseline columns (title, message)
+    try {
+      const { data, error } = await supabase
+        .from('broadcasts')
+        .insert({
+          author_id: null,
+          title: cleanTitle,
+          message: cleanMessage
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (err) {
+      console.error('[Supabase] createBroadcast baseline error:', err);
+      throw err;
+    }
+  },
+
+  async deleteBroadcast(broadcastId) {
+    if (!this.isConfigured() || !broadcastId) return false;
+    try {
+      const { error } = await supabase
+        .from('broadcasts')
+        .delete()
+        .eq('id', broadcastId);
+      if (error) {
+        console.warn('[Supabase] deleteBroadcast error:', error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('[Supabase] deleteBroadcast exception:', err);
+      return false;
+    }
   },
 
   // ============================================================================
