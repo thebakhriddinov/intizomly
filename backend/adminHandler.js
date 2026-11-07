@@ -582,34 +582,87 @@ export async function handleAdminApi(req, res) {
 
     // --------------------------------------------------------------------------
     // 8. ANNOUNCEMENTS: E'lonlar CRUD
+    // --------------------------------------------------------------------------
+    // 8. ANNOUNCEMENTS: E'lonlar CRUD & Realtime Push
     // GET /api/admin/announcements
     // POST /api/admin/announcements
     // PUT /api/admin/announcements/:id
     // DELETE /api/admin/announcements/:id
+    // POST /api/admin/announcements/:id/broadcast
     // --------------------------------------------------------------------------
+    const parseBroadcastRow = (b) => {
+      let bodyText = b.message || '';
+      let priority = b.priority || 'normal';
+      let target = b.target || 'all';
+      let duration_days = b.duration_days || null;
+      let expires_at = b.expires_at || null;
+      let pushed_at = b.pushed_at || null;
+
+      if (typeof b.message === 'string' && b.message.trim().startsWith('{')) {
+        try {
+          const parsed = JSON.parse(b.message);
+          if (parsed && typeof parsed === 'object') {
+            if (parsed.text !== undefined) bodyText = parsed.text;
+            if (parsed.priority) priority = parsed.priority;
+            if (parsed.target) target = parsed.target;
+            if (parsed.duration_days !== undefined) duration_days = parsed.duration_days;
+            if (parsed.expires_at !== undefined) expires_at = parsed.expires_at;
+            if (parsed.pushed_at !== undefined) pushed_at = parsed.pushed_at;
+          }
+        } catch {}
+      }
+
+      return {
+        id: b.id,
+        author_id: b.author_id,
+        title: b.title || '',
+        message: bodyText,
+        target,
+        status: 'active',
+        priority,
+        duration_days,
+        expires_at,
+        pushed_at,
+        created_at: b.created_at
+      };
+    };
+
+    const buildBroadcastMessage = (text, priority, target, durationDays, expiresAt, pushedAt) => {
+      return JSON.stringify({
+        text: (text || '').trim(),
+        priority: priority || 'normal',
+        target: target || 'all',
+        duration_days: durationDays || null,
+        expires_at: expiresAt || null,
+        pushed_at: pushedAt || null
+      });
+    };
+
+    // 8.1 GET /api/admin/announcements
     if (pathname === '/api/admin/announcements' && method === 'GET') {
+      const includeExpired = parsedUrl.searchParams.get('includeExpired') === 'true';
       let items = [];
+
       try {
         const { data, error } = await supabaseAdmin
-          .from('announcements')
-          .select('*')
-          .order('created_at', { ascending: false });
-        if (!error && data) items = data;
-      } catch {
-        // Fallback to broadcasts table
-        const { data } = await supabaseAdmin
           .from('broadcasts')
           .select('*')
           .order('created_at', { ascending: false });
-        items = (data || []).map(b => ({
-          id: b.id,
-          title: b.title,
-          message: b.message,
-          target: 'all',
-          status: 'active',
-          priority: 'banner',
-          created_at: b.created_at
-        }));
+
+        if (!error && Array.isArray(data)) {
+          items = data.map(parseBroadcastRow);
+        }
+      } catch (err) {
+        console.warn('[AdminHandler] Supabase broadcasts GET fallback:', err);
+      }
+
+      // Filter expired if requested
+      if (!includeExpired) {
+        const now = Date.now();
+        items = items.filter(item => {
+          if (!item.expires_at) return true;
+          return new Date(item.expires_at).getTime() > now;
+        });
       }
 
       res.statusCode = 200;
@@ -617,9 +670,19 @@ export async function handleAdminApi(req, res) {
       return true;
     }
 
+    // 8.2 POST /api/admin/announcements
     if (pathname === '/api/admin/announcements' && method === 'POST') {
       const body = await readJsonBody();
-      const { title, message, target = 'all', priority = 'normal', status = 'active' } = body;
+      const {
+        title,
+        message,
+        target = 'all',
+        priority = 'normal',
+        status = 'active',
+        durationDays = 7,
+        expiresAt = null,
+        broadcastToScreen = true
+      } = body;
 
       if (!title || !message) {
         res.statusCode = 400;
@@ -627,54 +690,265 @@ export async function handleAdminApi(req, res) {
         return true;
       }
 
+      // Hisoblash: Muddat vaqti (agar durationDays soatlarda bo'lsa yoki kunlarda)
+      let calculatedExpiresAt = expiresAt;
+      if (!calculatedExpiresAt && durationDays) {
+        const daysNum = Number(durationDays);
+        if (daysNum > 0) {
+          calculatedExpiresAt = new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString();
+        } else if (daysNum < 0) {
+          // Manfiy raqam soatlar bo'lishi mumkin (masalan -1 = 1 soat, -6 = 6 soat)
+          calculatedExpiresAt = new Date(Date.now() + Math.abs(daysNum) * 60 * 60 * 1000).toISOString();
+        }
+      }
+
+      const pushedAt = broadcastToScreen ? new Date().toISOString() : null;
+      const jsonMessage = buildBroadcastMessage(
+        message,
+        priority,
+        target,
+        durationDays > 0 ? durationDays : null,
+        calculatedExpiresAt,
+        pushedAt
+      );
+
+      const isUuid = typeof adminUser?.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(adminUser.id);
+      const validAuthorId = isUuid ? adminUser.id : null;
+
       let createdItem = null;
       try {
         const { data, error } = await supabaseAdmin
-          .from('announcements')
+          .from('broadcasts')
           .insert({
-            author_id: adminUser.id,
+            author_id: validAuthorId,
             title: title.trim(),
-            message: message.trim(),
-            target,
-            priority,
-            status
+            message: jsonMessage
           })
           .select()
           .single();
-        if (!error) createdItem = data;
-      } catch {
-        // Fallback
+
+        if (!error && data) {
+          createdItem = parseBroadcastRow(data);
+        } else if (error) {
+          console.warn('[AdminHandler] Supabase broadcast insert error:', error.message);
+        }
+      } catch (err) {
+        console.warn('[AdminHandler] Supabase insert exception:', err);
       }
 
-      // Broadcasts jadvaliga ham parallel qo'shish (eski bildirishnoma tizimi bilan moslik uchun)
-      try {
-        await supabaseAdmin.from('broadcasts').insert({
-          author_id: adminUser.id,
-          title: title.trim(),
-          message: message.trim()
-        });
-      } catch (e) {
-        // Ignore
-      }
+      const finalItem = createdItem || {
+        id: 'broadcast_' + Date.now(),
+        author_id: validAuthorId,
+        title: title.trim(),
+        message: message.trim(),
+        target,
+        status,
+        priority,
+        duration_days: durationDays > 0 ? durationDays : null,
+        expires_at: calculatedExpiresAt,
+        pushed_at: pushedAt,
+        created_at: new Date().toISOString()
+      };
 
       await recordAuditLog({
         adminId: adminUser.id,
         adminName,
         action: 'announcement_created',
         targetType: 'announcement',
-        targetId: createdItem?.id || 'broadcast',
+        targetId: finalItem.id,
         targetName: title,
-        details: { target, priority, status },
+        details: { target, priority, status, expires_at: calculatedExpiresAt },
         ip: clientIp
       });
 
       res.statusCode = 201;
       res.end(JSON.stringify({
         success: true,
-        message: "E'lon muvaffaqiyatli yaratildi",
-        announcement: createdItem || { id: Date.now().toString(), title, message, target, priority, status, created_at: new Date().toISOString() }
+        message: "E'lon va SMS barcha foydalanuvchilarga yuborildi",
+        announcement: finalItem
       }));
       return true;
+    }
+
+    // 8.3 DELETE /api/admin/announcements/:id (or /all)
+    if (pathname.startsWith('/api/admin/announcements') && method === 'DELETE') {
+      const parts = pathname.split('/').filter(Boolean);
+      const idOrAction = parts[parts.length - 1];
+
+      try {
+        if (idOrAction === 'all' || idOrAction === 'announcements') {
+          // Barchasini tozalash
+          await supabaseAdmin
+            .from('broadcasts')
+            .delete()
+            .neq('id', '00000000-0000-0000-0000-000000000000');
+
+          await recordAuditLog({
+            adminId: adminUser.id,
+            adminName,
+            action: 'announcements_cleared_all',
+            targetType: 'announcement',
+            targetId: 'all',
+            targetName: 'Barcha e\'lonlar',
+            details: {},
+            ip: clientIp
+          });
+
+          res.statusCode = 200;
+          res.end(JSON.stringify({ success: true, message: "Barcha e'lonlar to'liq o'chirildi" }));
+          return true;
+        } else {
+          // Bitta e'lonni o'chirish
+          await supabaseAdmin
+            .from('broadcasts')
+            .delete()
+            .eq('id', idOrAction);
+
+          await recordAuditLog({
+            adminId: adminUser.id,
+            adminName,
+            action: 'announcement_deleted',
+            targetType: 'announcement',
+            targetId: idOrAction,
+            targetName: idOrAction,
+            details: {},
+            ip: clientIp
+          });
+
+          res.statusCode = 200;
+          res.end(JSON.stringify({ success: true, message: "E'lon barcha foydalanuvchilardan o'chirildi", id: idOrAction }));
+          return true;
+        }
+      } catch (err) {
+        console.error('[AdminHandler] Delete error:', err);
+        res.statusCode = 500;
+        res.end(JSON.stringify({ success: false, message: err.message }));
+        return true;
+      }
+    }
+
+    // 8.4 PUT /api/admin/announcements/:id (Muddatni yoki parametrlarni o'zgartirish)
+    if (pathname.startsWith('/api/admin/announcements/') && method === 'PUT') {
+      const parts = pathname.split('/').filter(Boolean);
+      const id = parts[parts.length - 1];
+      const body = await readJsonBody();
+
+      try {
+        const { data: existing } = await supabaseAdmin
+          .from('broadcasts')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (!existing) {
+          res.statusCode = 404;
+          res.end(JSON.stringify({ success: false, message: "E'lon topilmadi" }));
+          return true;
+        }
+
+        const currentParsed = parseBroadcastRow(existing);
+        const updatedTitle = body.title !== undefined ? body.title : currentParsed.title;
+        const updatedMessage = body.message !== undefined ? body.message : currentParsed.message;
+        const updatedPriority = body.priority !== undefined ? body.priority : currentParsed.priority;
+        const updatedTarget = body.target !== undefined ? body.target : currentParsed.target;
+        const updatedDuration = body.durationDays !== undefined ? body.durationDays : currentParsed.duration_days;
+        const updatedExpiresAt = body.expiresAt !== undefined ? body.expiresAt : currentParsed.expires_at;
+
+        const newJsonMessage = buildBroadcastMessage(
+          updatedMessage,
+          updatedPriority,
+          updatedTarget,
+          updatedDuration,
+          updatedExpiresAt,
+          currentParsed.pushed_at
+        );
+
+        const { data: updatedData, error } = await supabaseAdmin
+          .from('broadcasts')
+          .update({
+            title: updatedTitle,
+            message: newJsonMessage
+          })
+          .eq('id', id)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const resultItem = parseBroadcastRow(updatedData);
+        res.statusCode = 200;
+        res.end(JSON.stringify({ success: true, message: "E'lon yangilandi", announcement: resultItem }));
+        return true;
+      } catch (err) {
+        console.error('[AdminHandler] PUT error:', err);
+        res.statusCode = 500;
+        res.end(JSON.stringify({ success: false, message: err.message }));
+        return true;
+      }
+    }
+
+    // 8.5 POST /api/admin/announcements/:id/broadcast (Ekranga darhol pop-up qilib uzatish)
+    if (pathname.includes('/broadcast') && pathname.startsWith('/api/admin/announcements/') && method === 'POST') {
+      const parts = pathname.split('/').filter(Boolean);
+      // /api/admin/announcements/:id/broadcast -> id is index parts.length - 2
+      const id = parts[parts.length - 2];
+
+      try {
+        const { data: existing } = await supabaseAdmin
+          .from('broadcasts')
+          .select('*')
+          .eq('id', id)
+          .single();
+
+        if (!existing) {
+          res.statusCode = 404;
+          res.end(JSON.stringify({ success: false, message: "E'lon topilmadi" }));
+          return true;
+        }
+
+        const currentParsed = parseBroadcastRow(existing);
+        const nowIso = new Date().toISOString();
+        const newJsonMessage = buildBroadcastMessage(
+          currentParsed.message,
+          currentParsed.priority,
+          currentParsed.target,
+          currentParsed.duration_days,
+          currentParsed.expires_at,
+          nowIso
+        );
+
+        const { data: updatedData } = await supabaseAdmin
+          .from('broadcasts')
+          .update({
+            message: newJsonMessage
+          })
+          .eq('id', id)
+          .select()
+          .single();
+
+        const resultItem = parseBroadcastRow(updatedData || existing);
+        resultItem.pushed_at = nowIso;
+
+        await recordAuditLog({
+          adminId: adminUser.id,
+          adminName,
+          action: 'announcement_broadcast_to_screen',
+          targetType: 'announcement',
+          targetId: id,
+          targetName: currentParsed.title,
+          details: { pushed_at: nowIso },
+          ip: clientIp
+        });
+
+        res.statusCode = 200;
+        res.end(JSON.stringify({ success: true, message: "E'lon barcha foydalanuvchilar ekraniga uzatildi ⚡", announcement: resultItem }));
+        return true;
+      } catch (err) {
+        console.error('[AdminHandler] Broadcast to screen error:', err);
+        res.statusCode = 500;
+        res.end(JSON.stringify({ success: false, message: err.message }));
+        return true;
+      }
     }
 
     // Unknown endpoint

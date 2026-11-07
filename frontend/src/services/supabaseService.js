@@ -771,24 +771,60 @@ export const supabaseService = {
   // ============================================================================
   // BROADCASTS (ADMIN & SMS NOTIFICATIONS)
   // ============================================================================
+  parseBroadcastRow(b) {
+    if (!b) return null;
+    let bodyText = b.message || '';
+    let priority = b.priority || 'normal';
+    let target = b.target || 'all';
+    let duration_days = b.duration_days || null;
+    let expires_at = b.expires_at || null;
+    let pushed_at = b.pushed_at || null;
+
+    if (typeof b.message === 'string' && b.message.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(b.message);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.text !== undefined) bodyText = parsed.text;
+          if (parsed.priority) priority = parsed.priority;
+          if (parsed.target) target = parsed.target;
+          if (parsed.duration_days !== undefined) duration_days = parsed.duration_days;
+          if (parsed.expires_at !== undefined) expires_at = parsed.expires_at;
+          if (parsed.pushed_at !== undefined) pushed_at = parsed.pushed_at;
+        }
+      } catch {}
+    }
+
+    return {
+      id: b.id,
+      author_id: b.author_id,
+      title: b.title || '',
+      message: bodyText,
+      target,
+      status: 'active',
+      priority,
+      duration_days,
+      expires_at,
+      pushed_at,
+      created_at: b.created_at
+    };
+  },
+
   async getBroadcasts({ includeExpired = false } = {}) {
     if (!this.isConfigured()) return [];
 
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('broadcasts')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
-
-      const { data, error } = await query;
 
       if (error) {
         console.warn('[Supabase] getBroadcasts error:', error.message);
         return [];
       }
 
-      const list = data || [];
+      const list = (data || []).map(b => this.parseBroadcastRow(b)).filter(Boolean);
       if (includeExpired) return list;
 
       const now = Date.now();
@@ -802,83 +838,70 @@ export const supabaseService = {
     }
   },
 
-  async createBroadcast(authorId, title, message, priority = 'normal', target = 'all', durationDays = 7) {
+  async createBroadcast(authorId, title, message, priority = 'normal', target = 'all', durationDays = 7, expiresAt = null) {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
     const cleanTitle = (title || '').trim();
     const cleanMessage = (message || '').trim();
 
-    // Calculate expiration timestamp
-    const daysNum = Number(durationDays);
-    const expiresAt = (daysNum > 0)
-      ? new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString()
-      : null;
+    // Hisoblash: Muddat vaqti
+    let calculatedExpiresAt = expiresAt;
+    if (!calculatedExpiresAt && durationDays) {
+      const daysNum = Number(durationDays);
+      if (daysNum > 0) {
+        calculatedExpiresAt = new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString();
+      } else if (daysNum < 0) {
+        calculatedExpiresAt = new Date(Date.now() + Math.abs(daysNum) * 60 * 60 * 1000).toISOString();
+      }
+    }
 
-    // Verify if authorId is a valid UUID, otherwise pass null to avoid Postgres UUID cast errors
     const isUuid = typeof authorId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(authorId);
     const validAuthorId = isUuid ? authorId : null;
 
-    // 1. Try full insert with priority, target, durationDays and expires_at
+    const jsonPayload = JSON.stringify({
+      text: cleanMessage,
+      priority: priority || 'normal',
+      target: target || 'all',
+      duration_days: durationDays > 0 ? durationDays : null,
+      expires_at: calculatedExpiresAt,
+      pushed_at: new Date().toISOString()
+    });
+
+    // 1. Try full insert with json payload into message (schema-safe for all setups)
     try {
       const { data, error } = await supabase
         .from('broadcasts')
         .insert({
           author_id: validAuthorId,
           title: cleanTitle,
-          message: cleanMessage,
-          priority: priority || 'normal',
-          target: target || 'all',
-          duration_days: daysNum > 0 ? daysNum : null,
-          expires_at: expiresAt
+          message: jsonPayload
         })
         .select()
         .single();
 
-      if (!error && data) return data;
-
-      if (error && error.message && error.message.includes('foreign key')) {
-        // Retry with author_id: null in case foreign key fails
-        const { data: retryData, error: retryErr } = await supabase
-          .from('broadcasts')
-          .insert({
-            author_id: null,
-            title: cleanTitle,
-            message: cleanMessage,
-            priority: priority || 'normal',
-            target: target || 'all',
-            duration_days: daysNum > 0 ? daysNum : null,
-            expires_at: expiresAt
-          })
-          .select()
-          .single();
-        if (!retryErr && retryData) return retryData;
+      if (!error && data) {
+        return this.parseBroadcastRow(data);
       }
     } catch (e) {
-      console.warn('[Supabase] Full broadcast insert attempt notice:', e);
+      console.warn('[Supabase] Broadcast insert attempt notice:', e);
     }
 
-    // 2. Fallback insert with baseline columns (title, message)
+    // 2. Retry with author_id: null if foreign key fails
     try {
       const { data, error } = await supabase
         .from('broadcasts')
         .insert({
           author_id: null,
           title: cleanTitle,
-          message: cleanMessage
+          message: jsonPayload
         })
         .select()
         .single();
 
       if (error) throw error;
-      return {
-        ...data,
-        priority,
-        target,
-        duration_days: daysNum > 0 ? daysNum : null,
-        expires_at: expiresAt
-      };
+      return this.parseBroadcastRow(data);
     } catch (err) {
-      console.error('[Supabase] createBroadcast baseline error:', err);
+      console.error('[Supabase] createBroadcast error:', err);
       throw err;
     }
   },
@@ -886,15 +909,19 @@ export const supabaseService = {
   async deleteBroadcast(broadcastId) {
     if (!this.isConfigured() || !broadcastId) return false;
     try {
-      // Also delete from broadcast_reads if table exists
-      try {
-        await supabase.from('broadcast_reads').delete().eq('broadcast_id', broadcastId);
-      } catch {}
+      if (broadcastId === 'all') {
+        return await this.deleteAllBroadcasts();
+      }
+
+      // Check UUID validity
+      const isUuid = typeof broadcastId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(broadcastId);
+      if (!isUuid) return true; // Local non-UUID broadcast already deleted from local storage
 
       const { error } = await supabase
         .from('broadcasts')
         .delete()
         .eq('id', broadcastId);
+
       if (error) {
         console.warn('[Supabase] deleteBroadcast error:', error.message);
         return false;
@@ -902,6 +929,71 @@ export const supabaseService = {
       return true;
     } catch (err) {
       console.warn('[Supabase] deleteBroadcast exception:', err);
+      return false;
+    }
+  },
+
+  async deleteAllBroadcasts() {
+    if (!this.isConfigured()) return false;
+    try {
+      const { error } = await supabase
+        .from('broadcasts')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+
+      if (error) {
+        console.warn('[Supabase] deleteAllBroadcasts error:', error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('[Supabase] deleteAllBroadcasts exception:', err);
+      return false;
+    }
+  },
+
+  async updateBroadcastDuration(broadcastId, { durationDays, expiresAt }) {
+    if (!this.isConfigured() || !broadcastId) return false;
+    try {
+      const isUuid = typeof broadcastId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(broadcastId);
+      if (!isUuid) return true;
+
+      const { data: existing } = await supabase
+        .from('broadcasts')
+        .select('*')
+        .eq('id', broadcastId)
+        .single();
+
+      if (!existing) return false;
+      const parsed = this.parseBroadcastRow(existing);
+
+      let newExpiresAt = expiresAt;
+      if (!newExpiresAt && durationDays) {
+        const daysNum = Number(durationDays);
+        if (daysNum > 0) newExpiresAt = new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString();
+        else if (daysNum < 0) newExpiresAt = new Date(Date.now() + Math.abs(daysNum) * 60 * 60 * 1000).toISOString();
+      }
+
+      const updatedPayload = JSON.stringify({
+        text: parsed.message,
+        priority: parsed.priority,
+        target: parsed.target,
+        duration_days: durationDays > 0 ? durationDays : null,
+        expires_at: newExpiresAt,
+        pushed_at: parsed.pushed_at
+      });
+
+      const { data, error } = await supabase
+        .from('broadcasts')
+        .update({ message: updatedPayload })
+        .eq('id', broadcastId)
+        .select()
+        .single();
+
+      if (error) return false;
+      return this.parseBroadcastRow(data);
+    } catch (err) {
+      console.warn('[Supabase] updateBroadcastDuration error:', err);
       return false;
     }
   },

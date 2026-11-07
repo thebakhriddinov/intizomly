@@ -3,6 +3,7 @@ import { adminService } from '../services/adminService';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { storage } from '../utils/storage';
 import { audioManager } from '../utils/audio';
+import { sanitizeAnnouncement } from '../utils/announcementHelper';
 
 const NotificationContext = createContext(null);
 
@@ -30,9 +31,12 @@ export function NotificationProvider({ children }) {
 
   const triggerPopup = useCallback((ann) => {
     if (!ann) return;
+    const cleanAnn = sanitizeAnnouncement(ann);
+    if (!cleanAnn) return;
+
     if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
 
-    setPopupAnnouncement(ann);
+    setPopupAnnouncement(cleanAnn);
     audioManager.playNotification();
 
     // Auto-dismiss floating popup after 7 seconds
@@ -45,7 +49,8 @@ export function NotificationProvider({ children }) {
   const loadAnnouncements = useCallback(async (isBackground = false) => {
     if (!isBackground) setLoading(true);
     try {
-      const list = await adminService.getAnnouncements();
+      const rawList = await adminService.getAnnouncements();
+      const list = (rawList || []).map(sanitizeAnnouncement).filter(Boolean);
       const currentRead = storage.getReadAnnouncementIds();
       setReadIds(currentRead);
 
@@ -108,7 +113,8 @@ export function NotificationProvider({ children }) {
 
     // Event listeners for same-window / local broadcasts
     const handleNewBroadcast = (e) => {
-      const newAnn = e.detail;
+      const rawAnn = e.detail;
+      const newAnn = sanitizeAnnouncement(rawAnn);
       if (newAnn) {
         setAnnouncements(prev => {
           const exists = prev.some(a => a.id === newAnn.id);
@@ -130,8 +136,30 @@ export function NotificationProvider({ children }) {
       }
     };
 
+    const handleAllDeleted = () => {
+      setAnnouncements([]);
+      dismissPopup();
+    };
+
+    const handleUpdatedBroadcast = (e) => {
+      const updated = sanitizeAnnouncement(e.detail);
+      if (updated && updated.id) {
+        setAnnouncements(prev => prev.map(a => a.id === updated.id ? { ...a, ...updated } : a));
+      }
+    };
+
+    const handlePushToScreen = (e) => {
+      const ann = sanitizeAnnouncement(e.detail);
+      if (ann) {
+        triggerPopup(ann);
+      }
+    };
+
     window.addEventListener('intizomly:new_broadcast', handleNewBroadcast);
     window.addEventListener('intizomly:broadcast_deleted', handleDeletedBroadcast);
+    window.addEventListener('intizomly:all_broadcasts_deleted', handleAllDeleted);
+    window.addEventListener('intizomly:broadcast_updated', handleUpdatedBroadcast);
+    window.addEventListener('intizomly:push_to_screen', handlePushToScreen);
 
     // Supabase Real-time Channel
     let channel = null;
@@ -142,8 +170,19 @@ export function NotificationProvider({ children }) {
           .on(
             'postgres_changes',
             { event: '*', schema: 'public', table: 'broadcasts' },
-            () => {
-              loadAnnouncements(true);
+            (payload) => {
+              if (payload.eventType === 'DELETE') {
+                const deletedId = payload.old?.id;
+                if (deletedId) {
+                  setAnnouncements(prev => prev.filter(a => a.id !== deletedId));
+                } else {
+                  loadAnnouncements(true);
+                }
+              } else if (payload.eventType === 'INSERT') {
+                loadAnnouncements(true);
+              } else {
+                loadAnnouncements(true);
+              }
             }
           )
           .subscribe();
@@ -160,6 +199,9 @@ export function NotificationProvider({ children }) {
     return () => {
       window.removeEventListener('intizomly:new_broadcast', handleNewBroadcast);
       window.removeEventListener('intizomly:broadcast_deleted', handleDeletedBroadcast);
+      window.removeEventListener('intizomly:all_broadcasts_deleted', handleAllDeleted);
+      window.removeEventListener('intizomly:broadcast_updated', handleUpdatedBroadcast);
+      window.removeEventListener('intizomly:push_to_screen', handlePushToScreen);
       clearInterval(pollTimer);
       if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
       if (channel && supabase) {
@@ -203,6 +245,31 @@ export function NotificationProvider({ children }) {
     return true;
   }, [popupAnnouncement, dismissPopup]);
 
+  // 5.1 Delete all announcements (Admin)
+  const deleteAllAnnouncements = useCallback(async () => {
+    await adminService.deleteAllAnnouncements();
+    setAnnouncements([]);
+    dismissPopup();
+    return true;
+  }, [dismissPopup]);
+
+  // 5.2 Broadcast to screen (Admin)
+  const broadcastToScreen = useCallback(async (id) => {
+    if (!id) return false;
+    await adminService.broadcastAnnouncementToScreen(id);
+    return true;
+  }, []);
+
+  // 5.3 Update announcement duration (Admin)
+  const updateAnnouncementDuration = useCallback(async (id, updates) => {
+    if (!id) return false;
+    const res = await adminService.updateAnnouncementDuration(id, updates);
+    if (res && res.announcement) {
+      setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, ...res.announcement } : a));
+    }
+    return true;
+  }, []);
+
   // 6. Request native browser notification permission
   const requestBrowserPermission = useCallback(async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
@@ -236,6 +303,9 @@ export function NotificationProvider({ children }) {
     markAsRead,
     markAllAsRead,
     deleteAnnouncement,
+    deleteAllAnnouncements,
+    broadcastToScreen,
+    updateAnnouncementDuration,
     refreshAnnouncements: loadAnnouncements,
     browserPermission,
     requestBrowserPermission,

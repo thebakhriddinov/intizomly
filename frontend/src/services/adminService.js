@@ -8,6 +8,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { supabaseService } from './supabaseService';
 import { validateUzbekPhone, formatUzbekPhone } from '../utils/phone';
 import { getUserPassword, saveUserPassword, storage } from '../utils/storage';
+import { sanitizeAnnouncement } from '../utils/announcementHelper';
 
 export const adminService = {
   /**
@@ -502,100 +503,126 @@ export const adminService = {
   // 4. E'LONLAR VA BILDIRISHNOMALAR (ANNOUNCEMENTS CRUD)
   // ============================================================================
   async getAnnouncements({ includeExpired = false } = {}) {
-    let list = [];
-
-    // 1. Try server API if available
+    // 1. Server API orqali sinab ko'rish (Authoritative source)
     try {
-      const res = await this.fetchAdminApi('/api/admin/announcements', { method: 'GET' });
+      const res = await this.fetchAdminApi(`/api/admin/announcements?includeExpired=${includeExpired}`, { method: 'GET' });
       if (res && res.success && Array.isArray(res.announcements)) {
-        list = res.announcements;
+        const cleanList = res.announcements.map(sanitizeAnnouncement).filter(Boolean);
+        // Serverdagi rasmiy ro'yxatni mahalliy keshga sinxronlashtirish
+        storage.save(STORAGE_KEYS.BROADCASTS, cleanList);
+        return cleanList;
       }
     } catch {
-      // Server API not present, fallback
+      // Server API mavjud emas yoki javob bermadi, Supabase'ga o'tish
     }
 
-    // 2. Fetch from Supabase
-    if (list.length === 0 && isSupabaseConfigured) {
+    // 2. Direct Supabase Query
+    if (isSupabaseConfigured) {
       try {
         const broadcasts = await supabaseService.getBroadcasts({ includeExpired });
-        if (Array.isArray(broadcasts) && broadcasts.length > 0) {
-          list = broadcasts.map(b => ({
-            id: b.id,
-            title: b.title,
-            message: b.message,
-            target: b.target || 'all',
-            status: 'active',
-            priority: b.priority || 'normal',
-            duration_days: b.duration_days || null,
-            expires_at: b.expires_at || null,
-            created_at: b.created_at
-          }));
+        if (Array.isArray(broadcasts)) {
+          const cleanList = broadcasts.map(sanitizeAnnouncement).filter(Boolean);
+          storage.save(STORAGE_KEYS.BROADCASTS, cleanList);
+          return cleanList;
         }
       } catch (e) {
         console.warn('[AdminService] Supabase getBroadcasts notice:', e);
       }
     }
 
-    // 3. Fallback / merge with local storage
-    const localBroadcasts = storage.getBroadcasts({ includeExpired });
-    const mergedMap = new Map();
-    list.forEach(item => mergedMap.set(item.id, item));
-    localBroadcasts.forEach(item => {
-      if (!mergedMap.has(item.id)) {
-        mergedMap.set(item.id, item);
-      }
-    });
-
-    const result = Array.from(mergedMap.values());
-    result.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-    return result;
+    // 3. Faqat server ham, Supabase ham ishlamagan offline holatda local storage keshdan olish
+    const localList = storage.getBroadcasts({ includeExpired });
+    return (localList || []).map(sanitizeAnnouncement).filter(Boolean);
   },
 
-  async createAnnouncement({ title, message, target = 'all', priority = 'normal', status = 'active', durationDays = 7 }) {
+  async createAnnouncement({
+    title,
+    message,
+    target = 'all',
+    priority = 'normal',
+    status = 'active',
+    durationDays = 7,
+    expiresAt = null,
+    broadcastToScreen = true
+  }) {
     // 1. Try server API if configured
     try {
       const res = await this.fetchAdminApi('/api/admin/announcements', {
         method: 'POST',
-        body: JSON.stringify({ title, message, target, priority, status, durationDays })
+        body: JSON.stringify({
+          title,
+          message,
+          target,
+          priority,
+          status,
+          durationDays,
+          expiresAt,
+          broadcastToScreen
+        })
       });
-      if (res && res.success) return res;
+      if (res && res.success && res.announcement) {
+        const cleanAnn = sanitizeAnnouncement(res.announcement);
+        storage.saveBroadcast(cleanAnn);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('intizomly:new_broadcast', { detail: cleanAnn }));
+          if (broadcastToScreen) {
+            window.dispatchEvent(new CustomEvent('intizomly:push_to_screen', { detail: cleanAnn }));
+          }
+        }
+        return { ...res, announcement: cleanAnn };
+      }
     } catch {
       // Fallback
     }
 
     const daysNum = Number(durationDays);
-    const expiresAt = (daysNum > 0)
-      ? new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString()
-      : null;
+    let calculatedExpiresAt = expiresAt;
+    if (!calculatedExpiresAt && daysNum) {
+      if (daysNum > 0) calculatedExpiresAt = new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString();
+      else if (daysNum < 0) calculatedExpiresAt = new Date(Date.now() + Math.abs(daysNum) * 60 * 60 * 1000).toISOString();
+    }
 
     // 2. Direct Supabase insert
     let created = null;
     if (isSupabaseConfigured) {
       try {
         const curUser = storage.getCurrentUser();
-        created = await supabaseService.createBroadcast(curUser?.id, title, message, priority, target, daysNum);
+        created = await supabaseService.createBroadcast(
+          curUser?.id,
+          title,
+          message,
+          priority,
+          target,
+          daysNum,
+          calculatedExpiresAt
+        );
       } catch (e) {
         console.warn('[AdminService] Supabase createBroadcast fallback:', e);
       }
     }
 
     // 3. Save to local storage cache
-    const newBroadcast = {
-      id: created?.id || 'broadcast_' + Date.now(),
+    const cleanCreated = sanitizeAnnouncement(created);
+    const newBroadcast = cleanCreated || {
+      id: 'broadcast_' + Date.now(),
       title: (title || '').trim(),
       message: (message || '').trim(),
       target,
       priority,
       status,
       duration_days: daysNum > 0 ? daysNum : null,
-      expires_at: expiresAt,
-      created_at: created?.created_at || new Date().toISOString()
+      expires_at: calculatedExpiresAt,
+      pushed_at: broadcastToScreen ? new Date().toISOString() : null,
+      created_at: new Date().toISOString()
     };
     storage.saveBroadcast(newBroadcast);
 
-    // 4. Dispatch instant event for app-wide reactivity
+    // 4. Dispatch instant events for app-wide reactivity
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('intizomly:new_broadcast', { detail: newBroadcast }));
+      if (broadcastToScreen) {
+        window.dispatchEvent(new CustomEvent('intizomly:push_to_screen', { detail: newBroadcast }));
+      }
     }
 
     return { success: true, announcement: newBroadcast };
@@ -629,6 +656,115 @@ export const adminService = {
     }
 
     return { success: true };
+  },
+
+  async deleteAllAnnouncements() {
+    // 1. Try server API
+    try {
+      await this.fetchAdminApi('/api/admin/announcements/all', { method: 'DELETE' });
+    } catch {
+      // Fallback
+    }
+
+    // 2. Direct Supabase delete
+    if (isSupabaseConfigured) {
+      try {
+        await supabaseService.deleteAllBroadcasts();
+      } catch (e) {
+        console.warn('[AdminService] Supabase deleteAllBroadcasts fallback:', e);
+      }
+    }
+
+    // 3. Clear local storage
+    storage.save(STORAGE_KEYS.BROADCASTS, []);
+
+    // 4. Dispatch event
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('intizomly:all_broadcasts_deleted'));
+    }
+
+    return { success: true };
+  },
+
+  async updateAnnouncementDuration(announcementId, { durationDays, expiresAt }) {
+    if (!announcementId) return { success: false };
+
+    let updatedAnn = null;
+    // 1. Try server API
+    try {
+      const res = await this.fetchAdminApi(`/api/admin/announcements/${announcementId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ durationDays, expiresAt })
+      });
+      if (res && res.success && res.announcement) {
+        updatedAnn = res.announcement;
+      }
+    } catch {
+      // Fallback
+    }
+
+    // 2. Direct Supabase update
+    if (!updatedAnn && isSupabaseConfigured) {
+      try {
+        updatedAnn = await supabaseService.updateBroadcastDuration(announcementId, { durationDays, expiresAt });
+      } catch (e) {
+        console.warn('[AdminService] Supabase updateBroadcastDuration fallback:', e);
+      }
+    }
+
+    // 3. Update storage
+    if (updatedAnn) {
+      storage.saveBroadcast(updatedAnn);
+    } else {
+      const current = storage.getBroadcasts({ includeExpired: true });
+      const target = current.find(b => b.id === announcementId);
+      if (target) {
+        let newExpiresAt = expiresAt;
+        if (!newExpiresAt && durationDays) {
+          const daysNum = Number(durationDays);
+          if (daysNum > 0) newExpiresAt = new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString();
+        }
+        target.duration_days = durationDays > 0 ? durationDays : null;
+        target.expires_at = newExpiresAt;
+        storage.saveBroadcast(target);
+        updatedAnn = target;
+      }
+    }
+
+    // 4. Dispatch event
+    if (typeof window !== 'undefined' && updatedAnn) {
+      window.dispatchEvent(new CustomEvent('intizomly:broadcast_updated', { detail: updatedAnn }));
+    }
+
+    return { success: true, announcement: updatedAnn };
+  },
+
+  async broadcastAnnouncementToScreen(announcementId) {
+    if (!announcementId) return { success: false };
+
+    let targetAnn = null;
+    // 1. Try server API
+    try {
+      const res = await this.fetchAdminApi(`/api/admin/announcements/${announcementId}/broadcast`, {
+        method: 'POST'
+      });
+      if (res && res.success && res.announcement) {
+        targetAnn = res.announcement;
+      }
+    } catch {
+      // Fallback
+    }
+
+    if (!targetAnn) {
+      const list = storage.getBroadcasts({ includeExpired: true });
+      targetAnn = list.find(b => b.id === announcementId);
+    }
+
+    if (targetAnn && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('intizomly:push_to_screen', { detail: targetAnn }));
+    }
+
+    return { success: true, announcement: targetAnn };
   },
 
   async getAnnouncementReads(announcementId) {

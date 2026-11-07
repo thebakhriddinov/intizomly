@@ -1,19 +1,96 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNotifications } from '../../context/NotificationContext';
 import { IconFlame, IconShield, IconMegaphone } from '../Common/AppIcons';
+import { getCleanAnnouncementText } from '../../utils/announcementHelper';
 
 export function FloatingSMSPopUp() {
   const { popupAnnouncement, dismissPopup, openNotifications, markAsRead } = useNotifications();
   const [isPaused, setIsPaused] = useState(false);
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDismissing, setIsDismissing] = useState(false);
+  const [dismissDirection, setDismissDirection] = useState('right');
+
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const currentDragXRef = useRef(0);
+
+  // Reset when popup changes
+  useEffect(() => {
+    setDragX(0);
+    setIsDragging(false);
+    setIsDismissing(false);
+    currentDragXRef.current = 0;
+  }, [popupAnnouncement?.id]);
 
   if (!popupAnnouncement) return null;
 
   const isUrgent = popupAnnouncement.priority === 'urgent';
 
-  const handleOpen = () => {
+  const handleOpen = (e) => {
+    // Agar foydalanuvchi surayotgan bo'lsa, bosish ishlamasin
+    if (Math.abs(currentDragXRef.current) > 15) return;
     markAsRead(popupAnnouncement.id);
     dismissPopup();
     openNotifications();
+  };
+
+  // Touch Swipe Handlers (Telefonda yonga surib o'chirish / dismiss)
+  const handleTouchStart = (e) => {
+    if (!e.touches?.[0]) return;
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+    setIsDragging(true);
+    setIsPaused(true);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!e.touches?.[0]) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - touchStartXRef.current;
+    const diffY = currentY - touchStartYRef.current;
+
+    // Gorizontal surish vertikal harakatdan ustun bo'lsa
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      currentDragXRef.current = diffX;
+      setDragX(diffX);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    const finalDiffX = currentDragXRef.current;
+
+    // 60px dan ko'proq surilsa - yonga surib tashlash (Dismiss)
+    if (Math.abs(finalDiffX) > 60) {
+      const dir = finalDiffX > 0 ? 'right' : 'left';
+      setDismissDirection(dir);
+      setIsDismissing(true);
+
+      setTimeout(() => {
+        dismissPopup();
+      }, 220);
+    } else {
+      // Aks holda joyiga qaytish (Snap back)
+      setDragX(0);
+      currentDragXRef.current = 0;
+      setIsPaused(false);
+    }
+  };
+
+  // Drag va Dismiss animatsiyalari
+  const cardStyle = {
+    transform: isDismissing
+      ? `translateX(${dismissDirection === 'right' ? '125%' : '-125%'}) scale(0.95)`
+      : `translateX(${dragX}px)`,
+    opacity: isDismissing
+      ? 0
+      : Math.max(0.15, 1 - Math.abs(dragX) / 260),
+    transition: isDragging
+      ? 'none'
+      : 'transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.24s ease',
+    touchAction: 'pan-y'
   };
 
   return (
@@ -21,10 +98,17 @@ export function FloatingSMSPopUp() {
       className="floating-sms-popup-wrap"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
-      <div className={`floating-sms-popup-card ${isUrgent ? 'is-urgent' : ''}`}>
+      <div
+        className={`floating-sms-popup-card ${isUrgent ? 'is-urgent' : ''}`}
+        style={cardStyle}
+      >
         {/* Progress Bar Timer */}
-        <div className={`sms-popup-progress-bar ${isPaused ? 'is-paused' : ''}`} />
+        <div className={`sms-popup-progress-bar ${isPaused || isDragging ? 'is-paused' : ''}`} />
 
         <div className="sms-popup-content">
           {/* Top row: Brand + Tag + Close */}
@@ -41,8 +125,11 @@ export function FloatingSMSPopUp() {
             <button
               type="button"
               className="sms-popup-close-btn"
-              onClick={dismissPopup}
-              title="Yopish"
+              onClick={(e) => {
+                e.stopPropagation();
+                dismissPopup();
+              }}
+              title="Yopish (yoki yonga suring)"
               aria-label="Yopish"
             >
               &times;
@@ -62,11 +149,11 @@ export function FloatingSMSPopUp() {
             </div>
 
             <p className="sms-popup-message">
-              {popupAnnouncement.message}
+              {getCleanAnnouncementText(popupAnnouncement.message)}
             </p>
           </div>
 
-          {/* Bottom Actions */}
+          {/* Bottom Actions + Swipe Hint on mobile */}
           <div className="sms-popup-footer">
             <button
               type="button"
@@ -76,6 +163,10 @@ export function FloatingSMSPopUp() {
               <span>Xabarni o'qish</span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
+
+            <span className="sms-popup-swipe-hint" style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.45)', marginLeft: 'auto' }}>
+              yonga surib yoping &rarr;
+            </span>
           </div>
         </div>
       </div>
@@ -84,4 +175,3 @@ export function FloatingSMSPopUp() {
 }
 
 export default FloatingSMSPopUp;
-

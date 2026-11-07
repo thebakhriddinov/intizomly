@@ -3,6 +3,7 @@ import { useNotifications } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { IconMegaphone, IconShield, IconTrash, IconRefresh } from '../Common/AppIcons';
+import { getCleanAnnouncementText } from '../../utils/announcementHelper';
 
 function IconBell({ size = 18, color = 'currentColor' }) {
   return (
@@ -31,6 +32,7 @@ export function NotificationCenterModal() {
     markAsRead,
     markAllAsRead,
     deleteAnnouncement,
+    deleteAllAnnouncements,
     refreshAnnouncements,
     loading,
     browserPermission,
@@ -147,17 +149,36 @@ export function NotificationCenterModal() {
             </button>
           </div>
 
-          {unreadCount > 0 && (
-            <button
-              type="button"
-              className="btn-mark-all-read"
-              onClick={markAllAsRead}
-              title="Barchasini o'qilgan deb belgilash"
-            >
-              <IconCheck size={13} />
-              <span>{lang === 'ru' ? "Прочитать все" : lang === 'en' ? "Mark all read" : "Barchasini o'qish"}</span>
-            </button>
-          )}
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {isAdmin && announcements.length > 0 && (
+              <button
+                type="button"
+                className="btn-mark-all-read"
+                onClick={() => {
+                  if (window.confirm("Barcha e'lonlarni barcha foydalanuvchilardan to'liq o'chirmoqchimisiz?")) {
+                    deleteAllAnnouncements();
+                  }
+                }}
+                style={{ color: '#EF4444', borderColor: 'rgba(239, 68, 68, 0.3)', background: 'rgba(239, 68, 68, 0.08)' }}
+                title="Barcha e'lonlarni tozalash"
+              >
+                <IconTrash size={12} />
+                <span>{lang === 'ru' ? "Очистить все" : "Tozalash"}</span>
+              </button>
+            )}
+
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                className="btn-mark-all-read"
+                onClick={markAllAsRead}
+                title="Barchasini o'qilgan deb belgilash"
+              >
+                <IconCheck size={13} />
+                <span>{lang === 'ru' ? "Прочитать все" : lang === 'en' ? "Mark all read" : "Barchasini o'qish"}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* 3. Browser Permission Prompt Banner (if not yet granted) */}
@@ -266,7 +287,7 @@ export function NotificationCenterModal() {
 
                     {/* Message Body */}
                     <p className="notif-item-body">
-                      {ann.message}
+                      {getCleanAnnouncementText(ann.message)}
                     </p>
 
                     {/* Item Bottom Actions */}
