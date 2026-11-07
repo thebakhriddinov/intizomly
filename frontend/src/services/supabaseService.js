@@ -1,6 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { validateUzbekPhone, formatUzbekPhone, phoneToAuthEmail } from '../utils/phone';
-import { saveUserPassword } from '../utils/storage';
+import { saveUserPassword, normalizeSchedule } from '../utils/storage';
 
 // Re-export phone helpers for convenience
 export { validateUzbekPhone, formatUzbekPhone, phoneToAuthEmail };
@@ -444,6 +444,7 @@ export const supabaseService = {
         category: h.category || 'Kundalik',
         target: h.target || '1 marta',
         time: h.time || '',
+        schedule: normalizeSchedule(h.schedule),
         createdAt: h.created_at ? new Date(h.created_at).getTime() : Date.now()
       }));
     } catch (e) {
@@ -452,9 +453,10 @@ export const supabaseService = {
     }
   },
 
-  async createHabit(userId, { title, emoji, description, category, target, time }) {
+  async createHabit(userId, { title, emoji, description, category, target, time, schedule }) {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
+    const normalizedSchedule = normalizeSchedule(schedule);
     const payload = {
       user_id: userId,
       title: (title || '').trim(),
@@ -462,7 +464,8 @@ export const supabaseService = {
       description: (description || '').trim(),
       category: category || "Sog'liq",
       target: target || "1 marta",
-      time: (time || '').trim()
+      time: (time || '').trim(),
+      schedule: normalizedSchedule
     };
 
     try {
@@ -481,34 +484,60 @@ export const supabaseService = {
         category: data.category,
         target: data.target,
         time: data.time || time || '',
+        schedule: normalizeSchedule(data.schedule || normalizedSchedule),
         createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
       };
     } catch (err) {
-      // Fallback without time column if not yet migrated
-      delete payload.time;
-      const { data, error } = await supabase
-        .from('habits')
-        .insert(payload)
-        .select()
-        .single();
+      // Fallback without schedule and/or time columns if not yet migrated on remote db
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.schedule;
+      try {
+        const { data, error } = await supabase
+          .from('habits')
+          .insert(fallbackPayload)
+          .select()
+          .single();
 
-      if (error) throw error;
-      return {
-        id: data.id,
-        title: data.title,
-        emoji: data.emoji,
-        description: data.description,
-        category: data.category,
-        target: data.target,
-        time: time || '',
-        createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
-      };
+        if (error) throw error;
+        return {
+          id: data.id,
+          title: data.title,
+          emoji: data.emoji,
+          description: data.description,
+          category: data.category,
+          target: data.target,
+          time: data.time || time || '',
+          schedule: normalizedSchedule,
+          createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
+        };
+      } catch (err2) {
+        delete fallbackPayload.time;
+        const { data, error } = await supabase
+          .from('habits')
+          .insert(fallbackPayload)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return {
+          id: data.id,
+          title: data.title,
+          emoji: data.emoji,
+          description: data.description,
+          category: data.category,
+          target: data.target,
+          time: time || '',
+          schedule: normalizedSchedule,
+          createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
+        };
+      }
     }
   },
 
-  async updateHabit(habitId, { title, emoji, description, category, target, time }) {
+  async updateHabit(habitId, { title, emoji, description, category, target, time, schedule }) {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
+    const normalizedSchedule = normalizeSchedule(schedule);
     const payload = {
       title: (title || '').trim(),
       emoji: emoji || '🎯',
@@ -516,6 +545,7 @@ export const supabaseService = {
       category: category || "Sog'liq",
       target: target || "1 marta",
       time: (time || '').trim(),
+      schedule: normalizedSchedule,
       updated_at: new Date().toISOString()
     };
 
@@ -536,28 +566,54 @@ export const supabaseService = {
         category: data.category,
         target: data.target,
         time: data.time || time || '',
+        schedule: normalizeSchedule(data.schedule || normalizedSchedule),
         createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
       };
     } catch (err) {
-      delete payload.time;
-      const { data, error } = await supabase
-        .from('habits')
-        .update(payload)
-        .eq('id', habitId)
-        .select()
-        .single();
+      const fallbackPayload = { ...payload };
+      delete fallbackPayload.schedule;
+      try {
+        const { data, error } = await supabase
+          .from('habits')
+          .update(fallbackPayload)
+          .eq('id', habitId)
+          .select()
+          .single();
 
-      if (error) throw error;
-      return {
-        id: data.id,
-        title: data.title,
-        emoji: data.emoji,
-        description: data.description,
-        category: data.category,
-        target: data.target,
-        time: time || '',
-        createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
-      };
+        if (error) throw error;
+        return {
+          id: data.id,
+          title: data.title,
+          emoji: data.emoji,
+          description: data.description,
+          category: data.category,
+          target: data.target,
+          time: data.time || time || '',
+          schedule: normalizedSchedule,
+          createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
+        };
+      } catch (err2) {
+        delete fallbackPayload.time;
+        const { data, error } = await supabase
+          .from('habits')
+          .update(fallbackPayload)
+          .eq('id', habitId)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return {
+          id: data.id,
+          title: data.title,
+          emoji: data.emoji,
+          description: data.description,
+          category: data.category,
+          target: data.target,
+          time: time || '',
+          schedule: normalizedSchedule,
+          createdAt: data.created_at ? new Date(data.created_at).getTime() : Date.now()
+        };
+      }
     }
   },
 

@@ -40,7 +40,7 @@ function ChallengeEmblem({ id, emoji, size = 26 }) {
 
 function RankingsPageComponent() {
   const { currentUser, isAdmin } = useAuth();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { triggerBanner, addToast } = useHabits();
 
   const [challenges, setChallenges] = useState(() => {
@@ -436,17 +436,24 @@ return (
         </div>
       </div>
 
-      <h2 className="rankings-hero-title">Intizom Chempionati & Reytinglar</h2>
+      <h2 className="rankings-hero-title">
+        {lang === 'ru' ? "Чемпионат дисциплины и рейтинги" : lang === 'en' ? "Discipline Championship & Rankings" : "Intizom Chempionati & Reytinglar"}
+      </h2>
       <p className="rankings-hero-desc">
-        Haqiqiy foydalanuvchilar bilan birgalikda intizom musobaqalari.
-        Reyting natijalari va o'zaro o'rinlarni ko'rish uchun avval ushbu guruhga a'zo bo'ling!
+        {lang === 'ru'
+          ? "Соревнования по дисциплине с реальными участниками. Чтобы видеть результаты и занимать места, присоединяйтесь к группам!"
+          : lang === 'en'
+          ? "Discipline competitions with real members. Join groups to track ranks, progress and compete!"
+          : "Haqiqiy foydalanuvchilar bilan birgalikda intizom musobaqalari. Reyting natijalari va o'zaro o'rinlarni ko'rish uchun avval ushbu guruhga a'zo bo'ling!"}
       </p>
 
       {/* 4-Challenge Limit Indicator Banner - Single clean row on all screens */}
       <div className="active-competitions-banner">
         <div className="active-comp-left">
           <IconTrophy size={16} color={joinedCount >= 4 ? '#F59E0B' : 'var(--primary-accent)'} />
-          <span className="active-comp-label">Faol musobaqalar:</span>
+          <span className="active-comp-label">
+            {lang === 'ru' ? "Активные соревнования:" : lang === 'en' ? "Active Competitions:" : "Faol musobaqalar:"}
+          </span>
           <span className="active-comp-badge" style={{ color: joinedCount >= 4 ? '#F59E0B' : 'var(--primary-accent)' }}>
             {joinedCount}/4
           </span>
@@ -462,9 +469,13 @@ return (
 
         <div className="active-comp-right">
           {joinedCount >= 4 ? (
-            <span className="comp-limit-tag warning">Limit to'ldi (4/4)</span>
+            <span className="comp-limit-tag warning">
+              {lang === 'ru' ? "Лимит исчерпан (4/4)" : lang === 'en' ? "Limit reached (4/4)" : "Limit to'ldi (4/4)"}
+            </span>
           ) : (
-            <span className="comp-limit-tag success">{4 - joinedCount} ta bo'sh joy</span>
+            <span className="comp-limit-tag success">
+              {lang === 'ru' ? `${4 - joinedCount} мест свободно` : lang === 'en' ? `${4 - joinedCount} slots left` : `${4 - joinedCount} ta bo'sh joy`}
+            </span>
           )}
         </div>
       </div>
@@ -763,11 +774,11 @@ return (
               <div className="challenge-meta-row">
                 <span className="meta-pill">
                   <IconUsers size={14} />
-                  <span>{selectedChallenge.participantsCount || 0} nafar ishtirokchi</span>
+                  <span>{selectedChallenge.participantsCount || 0} {lang === 'ru' ? 'участников' : lang === 'en' ? 'participants' : 'nafar ishtirokchi'}</span>
                 </span>
                 <span className="meta-pill">
                   <IconTrophy size={14} />
-                  <span>Mukofot: {selectedChallenge.badgeName}</span>
+                  <span>{lang === 'ru' ? 'Награда:' : lang === 'en' ? 'Reward:' : 'Mukofot:'} {selectedChallenge.badgeName}</span>
                 </span>
               </div>
             </div>
@@ -780,14 +791,14 @@ return (
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10B981" strokeWidth="2.5">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  <span>Siz guruh a'zosisiz</span>
+                  <span>{lang === 'ru' ? 'Вы состоите в группе' : lang === 'en' ? 'You are a member' : 'Siz guruh a\'zosisiz'}</span>
                 </span>
                 <button
                   type="button"
                   className="btn-leave-challenge"
                   onClick={() => handleLeave(selectedChallenge.id)}
                 >
-                  Guruhdan chiqish
+                  {lang === 'ru' ? 'Покинуть группу' : lang === 'en' ? 'Leave Group' : 'Guruhdan chiqish'}
                 </button>
               </div>
             ) : joinedCount >= 4 ? (
@@ -802,13 +813,13 @@ return (
                     color: '#F59E0B',
                     cursor: 'pointer'
                   }}
-                  title="Maksimal 4 ta musobaqaga a'zo bo'lingan"
+                  title={lang === 'ru' ? "Максимум 4 соревнования" : "Maksimal 4 ta musobaqaga a'zo bo'lingan"}
                 >
                   <IconLock size={16} color="#F59E0B" />
-                  <span>Limit To'ldi (4/4)</span>
+                  <span>{lang === 'ru' ? "Лимит исчерпан (4/4)" : lang === 'en' ? "Limit Reached (4/4)" : "Limit To'ldi (4/4)"}</span>
                 </button>
                 <span style={{ fontSize: '11px', color: '#F59E0B', textAlign: 'right' }}>
-                  Qo'shilish uchun avval boshqasidan chiqing
+                  {lang === 'ru' ? "Сначала покиньте другое соревнование" : lang === 'en' ? "Leave another group first to join" : "Qo'shilish uchun avval boshqasidan chiqing"}
                 </span>
               </div>
             ) : (
@@ -819,7 +830,7 @@ return (
               >
                 <span className="join-glow"></span>
                 <IconTrophy size={16} />
-                <span>Guruhga A'zo Bo'lish ({joinedCount}/4)</span>
+                <span>{lang === 'ru' ? `Вступить в группу (${joinedCount}/4)` : lang === 'en' ? `Join Group (${joinedCount}/4)` : `Guruhga A'zo Bo'lish (${joinedCount}/4)`}</span>
               </button>
             )}
           </div>
@@ -834,13 +845,13 @@ return (
               </div>
               <div>
                 <h4 className="participants-heading">
-                  Guruh Ishtirokchilari
+                  {lang === 'ru' ? 'Участники группы' : lang === 'en' ? 'Group Participants' : 'Guruh Ishtirokchilari'}
                   <span className="participants-count-tag">
-                    {selectedChallenge.participantsCount || 0} nafar
+                    {selectedChallenge.participantsCount || 0} {lang === 'ru' ? 'чел.' : lang === 'en' ? 'users' : 'nafar'}
                   </span>
                 </h4>
                 <span className="participants-subtext">
-                  Ushbu challengeda qatnashayotgan barcha a'zolar
+                  {lang === 'ru' ? 'Все участники, соревнующиеся в этом челлендже' : lang === 'en' ? 'All members competing in this challenge' : 'Ushbu challengeda qatnashayotgan barcha a\'zolar'}
                 </span>
               </div>
             </div>
@@ -852,7 +863,7 @@ return (
                 onClick={() => handleJoin(selectedChallenge.id)}
               >
                 <IconUserPlus size={14} />
-                <span>Guruhga qo'shilish</span>
+                <span>{lang === 'ru' ? 'Вступить' : lang === 'en' ? 'Join' : 'Guruhga qo\'shilish'}</span>
               </button>
             )}
           </div>
@@ -924,15 +935,15 @@ return (
                   <div className="participant-card-info">
                     <div className="participant-card-name-row">
                       <span className="participant-card-name">{member.name}</span>
-                      {member.isCurrent && <span className="member-you-badge">Siz</span>}
+                      {member.isCurrent && <span className="member-you-badge">{lang === 'ru' ? 'Вы' : lang === 'en' ? 'You' : 'Siz'}</span>}
                     </div>
                     <div className="participant-card-meta">
                       <span className="participant-streak-pill">
                         <IconFlame size={12} />
-                        <span>{member.streak || 0} kun</span>
+                        <span>{member.streak || 0} {t('daysCount')}</span>
                       </span>
                       <span className="participant-points-pill">
-                        {member.points || 0} ball
+                        {member.points || 0} {lang === 'ru' ? 'баллов' : lang === 'en' ? 'pts' : 'ball'}
                       </span>
                     </div>
                   </div>
@@ -1082,14 +1093,14 @@ return (
                               </div>
                               <div className="user-cell-info">
                                 <span className="user-cell-name">{row.name}</span>
-                                {row.isCurrent && <span className="user-cell-you-badge">Siz</span>}
+                                {row.isCurrent && <span className="user-cell-you-badge">{lang === 'ru' ? 'Вы' : lang === 'en' ? 'You' : 'Siz'}</span>}
                               </div>
                             </div>
                           </td>
                           <td className="streak-col">
                             <span className="table-streak-pill">
                               <IconFlame size={13} />
-                              <span>{row.streak} kun</span>
+                              <span>{row.streak} {t('daysCount')}</span>
                             </span>
                           </td>
                           <td className="rate-col">

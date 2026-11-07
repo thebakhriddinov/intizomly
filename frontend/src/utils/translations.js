@@ -100,7 +100,20 @@ export const TRANSLATIONS = {
     habitDeleted: "Odat o'chirildi",
     congratsAllDone: "Tabriklaymiz! 🌟 Bugungi barcha vazifalar to'liq bajarildi!",
     toastWelcome: "Xush kelibsiz! 👋",
-    toastSuccess: "Muvaffaqiyatli! ✅"
+    toastSuccess: "Muvaffaqiyatli! ✅",
+    yourLevel: "Sizning levelingiz",
+    myBadges: "Mendagi bor badgelar",
+    allLevels: "Barcha level va badgelar",
+    unlockedBadges: "Ochilgan Badgelar",
+    unlockedStatus: "OCHILDI",
+    lockedStatus: "QULFLANGAN",
+    achievedStatus: "Erishildi! 🏆",
+    daysCount: "kun",
+    noBadgesYet: "Hali badgelar ochilmagan",
+    noBadgesDesc: "10 kunlik to'xtovsiz intizomga yetganingizda birinchi \"Temir Iroda\" nishoniga ega bo'lasiz!",
+    rewardsAndLevelsTitle: "Intizom Mukofotlari va Sizning Levelingiz",
+    rewardsAndLevelsSubtitle: "Intizom darajangiz oshgani sari yangi unvon va nishonlar ochiladi",
+    currentStreakLabel: "Hozirgi Streak:"
   },
   ru: {
     appName: "Intizomly",
@@ -203,7 +216,20 @@ export const TRANSLATIONS = {
     habitDeleted: "Привычка удалена",
     congratsAllDone: "Поздравляем! 🌟 Все задачи на сегодня выполнены!",
     toastWelcome: "Добро пожаловать! 👋",
-    toastSuccess: "Успешно! ✅"
+    toastSuccess: "Успешно! ✅",
+    yourLevel: "Ваш уровень",
+    myBadges: "Мои бейджи",
+    allLevels: "Все уровни и бейджи",
+    unlockedBadges: "Открытые уровни",
+    unlockedStatus: "ОТКРЫТ",
+    lockedStatus: "ЗАКРЫТО",
+    achievedStatus: "Достигнуто! 🏆",
+    daysCount: "дней",
+    noBadgesYet: "Уровни еще не открыты",
+    noBadgesDesc: "При достижении 10 дней непрерывной дисциплины вы получите первый уровень 'Железная воля'!",
+    rewardsAndLevelsTitle: "Награды и Ваш Уровень Дисциплины",
+    rewardsAndLevelsSubtitle: "С ростом вашей дисциплины открываются новые звания и награды",
+    currentStreakLabel: "Текущий стрик:"
   },
   en: {
     appName: "Intizomly",
@@ -306,6 +332,19 @@ export const TRANSLATIONS = {
     habitDeleted: "Habit removed",
     congratsAllDone: "Congratulations! 🌟 All tasks completed for today!",
     toastWelcome: "Welcome back! 👋",
-    toastSuccess: "Success! ✅"
+    toastSuccess: "Success! ✅",
+    yourLevel: "Your level",
+    myBadges: "My badges",
+    allLevels: "All levels & badges",
+    unlockedBadges: "Unlocked Levels",
+    unlockedStatus: "UNLOCKED",
+    lockedStatus: "LOCKED",
+    achievedStatus: "Achieved! 🏆",
+    daysCount: "days",
+    noBadgesYet: "No badges unlocked yet",
+    noBadgesDesc: "Reach 10 days of continuous discipline to earn your first 'Iron Will' badge!",
+    rewardsAndLevelsTitle: "Discipline Rewards & Your Level",
+    rewardsAndLevelsSubtitle: "Unlock new titles and prestigious emblems as your discipline grows",
+    currentStreakLabel: "Current Streak:"
   }
 };

@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useHabits } from '../../context/HabitsContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { HabitGlyphIcon } from '../Common/AppIcons';
 
+const PRESET_ALL = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+const PRESET_WORKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
+const PRESET_WEEKENDS = ['sat', 'sun'];
+
 export function HabitModal({ isOpen, onClose, habitToEdit }) {
   const { addHabit, updateHabit } = useHabits();
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -13,6 +17,7 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
   const [target, setTarget] = useState('1 marta');
   const [time, setTime] = useState('');
   const [emoji, setEmoji] = useState('🎯');
+  const [selectedDays, setSelectedDays] = useState(PRESET_ALL);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const emojiList = [
@@ -20,26 +25,75 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
     '🎯', '🏋️', '🧠', '🚴', '🍏', '🛌', '🚭', '☕', '🌟'
   ];
 
+  const weekdays = useMemo(() => [
+    { id: 'mon', label: lang === 'ru' ? 'Пн' : lang === 'en' ? 'Mon' : 'Dsh', full: lang === 'ru' ? 'Понедельник' : lang === 'en' ? 'Monday' : 'Dushanba' },
+    { id: 'tue', label: lang === 'ru' ? 'Вт' : lang === 'en' ? 'Tue' : 'Ssh', full: lang === 'ru' ? 'Вторник' : lang === 'en' ? 'Tuesday' : 'Seshanba' },
+    { id: 'wed', label: lang === 'ru' ? 'Ср' : lang === 'en' ? 'Wed' : 'Chr', full: lang === 'ru' ? 'Среда' : lang === 'en' ? 'Wednesday' : 'Chorshanba' },
+    { id: 'thu', label: lang === 'ru' ? 'Чт' : lang === 'en' ? 'Thu' : 'Pay', full: lang === 'ru' ? 'Четверг' : lang === 'en' ? 'Thursday' : 'Payshanba' },
+    { id: 'fri', label: lang === 'ru' ? 'Пт' : lang === 'en' ? 'Fri' : 'Jum', full: lang === 'ru' ? 'Пятница' : lang === 'en' ? 'Friday' : 'Juma' },
+    { id: 'sat', label: lang === 'ru' ? 'Сб' : lang === 'en' ? 'Sat' : 'Shn', full: lang === 'ru' ? 'Суббота' : lang === 'en' ? 'Saturday' : 'Shanba' },
+    { id: 'sun', label: lang === 'ru' ? 'Вс' : lang === 'en' ? 'Sun' : 'Yak', full: lang === 'ru' ? 'Воскресенье' : lang === 'en' ? 'Sunday' : 'Yakshanba' }
+  ], [lang]);
+
   useEffect(() => {
     if (habitToEdit) {
       setTitle(habitToEdit.title || '');
       setDescription(habitToEdit.description || '');
-      setCategory(habitToEdit.category || "Sog'liq");
-      setTarget(habitToEdit.target || '1 marta');
+      setCategory(habitToEdit.category || (lang === 'ru' ? "Здоровье" : lang === 'en' ? "Health" : "Sog'liq"));
+      setTarget(habitToEdit.target || (lang === 'ru' ? '1 раз' : lang === 'en' ? '1 time' : '1 marta'));
       setTime(habitToEdit.time || '');
       setEmoji(habitToEdit.emoji || '🎯');
+      const initialSchedule = Array.isArray(habitToEdit.schedule) && habitToEdit.schedule.length > 0
+        ? habitToEdit.schedule
+        : PRESET_ALL;
+      setSelectedDays(initialSchedule);
     } else {
       setTitle('');
       setDescription('');
-      setCategory("Sog'liq");
-      setTarget('1 marta');
+      setCategory(lang === 'ru' ? "Здоровье" : lang === 'en' ? "Health" : "Sog'liq");
+      setTarget(lang === 'ru' ? '1 раз' : lang === 'en' ? '1 time' : '1 marta');
       setTime('08:00');
       setEmoji('🚫🍬');
+      setSelectedDays(PRESET_ALL);
     }
     setShowEmojiPicker(false);
-  }, [habitToEdit, isOpen]);
+  }, [habitToEdit, isOpen, lang]);
 
   const [submitting, setSubmitting] = useState(false);
+
+  // Toggle individual day selection
+  const handleToggleDay = (dayId) => {
+    setSelectedDays(prev => {
+      if (prev.includes(dayId)) {
+        if (prev.length <= 1) return prev; // At least one day selected
+        return prev.filter(d => d !== dayId);
+      } else {
+        const next = [...prev, dayId];
+        return PRESET_ALL.filter(d => next.includes(d));
+      }
+    });
+  };
+
+  const handleApplyPreset = (preset) => {
+    setSelectedDays([...preset]);
+  };
+
+  const scheduleSummaryText = useMemo(() => {
+    if (selectedDays.length === 7) {
+      return lang === 'ru' ? "Каждый день (7 дней)" : lang === 'en' ? "Every day (7 days)" : "Har kuni (7 kun)";
+    }
+    if (selectedDays.length === 5 && !selectedDays.includes('sat') && !selectedDays.includes('sun')) {
+      return lang === 'ru' ? "Будние дни (Пн–Пт)" : lang === 'en' ? "Weekdays (Mon–Fri)" : "Ish kunlari (Dsh–Jum)";
+    }
+    if (selectedDays.length === 2 && selectedDays.includes('sat') && selectedDays.includes('sun')) {
+      return lang === 'ru' ? "Выходные (Сб–Вс)" : lang === 'en' ? "Weekends (Sat–Sun)" : "Dam olish kunlari (Shn–Yak)";
+    }
+    return lang === 'ru'
+      ? `${selectedDays.length} дн. в неделю`
+      : lang === 'en'
+      ? `${selectedDays.length} days/week`
+      : `Haftada ${selectedDays.length} kun`;
+  }, [selectedDays, lang]);
 
   if (!isOpen) return null;
 
@@ -48,6 +102,8 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
     if (!title.trim() || submitting) return;
 
     setSubmitting(true);
+    const finalSchedule = selectedDays.length > 0 ? selectedDays : PRESET_ALL;
+
     try {
       if (habitToEdit) {
         await updateHabit(habitToEdit.id, {
@@ -56,7 +112,8 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
           category,
           target,
           time,
-          emoji
+          emoji,
+          schedule: finalSchedule
         });
       } else {
         await addHabit({
@@ -65,7 +122,8 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
           category,
           target,
           time,
-          emoji
+          emoji,
+          schedule: finalSchedule
         });
       }
       onClose();
@@ -81,13 +139,17 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
       <div className="modal-card small-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title-wrap">
-            <HabitGlyphIcon emoji={emoji} category={category} title={title} size={20} />
+            <HabitGlyphIcon emoji={emoji} category={category} title={title} size={22} />
             <div>
               <h3 className="modal-title">
-                {habitToEdit ? "Odatni Tahrirlash" : "Yangi Odat Qo'shish"}
+                {habitToEdit
+                  ? (lang === 'ru' ? "Редактировать привычку" : lang === 'en' ? "Edit Habit" : "Odatni Tahrirlash")
+                  : (lang === 'ru' ? "Добавить новую привычку" : lang === 'en' ? "Add New Habit" : "Yangi Odat Qo'shish")}
               </h3>
               <p className="modal-desc">
-                {habitToEdit ? "Odat parametrlarini yangilang" : "Har kuni bajariladigan yangi intizomli amal"}
+                {habitToEdit
+                  ? (lang === 'ru' ? "Обновите параметры и график привычки" : lang === 'en' ? "Update habit parameters and schedule" : "Odat parametrlari va jadvalini yangilang")
+                  : (lang === 'ru' ? "Новое дисциплинированное действие по графику" : lang === 'en' ? "New disciplined action on your schedule" : "O'z jadvalingiz bo'yicha yangi intizomli amal")}
               </p>
             </div>
           </div>
@@ -96,11 +158,11 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
 
         <form onSubmit={handleSubmit} className="modal-body">
           <div className="form-group">
-            <label>Odat Nomi *</label>
+            <label>{lang === 'ru' ? "Название привычки *" : lang === 'en' ? "Habit Title *" : "Odat Nomi *"}</label>
             <input
               type="text"
               className="form-control"
-              placeholder="Masalan: Kitob o'qish (20 bet)"
+              placeholder={lang === 'ru' ? "Например: Поход в зал, Чтение книг" : lang === 'en' ? "E.g. Going to gym, Reading books" : "Masalan: Zalga borish, Kitob o'qish"}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -109,10 +171,10 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
           </div>
 
           <div className="form-group">
-            <label>Tavsif (ixtiyoriy)</label>
+            <label>{lang === 'ru' ? "Описание (необязательно)" : lang === 'en' ? "Description (optional)" : "Tavsif (ixtiyoriy)"}</label>
             <textarea
               className="form-control"
-              placeholder="Ushbu odat sizga nima beradi?"
+              placeholder={lang === 'ru' ? "Что вам дает эта привычка?" : lang === 'en' ? "What value does this habit bring?" : "Ushbu odat sizga nima beradi?"}
               rows="2"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -121,30 +183,87 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
 
           <div className="form-row-2">
             <div className="form-group">
-              <label>Kategoriya</label>
+              <label>{lang === 'ru' ? "Категория" : lang === 'en' ? "Category" : "Kategoriya"}</label>
               <select
                 className="form-control"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="Sog'liq">Sog'liq</option>
-                <option value="O'qish">O'qish</option>
-                <option value="Sport">Sport</option>
-                <option value="Tartib">Tartib</option>
-                <option value="Rivojlanish">Rivojlanish</option>
-                <option value="Kundalik">Kundalik</option>
+                <option value="Sog'liq">{lang === 'ru' ? "Здоровье" : lang === 'en' ? "Health" : "Sog'liq"}</option>
+                <option value="O'qish">{lang === 'ru' ? "Чтение" : lang === 'en' ? "Reading" : "O'qish"}</option>
+                <option value="Sport">{lang === 'ru' ? "Спорт" : lang === 'en' ? "Sport" : "Sport"}</option>
+                <option value="Tartib">{lang === 'ru' ? "Порядок" : lang === 'en' ? "Order" : "Tartib"}</option>
+                <option value="Rivojlanish">{lang === 'ru' ? "Развитие" : lang === 'en' ? "Growth" : "Rivojlanish"}</option>
+                <option value="Kundalik">{lang === 'ru' ? "Ежедневное" : lang === 'en' ? "Daily" : "Kundalik"}</option>
               </select>
             </div>
 
             <div className="form-group">
-              <label>Kunlik Maqsad</label>
+              <label>{lang === 'ru' ? "Цель на день" : lang === 'en' ? "Daily Target" : "Kunlik Maqsad"}</label>
               <input
                 type="text"
                 className="form-control"
-                placeholder="1 marta, 2 litr, 20 bet"
+                placeholder={lang === 'ru' ? "1 раз, 2 литра, 20 страниц" : lang === 'en' ? "1 time, 2 liters, 20 pages" : "1 marta, 2 litr, 20 bet"}
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
               />
+            </div>
+          </div>
+
+          {/* CUSTOM SCHEDULE: Hafta kunlarini tanlash */}
+          <div className="form-group schedule-picker-group">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <label style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>{lang === 'ru' ? "📅 График повторений" : lang === 'en' ? "📅 Repetition Schedule" : "📅 Takrorlanish Jadvali"}</span>
+                <span className="schedule-summary-pill">{scheduleSummaryText}</span>
+              </label>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="schedule-presets-row">
+              <button
+                type="button"
+                className={`preset-chip-btn ${selectedDays.length === 7 ? 'active' : ''}`}
+                onClick={() => handleApplyPreset(PRESET_ALL)}
+              >
+                {lang === 'ru' ? "Каждый день" : lang === 'en' ? "Every day" : "Har kuni"}
+              </button>
+              <button
+                type="button"
+                className={`preset-chip-btn ${selectedDays.length === 5 && !selectedDays.includes('sat') && !selectedDays.includes('sun') ? 'active' : ''}`}
+                onClick={() => handleApplyPreset(PRESET_WORKDAYS)}
+              >
+                {lang === 'ru' ? "Будние дни" : lang === 'en' ? "Weekdays" : "Ish kunlari"}
+              </button>
+              <button
+                type="button"
+                className={`preset-chip-btn ${selectedDays.length === 2 && selectedDays.includes('sat') && selectedDays.includes('sun') ? 'active' : ''}`}
+                onClick={() => handleApplyPreset(PRESET_WEEKENDS)}
+              >
+                {lang === 'ru' ? "Выходные" : lang === 'en' ? "Weekends" : "Dam olish"}
+              </button>
+            </div>
+
+            {/* 7-Day Selector Buttons */}
+            <div className="schedule-days-grid">
+              {weekdays.map(day => {
+                const isSelected = selectedDays.includes(day.id);
+                return (
+                  <button
+                    key={day.id}
+                    type="button"
+                    className={`schedule-day-btn ${isSelected ? 'selected' : ''}`}
+                    onClick={() => handleToggleDay(day.id)}
+                    title={`${day.full} (${isSelected ? (lang === 'ru' ? 'Выбрано' : lang === 'en' ? 'Selected' : 'Tanlangan') : (lang === 'ru' ? 'Не выбрано' : lang === 'en' ? 'Unselected' : 'Tanlanmagan')})`}
+                    aria-pressed={isSelected}
+                  >
+                    <span className="schedule-day-text">{day.label}</span>
+                    <span className="schedule-day-check">
+                      {isSelected ? '✓' : ''}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -152,7 +271,7 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
           <div className="form-group">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
               <label style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>⏰ Bajarish Vaqti</span>
+                <span>⏰ {lang === 'ru' ? "Время выполнения" : lang === 'en' ? "Scheduled Time" : "Bajarish Vaqti"}</span>
                 <span style={{ fontSize: '11px', color: '#10B981', fontWeight: 700 }}>(SMS & Pin)</span>
               </label>
               {time && (
@@ -168,7 +287,7 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
                     padding: '2px 4px'
                   }}
                 >
-                  ✕ Vaqtni olib tashlash
+                  ✕ {lang === 'ru' ? "Удалить время" : lang === 'en' ? "Remove time" : "Vaqtni olib tashlash"}
                 </button>
               )}
             </div>
@@ -203,13 +322,17 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
             </div>
 
             <span className="form-hint" style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'block', lineHeight: 1.4 }}>
-              Shu vaqt kelganda telefoningizga SMS/xabar keladi va ilovaga kirganda bu odat eng tepada 📌 PIN bo'lib turadi.
+              {lang === 'ru'
+                ? "В указанное время придет напоминание/SMS и привычка будет закреплена 📌 в самом верху."
+                : lang === 'en'
+                ? "At this scheduled time, you will receive an alert/SMS and this habit will be 📌 PINNED to the top."
+                : "Shu vaqt kelganda telefoningizga SMS/xabar keladi va ilovaga kirganda bu odat eng tepada 📌 PIN bo'lib turadi."}
             </span>
           </div>
 
           {/* Emoji Picker */}
           <div className="form-group">
-            <label>Emoji Belgisi</label>
+            <label>{lang === 'ru' ? "Иконка / Emoji" : lang === 'en' ? "Icon / Emoji" : "Emoji Belgisi"}</label>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <div
                 style={{
@@ -233,7 +356,9 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 style={{ height: '40px' }}
               >
-                {showEmojiPicker ? "Emojilarni yopish" : "Emoji tanlash"}
+                {showEmojiPicker
+                  ? (lang === 'ru' ? "Закрыть эмодзи" : lang === 'en' ? "Close emojis" : "Emojilarni yopish")
+                  : (lang === 'ru' ? "Выбрать эмодзи" : lang === 'en' ? "Choose emoji" : "Emoji tanlash")}
               </button>
             </div>
 
@@ -273,10 +398,14 @@ export function HabitModal({ isOpen, onClose, habitToEdit }) {
 
           <div className="form-actions" style={{ marginTop: '12px' }}>
             <button type="button" className="btn-subtle" onClick={onClose}>
-              Bekor qilish
+              {lang === 'ru' ? "Отмена" : lang === 'en' ? "Cancel" : "Bekor qilish"}
             </button>
             <button type="submit" className="primary-btn" disabled={submitting}>
-              {submitting ? "Saqlanmoqda..." : (habitToEdit ? "Odatni Yangilash" : "Odatni Qo'shish")}
+              {submitting
+                ? (lang === 'ru' ? "Сохранение..." : lang === 'en' ? "Saving..." : "Saqlanmoqda...")
+                : (habitToEdit
+                  ? (lang === 'ru' ? "Обновить привычку" : lang === 'en' ? "Update Habit" : "Odatni Yangilash")
+                  : (lang === 'ru' ? "Добавить привычку" : lang === 'en' ? "Add Habit" : "Odatni Qo'shish"))}
             </button>
           </div>
         </form>

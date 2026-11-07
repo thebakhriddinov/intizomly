@@ -49,6 +49,10 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess, isAuthGate = false 
           addToast(t('toastWelcome'), `${res.user.firstName}!`, "success");
         }
 
+        try {
+          sessionStorage.setItem('intizomly_prompt_pwa_install', 'true');
+        } catch {}
+
         if (onLoginSuccess) {
           onLoginSuccess(res.user);
         } else if (onClose) {
@@ -100,6 +104,9 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess, isAuthGate = false 
 
       if (res.success) {
         addToast("Tabriklaymiz! 🎉", `${res.user.firstName}, hisobingiz muvaffaqiyatli ochildi!`, "success");
+        try {
+          sessionStorage.setItem('intizomly_prompt_pwa_install', 'true');
+        } catch {}
         if (onLoginSuccess) {
           onLoginSuccess(res.user);
         } else if (onClose) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { storage } from '../../utils/storage';
 import { formatUzbekPhone } from '../../utils/phone';
+import { useLanguage } from '../../context/LanguageContext';
 import {
   IconPhone,
   IconFlame,
@@ -28,52 +29,60 @@ function BadgeEmblem({ id, color = '#10B981', size = 26 }) {
 }
 
 const SOCIAL_PLATFORMS = [
-  { id: 'telegram', name: 'Telegram', prefix: 'https://t.me/' },
-  { id: 'instagram', name: 'Instagram', prefix: 'https://instagram.com/' },
-  { id: 'youtube', name: 'YouTube', prefix: 'https://youtube.com/@' },
-  { id: 'github', name: 'GitHub', prefix: 'https://github.com/' },
-  { id: 'x', name: 'X / Twitter', prefix: 'https://x.com/' },
-  { id: 'linkedin', name: 'LinkedIn', prefix: 'https://linkedin.com/in/' }
+  { id: 'telegram', name: 'Telegram', prefix: 'https://t.me/', icon: 'telegram' },
+  { id: 'instagram', name: 'Instagram', prefix: 'https://instagram.com/', icon: 'instagram' },
+  { id: 'youtube', name: 'YouTube', prefix: 'https://youtube.com/@', icon: 'youtube' },
+  { id: 'tiktok', name: 'TikTok', prefix: 'https://tiktok.com/@', icon: 'tiktok' },
+  { id: 'twitter', name: 'X / Twitter', prefix: 'https://x.com/', icon: 'twitter' },
+  { id: 'linkedin', name: 'LinkedIn', prefix: 'https://linkedin.com/in/', icon: 'linkedin' },
+  { id: 'github', name: 'GitHub', prefix: 'https://github.com/', icon: 'github' }
 ];
 
-export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollowChange }) {
-  const [activeTab, setActiveTab] = useState('info'); // 'info' | 'followers' | 'following'
+export function PublicProfileModal({ user, isOpen, onClose, currentUser }) {
+  const { t, lang } = useLanguage();
   const [currentProfile, setCurrentProfile] = useState(null);
+  const [activeTab, setActiveTab] = useState('info'); // 'info' | 'followers' | 'following'
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isRequested, setIsRequested] = useState(false);
 
   useEffect(() => {
-    if (!isOpen || !user) return;
-    const userId = typeof user === 'string' ? user : user.id;
-    const prof = storage.getPublicProfile(userId, typeof user === 'object' ? user : {});
-    setCurrentProfile(prof);
+    if (!isOpen || !user) {
+      setCurrentProfile(null);
+      return;
+    }
 
-    const following = storage.isFollowing(userId, currentUser?.id);
-    setIsFollowing(following);
+    // Load full profile with fallbacks from storage
+    const targetUserId = user.id || user.userId;
+    const initialName = user.name || `${user.firstName || user.first_name || ''} ${user.lastName || user.last_name || ''}`.trim() || 'Foydalanuvchi';
+    const profile = storage.getPublicProfile(targetUserId, {
+      ...user,
+      id: targetUserId,
+      name: initialName
+    });
+
+    setCurrentProfile(profile);
+
+    if (currentUser?.id) {
+      setIsFollowing(storage.isFollowing(targetUserId, currentUser.id));
+      setIsRequested(storage.isFollowRequested(targetUserId, currentUser.id));
+    }
     setActiveTab('info');
   }, [isOpen, user, currentUser]);
 
   if (!isOpen || !currentProfile) return null;
 
-  const isSelf = currentUser && currentProfile.id === currentUser.id;
+  const isSelf = currentUser?.id && currentUser.id === currentProfile.id;
 
   const handleToggleFollow = () => {
-    if (isSelf) return;
+    if (!currentUser?.id || isSelf) return;
 
-    if (isFollowing) {
-      storage.unfollowUser(currentProfile.id, currentUser?.id);
-      setIsFollowing(false);
-      const updated = storage.getPublicProfile(currentProfile.id);
-      setCurrentProfile({ ...updated });
-    } else {
-      storage.followUser(currentProfile, currentUser);
-      setIsFollowing(true);
-      const updated = storage.getPublicProfile(currentProfile.id);
-      setCurrentProfile({ ...updated });
-    }
+    const res = storage.toggleFollow(currentProfile.id, currentUser.id);
+    setIsFollowing(res.isFollowing);
+    setIsRequested(res.isRequested);
 
-    if (typeof onFollowChange === 'function') {
-      onFollowChange();
-    }
+    // Refresh current profile state from storage
+    const refreshed = storage.getPublicProfile(currentProfile.id);
+    setCurrentProfile(refreshed);
   };
 
   const handleSelectOtherUser = (otherUser) => {
@@ -84,7 +93,7 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
     setActiveTab('info');
   };
 
-  const allBadges = storage.getBadgesStatus(currentProfile.streak || 0);
+  const allBadges = storage.getBadgesStatus(currentProfile.streak || 0, lang);
   const unlockedBadges = allBadges.filter(b => b.isUnlocked || b.unlocked);
 
   const initials = (currentProfile.name || 'User')
@@ -128,36 +137,47 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
                   src={currentProfile.avatarUrl}
                   alt={currentProfile.name}
                   className="pub-modal-avatar-img"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    if (e.currentTarget.nextSibling) {
+                      e.currentTarget.nextSibling.style.display = 'flex';
+                    }
+                  }}
                 />
-              ) : (
-                <div
-                  className="pub-modal-avatar-gradient"
-                  style={{ background: currentProfile.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)' }}
-                >
-                  {initials}
-                </div>
-              )}
+              ) : null}
+              <div
+                className="pub-modal-avatar-placeholder"
+                style={{
+                  background: currentProfile.avatarGradient || 'linear-gradient(135deg, #10b981, #06b6d4)',
+                  display: currentProfile.avatarUrl ? 'none' : 'flex'
+                }}
+              >
+                <span>{initials}</span>
+              </div>
             </div>
 
-            {/* Follow Button if not self */}
-            {!isSelf && (
-              <div className="pub-modal-action-box">
+            {/* Follow / Unfollow Action Button */}
+            {!isSelf && currentUser && (
+              <div className="pub-actions-row">
                 <button
                   type="button"
-                  className={`btn-pub-follow ${isFollowing ? 'is-following' : ''}`}
+                  className={`pub-follow-btn ${isFollowing ? 'is-following' : isRequested ? 'is-requested' : 'primary-glow'}`}
                   onClick={handleToggleFollow}
                 >
                   {isFollowing ? (
                     <>
-                      <IconCheck size={14} color="#10B981" />
-                      <span>Kuzatilyapti</span>
+                      <IconCheck size={14} />
+                      <span>{lang === 'ru' ? "Отписаться" : lang === 'en' ? "Unfollow" : "Kuzatishni to'xtatish"}</span>
+                    </>
+                  ) : isRequested ? (
+                    <>
+                      <IconLock size={13} />
+                      <span>{lang === 'ru' ? "Запрос отправлен" : lang === 'en' ? "Requested" : "Kutilmoqda"}</span>
                     </>
                   ) : (
                     <>
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5">
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
-                      <span>Kuzatish</span>
+                      <span style={{ fontSize: '15px', lineHeight: 1 }}>+</span>
+                      <span>{lang === 'ru' ? "Подписаться" : lang === 'en' ? "Follow" : "Kuzatish"}</span>
                     </>
                   )}
                 </button>
@@ -190,7 +210,7 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
 
             {/* Bio Text */}
             <p className="pub-bio-paragraph" style={{ fontStyle: currentProfile.bio ? 'normal' : 'italic', opacity: currentProfile.bio ? 1 : 0.75 }}>
-              {currentProfile.bio || "Foydalanuvchi hali bio kiritmagan."}
+              {currentProfile.bio || (lang === 'ru' ? "Пользователь еще не указал био." : lang === 'en' ? "User hasn't added a bio yet." : "Foydalanuvchi hali bio kiritmagan.")}
             </p>
           </div>
 
@@ -198,14 +218,14 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
           <div className="pub-stats-grid">
             <div className="pub-stat-chip">
               <span className="pub-stat-chip-icon"><IconFlame size={15} /></span>
-              <span className="pub-stat-chip-val">{currentProfile.streak || 0} kun</span>
+              <span className="pub-stat-chip-val">{currentProfile.streak || 0} {t('daysCount')}</span>
               <span className="pub-stat-chip-lbl">Streak</span>
             </div>
 
             <div className="pub-stat-chip">
               <span className="pub-stat-chip-icon"><IconTrophy size={15} /></span>
               <span className="pub-stat-chip-val">{currentProfile.points || 0}</span>
-              <span className="pub-stat-chip-lbl">Ball</span>
+              <span className="pub-stat-chip-lbl">{lang === 'ru' ? "Баллы" : lang === 'en' ? "Points" : "Ball"}</span>
             </div>
 
             <div
@@ -214,7 +234,7 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
             >
               <span className="pub-stat-chip-icon"><IconUsers size={15} /></span>
               <span className="pub-stat-chip-val">{currentProfile.followers?.length || 0}</span>
-              <span className="pub-stat-chip-lbl">Followers</span>
+              <span className="pub-stat-chip-lbl">{lang === 'ru' ? "Подписчики" : "Followers"}</span>
             </div>
 
             <div
@@ -223,7 +243,7 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
             >
               <span className="pub-stat-chip-icon"><IconUsers size={15} /></span>
               <span className="pub-stat-chip-val">{currentProfile.following?.length || 0}</span>
-              <span className="pub-stat-chip-lbl">Following</span>
+              <span className="pub-stat-chip-lbl">{lang === 'ru' ? "Подписки" : "Following"}</span>
             </div>
           </div>
 
@@ -234,21 +254,21 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
               className={`pub-subtab-btn ${activeTab === 'info' ? 'active' : ''}`}
               onClick={() => setActiveTab('info')}
             >
-              Mukofotlar & Tarmoqlar
+              {lang === 'ru' ? "Уровни & Соцсети" : lang === 'en' ? "Levels & Networks" : "Level & Tarmoqlar"}
             </button>
             <button
               type="button"
               className={`pub-subtab-btn ${activeTab === 'followers' ? 'active' : ''}`}
               onClick={() => setActiveTab('followers')}
             >
-              Followers ({currentProfile.followers?.length || 0})
+              {lang === 'ru' ? "Подписчики" : "Followers"} ({currentProfile.followers?.length || 0})
             </button>
             <button
               type="button"
               className={`pub-subtab-btn ${activeTab === 'following' ? 'active' : ''}`}
               onClick={() => setActiveTab('following')}
             >
-              Following ({currentProfile.following?.length || 0})
+              {lang === 'ru' ? "Подписки" : "Following"} ({currentProfile.following?.length || 0})
             </button>
           </div>
 
@@ -257,26 +277,27 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
             <div className="pub-tab-body">
               {/* Social links */}
               <div className="pub-section-block">
-                <span className="pub-section-title">Ijtimoiy tarmoqlar</span>
+                <span className="pub-section-title">{lang === 'ru' ? "Социальные сети" : lang === 'en' ? "Social Networks" : "Ijtimoiy tarmoqlar"}</span>
                 {(!currentProfile.socialLinks || currentProfile.socialLinks.length === 0) ? (
-                  <p className="pub-empty-text">Ijtimoiy tarmoqlar ulanmagan</p>
+                  <p className="pub-empty-text-note" style={{ margin: 0, fontStyle: 'italic', fontSize: '13px', color: 'var(--text-muted)' }}>
+                    {lang === 'ru' ? "Социальные сети пока не добавлены." : lang === 'en' ? "No social networks added yet." : "Hali ijtimoiy tarmoqlar qo'shilmagan."}
+                  </p>
                 ) : (
-                  <div className="pub-socials-list">
+                  <div className="pub-social-chips-grid">
                     {currentProfile.socialLinks.map((soc) => {
-                      const platObj = SOCIAL_PLATFORMS.find(p => p.id === soc.platform);
-                      const fullUrl = soc.username.startsWith('http')
-                        ? soc.username
-                        : platObj
-                          ? `${platObj.prefix}${soc.username.replace(/^@/, '')}`
-                          : `https://${soc.username}`;
+                      const platformObj = SOCIAL_PLATFORMS.find(p => p.id === soc.platform);
+                      const prefix = platformObj?.prefix || 'https://';
+                      const cleanUser = soc.username.replace(/^@/, '');
+                      const fullUrl = cleanUser.startsWith('http') ? cleanUser : `${prefix}${cleanUser}`;
 
                       return (
                         <a
-                          key={soc.id || soc.platform}
+                          key={soc.platform}
                           href={fullUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="pub-social-btn"
+                          className="pub-social-pill"
+                          title={soc.username}
                         >
                           <IconSocialPlatform platform={soc.platform} size={16} />
                           <span className="pub-social-label">@{soc.username.replace(/^@/, '')}</span>
@@ -293,16 +314,26 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
               {/* Badges / Rewards */}
               <div className="pub-section-block">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <span className="pub-section-title">Mendagi bor badgelar ({unlockedBadges.length} ta)</span>
+                  <span className="pub-section-title">
+                    {isSelf
+                      ? `${t('myBadges')} (${unlockedBadges.length})`
+                      : (lang === 'ru' ? `Уровни и бейджи (${unlockedBadges.length})` : lang === 'en' ? `Levels & Badges (${unlockedBadges.length})` : `Erishilgan levelingiz va badgelar (${unlockedBadges.length} ta)`)}
+                  </span>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Streak: {currentProfile.streak || 0} kun
+                    {t('currentStreakLabel')} {currentProfile.streak || 0} {t('daysCount')}
                   </span>
                 </div>
 
                 {unlockedBadges.length === 0 ? (
                   <div className="pub-empty-badges-card">
                     <IconLock size={20} color="var(--text-muted)" />
-                    <span>Hali badgelar ochilmagan (10 kunlik to'xtovsiz intizomda birinchi nishon beriladi)</span>
+                    <span>
+                      {lang === 'ru'
+                        ? "Уровни еще не открыты (первый знак выдается за 10 дней дисциплины)"
+                        : lang === 'en'
+                        ? "No levels unlocked yet (first badge earned at 10-day streak)"
+                        : "Hali badgelar ochilmagan (10 kunlik to'xtovsiz intizomda birinchi nishon beriladi)"}
+                    </span>
                   </div>
                 ) : (
                   <div className="pub-badges-grid">
@@ -322,7 +353,7 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
                           <h5 className="pub-badge-name" style={{ color: 'var(--text-primary)' }}>{badge.title}</h5>
                           <p className="pub-badge-desc">{badge.description}</p>
                           <span className="pub-badge-tag-pill" style={{ color: badge.color, borderColor: badge.color }}>
-                            {badge.tag || `${badge.streakReq} KUN`}
+                            {badge.tag || `${badge.streakReq} ${t('daysCount').toUpperCase()}`}
                           </span>
                         </div>
                       </div>
@@ -339,7 +370,7 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
               {(!currentProfile.followers || currentProfile.followers.length === 0) ? (
                 <div className="pub-empty-users-box">
                   <IconUsers size={28} color="var(--text-muted)" />
-                  <span>Hozircha followers yo'q</span>
+                  <span>{lang === 'ru' ? "Пока нет подписчиков" : lang === 'en' ? "No followers yet" : "Hozircha followers yo'q"}</span>
                 </div>
               ) : (
                 <div className="pub-users-scroll-list">
@@ -361,10 +392,10 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
                       <div className="pub-user-item-info">
                         <span className="pub-user-item-name">{usr.name}</span>
                         <span className="pub-user-item-meta">
-                          <IconFlame size={12} /> {usr.streak || 0} kun streak
+                          <IconFlame size={12} /> {usr.streak || 0} {t('daysCount')} streak
                         </span>
                       </div>
-                      <span className="pub-view-profile-arrow">Ko'rish &rarr;</span>
+                      <span className="pub-view-profile-arrow">{lang === 'ru' ? "Профиль →" : lang === 'en' ? "View →" : "Ko'rish →"}</span>
                     </div>
                   ))}
                 </div>
@@ -378,7 +409,7 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
               {(!currentProfile.following || currentProfile.following.length === 0) ? (
                 <div className="pub-empty-users-box">
                   <IconUsers size={28} color="var(--text-muted)" />
-                  <span>Hozircha hech kimni kuzatmayapti</span>
+                  <span>{lang === 'ru' ? "Пока никого не отслеживает" : lang === 'en' ? "Not following anyone yet" : "Hozircha hech kimni kuzatmayapti"}</span>
                 </div>
               ) : (
                 <div className="pub-users-scroll-list">
@@ -400,10 +431,10 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
                       <div className="pub-user-item-info">
                         <span className="pub-user-item-name">{usr.name}</span>
                         <span className="pub-user-item-meta">
-                          <IconFlame size={12} /> {usr.streak || 0} kun streak
+                          <IconFlame size={12} /> {usr.streak || 0} {t('daysCount')} streak
                         </span>
                       </div>
-                      <span className="pub-view-profile-arrow">Ko'rish &rarr;</span>
+                      <span className="pub-view-profile-arrow">{lang === 'ru' ? "Профиль →" : lang === 'en' ? "View →" : "Ko'rish →"}</span>
                     </div>
                   ))}
                 </div>
@@ -416,4 +447,3 @@ export function PublicProfileModal({ user, isOpen, onClose, currentUser, onFollo
     document.body
   );
 }
-

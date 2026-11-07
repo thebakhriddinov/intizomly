@@ -1,6 +1,7 @@
-import React, { useState, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from './context/AuthContext';
 import { useLanguage } from './context/LanguageContext';
+import { usePWA } from './context/PWAContext';
 import { LiquidBackground } from './components/Background/LiquidBackground';
 import { Header } from './components/Layout/Header';
 import { Sidebar } from './components/Layout/Sidebar';
@@ -15,6 +16,7 @@ import { ToastContainer } from './components/Feedback/ToastContainer';
 import { EnvWarningBanner } from './components/Feedback/EnvWarningBanner';
 import { BrandLogo } from './components/Common/BrandLogo';
 import { ErrorBoundary } from './components/Common/ErrorBoundary';
+import { PWAInstallPromptModal } from './components/Modals/PWAInstallPromptModal';
 
 // Lazy-loaded pages for fast initial bundle
 const MotivationPage = lazy(() => import('./components/Pages/MotivationPage').then(m => ({ default: m.MotivationPage })));
@@ -33,6 +35,7 @@ const UpgradeModal = lazy(() => import('./components/Modals/UpgradeModal').then(
 export function App() {
   const { t } = useLanguage();
   const { currentUser, authLoading } = useAuth();
+  const { isStandalone, showInstallModal, setShowInstallModal, openInstallPrompt } = usePWA();
 
   // Active top-level navigation tab: 'home' | 'motivation' | 'reminder' | 'rankings' | 'you'
   const [activeTab, setActiveTab] = useState('home');
@@ -47,6 +50,23 @@ export function App() {
   const [adminModalOpen, setAdminModalOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+
+  // Auto-prompt PWA installation after account login/registration on web
+  useEffect(() => {
+    if (!currentUser || isStandalone) return;
+
+    const shouldPromptAfterAuth = sessionStorage.getItem('intizomly_prompt_pwa_install') === 'true';
+    const lastDismissed = localStorage.getItem('intizomly_pwa_install_dismissed_at');
+    const wasRecentlyDismissed = lastDismissed && (Date.now() - Number(lastDismissed) < 24 * 60 * 60 * 1000);
+
+    if (shouldPromptAfterAuth || !wasRecentlyDismissed) {
+      const timer = setTimeout(() => {
+        sessionStorage.removeItem('intizomly_prompt_pwa_install');
+        openInstallPrompt();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [currentUser, isStandalone, openInstallPrompt]);
 
   const handleOpenAddHabit = useCallback(() => {
     setHabitToEdit(null);
@@ -271,6 +291,12 @@ export function App() {
           />
         )}
       </Suspense>
+
+      {/* PWA Web Install Prompt Modal */}
+      <PWAInstallPromptModal
+        isOpen={showInstallModal}
+        onClose={() => setShowInstallModal(false)}
+      />
 
       {/* 7. Feedback Elements */}
       <DynamicIslandBanner />

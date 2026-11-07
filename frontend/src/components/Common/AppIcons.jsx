@@ -608,10 +608,37 @@ export function IconLayers({ size = 16, className = '', color = 'currentColor' }
 }
 
 /**
- * HabitGlyphIcon - Replaces flat emoji stickers with crafted vector emblems
+ * HabitGlyphIcon - Displays the user-selected emoji or crafted vector emblem
  */
 export function HabitGlyphIcon({ emoji = '', category = '', title = '', size = 18, className = '' }) {
-  const combined = `${emoji} ${category} ${title}`.toLowerCase();
+  const cleanEmoji = (emoji || '').trim();
+
+  // If user selected or changed an emoji, display that exact emoji badge!
+  if (cleanEmoji) {
+    return (
+      <div
+        className={`habit-vector-badge ${className}`}
+        style={{
+          width: `${size + 14}px`,
+          height: `${size + 14}px`,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: '10px',
+          backgroundColor: 'var(--bg-secondary, rgba(255, 255, 255, 0.08))',
+          border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.12))',
+          fontSize: `${size + 2}px`,
+          lineHeight: 1,
+          flexShrink: 0,
+          userSelect: 'none'
+        }}
+      >
+        <span style={{ display: 'inline-block' }}>{cleanEmoji}</span>
+      </div>
+    );
+  }
+
+  const combined = `${category} ${title}`.toLowerCase();
 
   let IconComponent = IconTarget;
   let accentColor = '#10B981';

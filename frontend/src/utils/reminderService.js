@@ -116,6 +116,11 @@ class ReminderService {
         habits.forEach((habit) => {
           if (!habit || !habit.time) return;
 
+          // Check if habit is scheduled for today (Custom schedule support)
+          if (typeof storage.isHabitScheduledForDate === 'function' && !storage.isHabitScheduledForDate(habit, dateKey)) {
+            return;
+          }
+
           // If already completed today, don't disturb
           const isDone = typeof storage.isHabitCompleted === 'function' ? storage.isHabitCompleted(dateKey, habit.id) : false;
           if (isDone) return;

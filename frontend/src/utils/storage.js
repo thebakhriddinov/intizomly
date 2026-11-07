@@ -166,6 +166,92 @@ export const getUserPassword = (userOrId) => {
   return '';
 };
 
+
+export const WEEK_DAYS = [
+  { id: 'mon', labelUz: 'Dsh', labelRu: 'Пн', labelEn: 'Mon', fullNameUz: 'Dushanba', dayIndex: 1 },
+  { id: 'tue', labelUz: 'Ssh', labelRu: 'Вт', labelEn: 'Tue', fullNameUz: 'Seshanba', dayIndex: 2 },
+  { id: 'wed', labelUz: 'Chr', labelRu: 'Ср', labelEn: 'Wed', fullNameUz: 'Chorshanba', dayIndex: 3 },
+  { id: 'thu', labelUz: 'Pay', labelRu: 'Чт', labelEn: 'Thu', fullNameUz: 'Payshanba', dayIndex: 4 },
+  { id: 'fri', labelUz: 'Jum', labelRu: 'Пт', labelEn: 'Fri', fullNameUz: 'Juma', dayIndex: 5 },
+  { id: 'sat', labelUz: 'Shn', labelRu: 'Сб', labelEn: 'Sat', fullNameUz: 'Shanba', dayIndex: 6 },
+  { id: 'sun', labelUz: 'Yak', labelRu: 'Вс', labelEn: 'Sun', fullNameUz: 'Yakshanba', dayIndex: 0 },
+];
+
+export const ALL_SCHEDULE_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+export const JS_DAY_TO_SCHEDULE_ID = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+
+/**
+ * Timezone-safe Date key parser. Prevents UTC midnight date-shift bugs.
+ */
+export const parseDateKey = (dateOrKey) => {
+  if (!dateOrKey) return new Date();
+  if (dateOrKey instanceof Date) return dateOrKey;
+  if (typeof dateOrKey === 'string') {
+    const parts = dateOrKey.trim().split('-');
+    if (parts.length === 3) {
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      return new Date(y, m, d, 12, 0, 0);
+    }
+  }
+  return new Date(dateOrKey);
+};
+
+/**
+ * Get weekday ID ('mon'...'sun') for a given date or 'YYYY-MM-DD' key
+ */
+export const getDayIdForDate = (dateOrKey) => {
+  const d = parseDateKey(dateOrKey);
+  const jsDay = d.getDay(); // 0 is Sun, 1 is Mon, etc.
+  return JS_DAY_TO_SCHEDULE_ID[jsDay] || 'mon';
+};
+
+/**
+ * Normalizes schedule array. Defaults to all 7 days if empty or invalid.
+ */
+export const normalizeSchedule = (schedule) => {
+  if (!schedule || !Array.isArray(schedule) || schedule.length === 0) {
+    return [...ALL_SCHEDULE_DAYS];
+  }
+  const set = new Set(schedule.map(d => String(d).toLowerCase().trim()));
+  const filtered = ALL_SCHEDULE_DAYS.filter(d => set.has(d));
+  return filtered.length > 0 ? filtered : [...ALL_SCHEDULE_DAYS];
+};
+
+/**
+ * Check if a habit is scheduled for a specific date or dateKey
+ */
+export const isHabitScheduledForDate = (habit, dateOrKey) => {
+  if (!habit) return false;
+  const schedule = normalizeSchedule(habit.schedule);
+  if (schedule.length === 7) return true; // Har kuni
+  const dayId = getDayIdForDate(dateOrKey);
+  return schedule.includes(dayId);
+};
+
+/**
+ * Human-friendly localized schedule summary (e.g. "Dsh, Chr, Jum", "Ish kunlari", "Har kuni")
+ */
+export const formatScheduleSummary = (schedule, lang = 'uz') => {
+  const norm = normalizeSchedule(schedule);
+  if (norm.length === 7) {
+    return lang === 'ru' ? 'Каждый день' : lang === 'en' ? 'Every day' : 'Har kuni';
+  }
+  if (norm.length === 5 && !norm.includes('sat') && !norm.includes('sun')) {
+    return lang === 'ru' ? 'Будние дни' : lang === 'en' ? 'Weekdays' : 'Ish kunlari';
+  }
+  if (norm.length === 2 && norm.includes('sat') && norm.includes('sun')) {
+    return lang === 'ru' ? 'Выходные' : lang === 'en' ? 'Weekends' : 'Dam olish';
+  }
+
+  return norm.map(id => {
+    const found = WEEK_DAYS.find(w => w.id === id);
+    if (!found) return id;
+    return lang === 'ru' ? found.labelRu : lang === 'en' ? found.labelEn : found.labelUz;
+  }).join(', ');
+};
+
 export const DEFAULT_HABITS = [
   {
     id: 'habit_sugar',
@@ -175,6 +261,7 @@ export const DEFAULT_HABITS = [
     category: "Sog'liq",
     target: "Kun bo'yi toza",
     time: "20:00",
+    schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
     createdAt: Date.now() - 86400000 * 7
   },
   {
@@ -185,6 +272,7 @@ export const DEFAULT_HABITS = [
     category: "O'qish",
     target: "20 bet",
     time: "14:00",
+    schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
     createdAt: Date.now() - 86400000 * 7
   },
   {
@@ -195,6 +283,7 @@ export const DEFAULT_HABITS = [
     category: "Sog'liq",
     target: "2 litr",
     time: "16:00",
+    schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
     createdAt: Date.now() - 86400000 * 7
   },
   {
@@ -205,6 +294,7 @@ export const DEFAULT_HABITS = [
     category: "Sport",
     target: "30 daqiqa",
     time: "07:30",
+    schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
     createdAt: Date.now() - 86400000 * 7
   },
   {
@@ -215,6 +305,7 @@ export const DEFAULT_HABITS = [
     category: "Tartib",
     target: "06:30 da",
     time: "06:30",
+    schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
     createdAt: Date.now() - 86400000 * 7
   }
 ];
@@ -420,63 +511,129 @@ export const BADGES_CONFIG = [
     streakReq: 10,
     id: 'badge_10',
     title: "Boshlang'ich Temir Iroda",
+    titleUz: "Boshlang'ich Temir Iroda",
+    titleRu: "Начальная Железная Воля",
+    titleEn: "Initial Iron Will",
     description: "10 kunlik to'xtovsiz intizomga erishildi",
+    descUz: "10 kunlik to'xtovsiz intizomga erishildi",
+    descRu: "Достигнуто 10 дней непрерывной дисциплины",
+    descEn: "10 days of continuous discipline achieved",
+    tag: "BRONZE MASTER",
+    tagUz: "BRONZA MASTERS",
+    tagRu: "БРОНЗОВЫЙ МАСТЕР",
+    tagEn: "BRONZE MASTER",
     icon: "🥉",
     color: "#CD7F32",
-    glow: "rgba(205, 127, 50, 0.45)",
-    tag: "BRONZE MASTER"
+    glow: "rgba(205, 127, 50, 0.45)"
   },
   {
     streakReq: 20,
     id: 'badge_20',
     title: "Kumush Matonat",
+    titleUz: "Kumush Matonat",
+    titleRu: "Серебряная Стойкость",
+    titleEn: "Silver Resilience",
     description: "20 kunlik uzluksiz intizom zanjiri",
+    descUz: "20 kunlik uzluksiz intizom zanjiri",
+    descRu: "20 дней непрерывной цепи дисциплины",
+    descEn: "20 days unbroken discipline chain",
+    tag: "SILVER TITAN",
+    tagUz: "KUMUSH TITAN",
+    tagRu: "СЕРЕБРЯНЫЙ ТИТАН",
+    tagEn: "SILVER TITAN",
     icon: "🥈",
     color: "#E2E8F0",
-    glow: "rgba(226, 232, 240, 0.45)",
-    tag: "SILVER TITAN"
+    glow: "rgba(226, 232, 240, 0.45)"
   },
   {
     streakReq: 50,
     id: 'badge_50',
     title: "Oltin Odatlar Sohibi",
+    titleUz: "Oltin Odatlar Sohibi",
+    titleRu: "Золотые Привычки",
+    titleEn: "Golden Habits Master",
     description: "50 kunlik yangi xarakter shakllandi",
+    descUz: "50 kunlik yangi xarakter shakllandi",
+    descRu: "50 дней — сформирован новый характер",
+    descEn: "50 days — forged a brand new character",
+    tag: "GOLDEN CHAMPION",
+    tagUz: "OLTIN CHEMPION",
+    tagRu: "ЗОЛОТОЙ ЧЕМПИОН",
+    tagEn: "GOLDEN CHAMPION",
     icon: "🥇",
     color: "#FBBF24",
-    glow: "rgba(251, 191, 36, 0.5)",
-    tag: "GOLDEN CHAMPION"
+    glow: "rgba(251, 191, 36, 0.5)"
   },
   {
     streakReq: 70,
     id: 'badge_70',
     title: "Olmos Qat'iyat",
+    titleUz: "Olmos Qat'iyat",
+    titleRu: "Алмазная Решимость",
+    titleEn: "Diamond Persistence",
     description: "70 kunlik mutlaq intizom cho'qqisi",
+    descUz: "70 kunlik mutlaq intizom cho'qqisi",
+    descRu: "70 дней — вершина абсолютной дисциплины",
+    descEn: "70 days of absolute peak discipline",
+    tag: "DIAMOND PERSISTENCE",
+    tagUz: "OLMOS TITAN",
+    tagRu: "АЛМАЗНЫЙ ТИТАН",
+    tagEn: "DIAMOND PERSISTENCE",
     icon: "💎",
     color: "#06B6D4",
-    glow: "rgba(6, 182, 212, 0.55)",
-    tag: "DIAMOND PERSISTENCE"
+    glow: "rgba(6, 182, 212, 0.55)"
   },
   {
     streakReq: 90,
     id: 'badge_90',
     title: "Qirollik Tartibi",
+    titleUz: "Qirollik Tartibi",
+    titleRu: "Королевский Порядок",
+    titleEn: "Royal Order",
     description: "90 kun — o'z hayotini to'liq o'zgartirgan shaxs",
+    descUz: "90 kun — o'z hayotini to'liq o'zgartirgan shaxs",
+    descRu: "90 дней — человек, полностью изменивший жизнь",
+    descEn: "90 days — completely transformed life",
+    tag: "ROYAL SOVEREIGN",
+    tagUz: "QIROLLIK HUKMDORI",
+    tagRu: "КОРОЛЕВСКИЙ СУВЕРЕН",
+    tagEn: "ROYAL SOVEREIGN",
     icon: "👑",
     color: "#A855F7",
-    glow: "rgba(168, 85, 247, 0.55)",
-    tag: "ROYAL SOVEREIGN"
+    glow: "rgba(168, 85, 247, 0.55)"
   },
   {
     streakReq: 100,
     id: 'badge_100',
     title: "Afsonaviy Yengilmas",
+    titleUz: "Afsonaviy Yengilmas",
+    titleRu: "Легендарный Непобедимый",
+    titleEn: "Immortal Invincible",
     description: "100 kunlik afsonaviy g'alaba va yengilmas iroda",
+    descUz: "100 kunlik afsonaviy g'alaba va yengilmas iroda",
+    descRu: "100 дней легендарной победы и несгибаемой воли",
+    descEn: "100 days of legendary victory and unbreakable will",
+    tag: "IMMORTAL TITAN",
+    tagUz: "AFSONAVIY TITAN",
+    tagRu: "БЕССМЕРТНЫЙ ТИТАН",
+    tagEn: "IMMORTAL TITAN",
     icon: "🔥",
     color: "#B6F36B",
-    glow: "rgba(182, 243, 107, 0.65)",
-    tag: "IMMORTAL TITAN"
+    glow: "rgba(182, 243, 107, 0.65)"
   }
 ];
+
+export const getBadgeLocalized = (badge, lang = 'uz') => {
+  if (!badge) return badge;
+  const isRu = lang === 'ru';
+  const isEn = lang === 'en';
+  return {
+    ...badge,
+    title: isRu ? (badge.titleRu || badge.title) : isEn ? (badge.titleEn || badge.title) : (badge.titleUz || badge.title),
+    description: isRu ? (badge.descRu || badge.description) : isEn ? (badge.descEn || badge.description) : (badge.descUz || badge.description),
+    tag: isRu ? (badge.tagRu || badge.tag) : isEn ? (badge.tagEn || badge.tag) : (badge.tagUz || badge.tag)
+  };
+};
 
 class StorageManager {
   constructor() {
@@ -550,6 +707,18 @@ class StorageManager {
     if (!this.habits || !Array.isArray(this.habits) || this.habits.length === 0) {
       this.habits = JSON.parse(JSON.stringify(DEFAULT_HABITS));
       this.save(STORAGE_KEYS.HABITS, this.habits);
+    } else {
+      let changed = false;
+      this.habits = this.habits.map(h => {
+        if (!h.schedule || !Array.isArray(h.schedule) || h.schedule.length === 0) {
+          changed = true;
+          return { ...h, schedule: [...ALL_SCHEDULE_DAYS] };
+        }
+        return h;
+      });
+      if (changed) {
+        this.save(STORAGE_KEYS.HABITS, this.habits);
+      }
     }
 
     // 4. History (ensure at least 70 days for the heatmap)
@@ -800,7 +969,7 @@ class StorageManager {
     return this.habits.find(h => h.id === id);
   }
 
-  addHabit({ title, emoji, description, category, target, time, isPinned }) {
+  addHabit({ title, emoji, description, category, target, time, isPinned, schedule }) {
     const newHabit = {
       id: 'habit_' + Date.now(),
       title: title.trim(),
@@ -810,6 +979,7 @@ class StorageManager {
       target: target || "1 marta",
       time: (time || '').trim(),
       isPinned: !!isPinned,
+      schedule: normalizeSchedule(schedule),
       createdAt: Date.now()
     };
 
@@ -818,7 +988,7 @@ class StorageManager {
     return newHabit;
   }
 
-  updateHabit(id, { title, emoji, description, category, target, time, isPinned }) {
+  updateHabit(id, { title, emoji, description, category, target, time, isPinned, schedule }) {
     const h = this.habits.find(item => item.id === id);
     if (!h) return null;
 
@@ -829,14 +999,52 @@ class StorageManager {
     if (target !== undefined) h.target = target;
     if (time !== undefined) h.time = (time || '').trim();
     if (isPinned !== undefined) h.isPinned = !!isPinned;
+    if (schedule !== undefined) h.schedule = normalizeSchedule(schedule);
 
     this.save(STORAGE_KEYS.HABITS, this.habits);
     return h;
   }
 
+  // ==================== SCHEDULE HELPERS ====================
+  parseDateKey(dateOrKey) {
+    return parseDateKey(dateOrKey);
+  }
+
+  getDayIdForDate(dateOrKey) {
+    return getDayIdForDate(dateOrKey);
+  }
+
+  normalizeSchedule(schedule) {
+    return normalizeSchedule(schedule);
+  }
+
+  isHabitScheduledForDate(habit, dateOrKey) {
+    return isHabitScheduledForDate(habit, dateOrKey);
+  }
+
+  formatScheduleSummary(schedule, lang = 'uz') {
+    return formatScheduleSummary(schedule, lang);
+  }
+
+  getHabitsForDate(dateOrKey, habitsList) {
+    const list = Array.isArray(habitsList) ? habitsList : (this.habits || []);
+    const dateKey = typeof dateOrKey === 'string' ? dateOrKey : this.formatDateKey(dateOrKey);
+    return list.filter(h => {
+      // 1. Habit is scheduled for this weekday
+      if (this.isHabitScheduledForDate(h, dateOrKey)) return true;
+      // 2. OR habit was previously marked completed on this dateKey (keep history intact)
+      if (this.isHabitCompleted(dateKey, h.id)) return true;
+      return false;
+    });
+  }
+
   getActiveCurrentHabitId(habitsList, historyMap, dateKey) {
-    const list = Array.isArray(habitsList) ? habitsList : this.habits;
-    if (!list || list.length === 0) return null;
+    const rawList = Array.isArray(habitsList) ? habitsList : this.habits;
+    if (!rawList || rawList.length === 0) return null;
+
+    // Filter to only habits scheduled for this day (or already completed today)
+    const list = rawList.filter(h => this.isHabitScheduledForDate(h, dateKey) || this.isHabitCompleted(dateKey, h.id));
+    if (list.length === 0) return null;
 
     const now = new Date();
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
@@ -921,10 +1129,11 @@ class StorageManager {
   }
 
   getDayStats(dateKey) {
-    const total = this.habits.length;
-    const completed = this.habits.filter(h => this.isHabitCompleted(dateKey, h.id)).length;
+    const scheduledHabits = this.getHabitsForDate(dateKey);
+    const total = scheduledHabits.length;
+    const completed = scheduledHabits.filter(h => this.isHabitCompleted(dateKey, h.id)).length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    return { total, completed, percentage };
+    return { total, completed, percentage, isRestDay: total === 0 };
   }
 
   getGlobalStreak() {
@@ -941,6 +1150,12 @@ class StorageManager {
       cur.setDate(cur.getDate() - 1);
       const dateKey = this.formatDateKey(cur);
       const stats = this.getDayStats(dateKey);
+
+      // Rest Day: Agar bu kunda hech qanday odat rejalashtirilmagan bo'lsa, u streakni buzmaydi
+      if (stats.total === 0) {
+        continue;
+      }
+
       if (stats.total > 0 && stats.completed === stats.total) {
         streak++;
       } else {
@@ -962,9 +1177,10 @@ class StorageManager {
       if (stats.total > 0 && stats.completed === stats.total) {
         current++;
         if (current > best) best = current;
-      } else {
+      } else if (stats.total > 0) {
         current = 0;
       }
+      // stats.total === 0 bo'lganda (dam olish kuni) zanjir buzilmaydi
     });
 
     const curGlobal = this.getGlobalStreak();
@@ -980,20 +1196,35 @@ class StorageManager {
   }
 
   getHabitStreak(habitId) {
+    const habit = this.getHabitById(habitId) || (this.habits || []).find(h => h.id === habitId);
+    if (!habit) return 0;
+
     let streak = 0;
     const cur = new Date();
 
     const todayKey = this.formatDateKey(cur);
-    if (this.isHabitCompleted(todayKey, habitId)) {
+    const isScheduledToday = this.isHabitScheduledForDate(habit, todayKey);
+    const isDoneToday = this.isHabitCompleted(todayKey, habitId);
+
+    if (isDoneToday) {
       streak++;
     }
 
     while (true) {
       cur.setDate(cur.getDate() - 1);
       const dateKey = this.formatDateKey(cur);
-      if (this.isHabitCompleted(dateKey, habitId)) {
+      const isScheduled = this.isHabitScheduledForDate(habit, dateKey);
+      const isDone = this.isHabitCompleted(dateKey, habitId);
+
+      // Agar odat shu kuni rejalashtirilmagan bo'lsa (dam olish kuni), streak buzilmaydi
+      if (!isScheduled) {
+        continue;
+      }
+
+      if (isDone) {
         streak++;
       } else {
+        // Rejalashtirilgan kuni bajarilmagan bo'lsa streak to'xtaydi
         break;
       }
       if (streak > 365) break;
@@ -1612,16 +1843,28 @@ class StorageManager {
         }
 
         // ==================== BADGES ENGINE ====================
-        getBadgesStatus(currentStreak) {
+        getBadgesStatus(currentStreak, lang = 'uz') {
           const streak = currentStreak || 0;
+          const isRu = lang === 'ru';
+          const isEn = lang === 'en';
+
           return BADGES_CONFIG.map(badge => {
             const isUnlocked = streak >= badge.streakReq;
             const progressPct = isUnlocked ? 100 : Math.min(100, Math.round((streak / badge.streakReq) * 100));
+
+            const title = isRu ? (badge.titleRu || badge.title) : isEn ? (badge.titleEn || badge.title) : (badge.titleUz || badge.title);
+            const description = isRu ? (badge.descRu || badge.description) : isEn ? (badge.descEn || badge.description) : (badge.descUz || badge.description);
+            const tag = isRu ? (badge.tagRu || badge.tag) : isEn ? (badge.tagEn || badge.tag) : (badge.tagUz || badge.tag);
+
             return {
               ...badge,
+              title,
+              description,
+              tag,
               unlocked: isUnlocked,
               isUnlocked,
               progressPct,
+              progressPercent: progressPct,
               currentStreak: streak
             };
           });

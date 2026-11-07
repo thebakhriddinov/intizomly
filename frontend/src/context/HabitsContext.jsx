@@ -56,11 +56,11 @@ export function HabitsProvider({ children }) {
           // If fresh user with no habits, auto-seed starter habits into Supabase
           try {
             const initialHabits = [
-              { title: "Shakar iste'mol qilmaslik", emoji: '🚫🍬', description: "Kun davomida qo'shimcha shakar va shirinliklardan butunlay voz kechish", category: "Sog'liq", target: "Kun bo'yi toza" },
-              { title: "Kitob o'qish (20 bet)", emoji: '📖', description: "Shaxsiy rivojlanish yoki badiiy adabiyotdan kamida 20 bet mutolaa qilish", category: "O'qish", target: "20 bet" },
-              { title: "Kamida 2 litr toza suv ichish", emoji: '💧', description: "Har 1.5 - 2 soatda 1 stakan toza suv ichib, ichki organizmni tetik saqlash", category: "Sog'liq", target: "2 litr" },
-              { title: "30 daqiqa jismoniy mashq", emoji: '🏃‍♂️', description: "Ertalabki yugurish yoki gimnastika mashqlari", category: "Sport", target: "30 daqiqa" },
-              { title: "Ertalab 06:30 da uyg'onish", emoji: '⏰', description: "Kunning barakali qismini qo'ldan boy bermaslik", category: "Tartib", target: "06:30 da" }
+              { title: "Shakar iste'mol qilmaslik", emoji: '🚫🍬', description: "Kun davomida qo'shimcha shakar va shirinliklardan butunlay voz kechish", category: "Sog'liq", target: "Kun bo'yi toza", schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] },
+              { title: "Kitob o'qish (20 bet)", emoji: '📖', description: "Shaxsiy rivojlanish yoki badiiy adabiyotdan kamida 20 bet mutolaa qilish", category: "O'qish", target: "20 bet", schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] },
+              { title: "Kamida 2 litr toza suv ichish", emoji: '💧', description: "Har 1.5 - 2 soatda 1 stakan toza suv ichib, ichki organizmni tetik saqlash", category: "Sog'liq", target: "2 litr", schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] },
+              { title: "30 daqiqa jismoniy mashq", emoji: '🏃‍♂️', description: "Ertalabki yugurish yoki gimnastika mashqlari", category: "Sport", target: "30 daqiqa", schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] },
+              { title: "Ertalab 06:30 da uyg'onish", emoji: '⏰', description: "Kunning barakali qismini qo'ldan boy bermaslik", category: "Tartib", target: "06:30 da", schedule: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] }
             ];
 
             const createdList = [];

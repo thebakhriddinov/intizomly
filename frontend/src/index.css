@@ -4145,6 +4145,11 @@ button, .habit-checkbox-btn, .filter-chip, .week-day-cell, .gh-square, a, input 
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4);
 }
 
+.motivation-hero-content {
+  position: relative;
+  z-index: 1;
+}
+
 .motivation-hero-glow {
   position: absolute;
   top: -40px;
@@ -4159,6 +4164,8 @@ button, .habit-checkbox-btn, .filter-chip, .week-day-cell, .gh-square, a, input 
 
 .motivation-tag-pill {
   display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 10px;
   border-radius: 20px;
   background: rgba(245, 158, 11, 0.12);
@@ -5100,8 +5107,19 @@ input:checked + .slider:before {
   padding: 24px;
 }
 
+.rankings-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
 .rankings-pill-tag {
   display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 10px;
   border-radius: 20px;
   background: rgba(182, 243, 107, 0.12);
@@ -5109,7 +5127,13 @@ input:checked + .slider:before {
   color: var(--accent-primary);
   font-size: 11px;
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: 0;
+}
+
+.rankings-hero-subtag {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .rankings-hero-title {
@@ -5119,6 +5143,7 @@ input:checked + .slider:before {
   margin: 0 0 6px 0;
 }
 
+.rankings-hero-desc,
 .rankings-hero-sub {
   font-size: 13.5px;
   color: var(--text-secondary);
@@ -7052,7 +7077,13 @@ body.theme-light {
 [data-appearance="light"] .modal-card,
 .theme-light .modal-card,
 [data-appearance="light"] .control-modal-card,
-.theme-light .control-modal-card {
+.theme-light .control-modal-card,
+[data-appearance="light"] .motivation-hero-card,
+.theme-light .motivation-hero-card,
+[data-appearance="light"] .rankings-hero-card,
+.theme-light .rankings-hero-card,
+[data-appearance="light"] .motivation-quote-card,
+.theme-light .motivation-quote-card {
   background: #FFFFFF !important;
   border: 1px solid rgba(15, 23, 42, 0.1) !important;
   box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06) !important;
@@ -7264,6 +7295,162 @@ body.theme-light {
 [data-appearance="light"] .leaderboard-row.is-current-user-row,
 .theme-light .leaderboard-row.is-current-user-row {
   background: rgba(16, 185, 129, 0.08) !important;
+}
+
+/* Rankings Hero Card & Active Competitions Banner (Light Theme) */
+[data-appearance="light"] .rankings-hero-card,
+.theme-light .rankings-hero-card {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAF9 60%, #F0FDF4 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  box-shadow: 0 4px 24px -2px rgba(16, 185, 129, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-appearance="light"] .rankings-pill-tag,
+.theme-light .rankings-pill-tag {
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #047857 !important;
+}
+
+[data-appearance="light"] .rankings-hero-subtag,
+.theme-light .rankings-hero-subtag {
+  color: #64748B !important;
+}
+
+[data-appearance="light"] .rankings-hero-title,
+.theme-light .rankings-hero-title {
+  color: #0F172A !important;
+}
+
+[data-appearance="light"] .rankings-hero-desc,
+.theme-light .rankings-hero-desc,
+[data-appearance="light"] .rankings-hero-sub,
+.theme-light .rankings-hero-sub {
+  color: #475569 !important;
+}
+
+[data-appearance="light"] .active-competitions-banner,
+.theme-light .active-competitions-banner {
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-appearance="light"] .active-comp-label,
+.theme-light .active-comp-label {
+  color: #0F172A !important;
+}
+
+[data-appearance="light"] .active-comp-badge,
+.theme-light .active-comp-badge {
+  color: #047857 !important;
+}
+
+[data-appearance="light"] .comp-dot,
+.theme-light .comp-dot {
+  background: #CBD5E1 !important;
+}
+
+[data-appearance="light"] .comp-dot.filled,
+.theme-light .comp-dot.filled {
+  background: #10B981 !important;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5) !important;
+}
+
+[data-appearance="light"] .comp-dot.filled.warning,
+.theme-light .comp-dot.filled.warning {
+  background: #F59E0B !important;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.5) !important;
+}
+
+[data-appearance="light"] .comp-limit-tag.success,
+.theme-light .comp-limit-tag.success {
+  background: #ECFDF5 !important;
+  color: #047857 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-appearance="light"] .comp-limit-tag.warning,
+.theme-light .comp-limit-tag.warning {
+  background: #FFFBEB !important;
+  color: #B45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Motivation Hero Card & Quote Box (Light Theme) */
+[data-appearance="light"] .motivation-hero-card,
+.theme-light .motivation-hero-card {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FFFDF7 60%, #FEF9EE 100%) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 4px 24px -2px rgba(245, 158, 11, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-appearance="light"] .motivation-hero-glow,
+.theme-light .motivation-hero-glow {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.14) 0%, transparent 70%) !important;
+  opacity: 0.6 !important;
+}
+
+[data-appearance="light"] .motivation-tag-pill,
+.theme-light .motivation-tag-pill {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  color: #B45309 !important;
+}
+
+[data-appearance="light"] .motivation-hero-title,
+.theme-light .motivation-hero-title {
+  color: #0F172A !important;
+}
+
+[data-appearance="light"] .motivation-hero-sub,
+.theme-light .motivation-hero-sub {
+  color: #475569 !important;
+}
+
+[data-appearance="light"] .user-read-only-badge,
+.theme-light .user-read-only-badge {
+  color: #64748B !important;
+}
+
+[data-appearance="light"] .motivation-quote-card,
+.theme-light .motivation-quote-card {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05) !important;
+}
+
+[data-appearance="light"] .quote-text,
+.theme-light .quote-text {
+  color: #0F172A !important;
+}
+
+[data-appearance="light"] .quote-author-name,
+.theme-light .quote-author-name {
+  color: #047857 !important;
+}
+
+[data-appearance="light"] .quote-author-tag,
+.theme-light .quote-author-tag {
+  background: #F1F5F9 !important;
+  color: #475569 !important;
+}
+
+[data-appearance="light"] .quote-footer-row,
+.theme-light .quote-footer-row {
+  border-top: 1px solid #F1F5F9 !important;
+}
+
+[data-appearance="light"] .quote-shuffle-btn,
+.theme-light .quote-shuffle-btn {
+  background: #F8FAFC !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0F172A !important;
+}
+
+[data-appearance="light"] .quote-shuffle-btn:hover,
+.theme-light .quote-shuffle-btn:hover {
+  background: #F1F5F9 !important;
 }
 
 /* 8. Control & Screen Time */
@@ -11076,9 +11263,477 @@ button:active:not(:disabled) {
   color: #475569 !important;
 }
 
+/* ============================================================================
+   PWA INSTALL PROMPT MODAL (ON WEB LOGIN/SIGNUP)
+   ============================================================================ */
+.pwa-install-overlay {
+  z-index: 10050;
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+}
+
+.pwa-install-prompt-card {
+  max-width: 420px;
+  padding: 26px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-radius: 28px;
+  background: var(--bg-card, rgba(18, 25, 38, 0.95));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(16, 185, 129, 0.15);
+  position: relative;
+  text-align: center;
+}
+
+.pwa-prompt-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.pwa-app-icon-squircle {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.15));
+  border: 2px solid rgba(16, 185, 129, 0.4);
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25), 0 0 15px rgba(16, 185, 129, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pwaIconGlow 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes pwaIconGlow {
+  0% { transform: scale(1); box-shadow: 0 8px 24px rgba(16, 185, 129, 0.25); }
+  100% { transform: scale(1.04); box-shadow: 0 12px 30px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.3); }
+}
+
+.pwa-squircle-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.pwa-prompt-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.14);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10B981;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.pwa-prompt-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary, #fff);
+  margin: 0 0 6px 0;
+  letter-spacing: -0.3px;
+}
+
+.pwa-prompt-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  margin: 0;
+  padding: 0 6px;
+}
+
+.pwa-benefits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.pwa-benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pwa-benefit-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pwa-benefit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pwa-benefit-text strong {
+  font-size: 12.5px;
+  color: var(--text-primary, #fff);
+}
+
+.pwa-benefit-text span {
+  font-size: 11px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+}
+
+.pwa-prompt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-pwa-install-confirm {
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #10B981, #06B6D4);
+  color: #080D05;
+  font-size: 14px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-pwa-install-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
+}
+
+.btn-pwa-install-confirm:active {
+  transform: scale(0.98);
+}
+
+.btn-pwa-install-dismiss {
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-pwa-install-dismiss:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary, #fff);
+}
+
+/* iOS & Android Step Guide */
+.pwa-ios-guide-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
+}
+
+.pwa-guide-top {
+  text-align: center;
+}
+
+.pwa-guide-device-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.pwa-guide-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.pwa-guide-subtitle {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.pwa-ios-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ios-step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+}
+
+.ios-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #10B981;
+  color: #080D05;
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.ios-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.ios-step-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ios-step-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.ios-key-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Light mode overrides */
+[data-appearance="light"] .pwa-install-prompt-card,
+.theme-light .pwa-install-prompt-card {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.15) !important;
+}
+
+[data-appearance="light"] .pwa-benefits-list,
+.theme-light .pwa-benefits-list {
+  background: #F8FAFC !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-appearance="light"] .ios-step-card,
+.theme-light .ios-step-card {
+  background: #F8FAFC !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-appearance="light"] .pwa-prompt-title,
+.theme-light .pwa-prompt-title,
+[data-appearance="light"] .pwa-guide-title,
+.theme-light .pwa-guide-title {
+  color: #0F172A !important;
+}
+
 [data-appearance="light"] .habit-time-badge.is-active-now,
 .theme-light .habit-time-badge.is-active-now {
   background: rgba(16, 185, 129, 0.12) !important;
   border-color: rgba(16, 185, 129, 0.35) !important;
   color: #059669 !important;
 }
+
+/* ==============================================================================
+   CUSTOM HABIT SCHEDULE STYLES (Hafta kunlari jadvali)
+   ============================================================================== */
+.schedule-picker-group {
+  margin-bottom: 16px;
+}
+
+.schedule-summary-pill {
+  font-size: 11px;
+  font-weight: 700;
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+}
+
+.schedule-presets-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.schedule-days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.schedule-day-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  min-height: 48px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: var(--text-secondary, #94A3B8);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  position: relative;
+}
+
+.schedule-day-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--text-primary, #F8FAFC);
+  transform: translateY(-1px);
+}
+
+.schedule-day-btn:active {
+  transform: scale(0.96);
+}
+
+.schedule-day-btn.selected {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.22) 0%, rgba(6, 182, 212, 0.16) 100%);
+  border-color: #10B981;
+  color: #10B981;
+  font-weight: 700;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.22);
+}
+
+.schedule-day-text {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.schedule-day-check {
+  font-size: 10px;
+  line-height: 1;
+  height: 11px;
+  margin-top: 3px;
+  font-weight: 800;
+  color: #10B981;
+}
+
+/* Habit Card Schedule Badge */
+.habit-schedule-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: #60A5FA;
+  letter-spacing: 0.2px;
+}
+
+.habit-schedule-badge svg {
+  flex-shrink: 0;
+}
+
+/* Mini Dot Rest Day */
+.mini-dot.rest-dot {
+  background: transparent !important;
+  border: 1px dashed rgba(255, 255, 255, 0.2) !important;
+  opacity: 0.55;
+}
+
+.day-status-indicator.rest-done {
+  background: rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 0 4px rgba(59, 130, 246, 0.4);
+}
+
+/* Light Mode Overrides for Schedule */
+[data-appearance="light"] .schedule-summary-pill,
+.theme-light .schedule-summary-pill {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #059669 !important;
+}
+
+[data-appearance="light"] .schedule-day-btn,
+.theme-light .schedule-day-btn {
+  background: #F8FAFC !important;
+  border-color: #E2E8F0 !important;
+  color: #64748B !important;
+}
+
+[data-appearance="light"] .schedule-day-btn:hover,
+.theme-light .schedule-day-btn:hover {
+  background: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+
+[data-appearance="light"] .schedule-day-btn.selected,
+.theme-light .schedule-day-btn.selected {
+  background: #ECFDF5 !important;
+  border-color: #10B981 !important;
+  color: #059669 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2) !important;
+}
+
+[data-appearance="light"] .habit-schedule-badge,
+.theme-light .habit-schedule-badge {
+  background: rgba(59, 130, 246, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
+  color: #2563EB !important;
+}
+
+[data-appearance="light"] .mini-dot.rest-dot,
+.theme-light .mini-dot.rest-dot {
+  border-color: rgba(15, 23, 42, 0.25) !important;
+}
+

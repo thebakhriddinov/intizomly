@@ -36,12 +36,14 @@ function StatsOverviewComponent() {
   }, [totalCompletions, t]);
 
   const progressSubtext = useMemo(() => {
-    if (dayStats.total === 0) return "Hozircha odatlar mavjud emas";
+    if (dayStats.total === 0) {
+      return (habits && habits.length > 0) ? "Bugun dam olish kuni ✨" : "Hozircha odatlar mavjud emas";
+    }
     if (dayStats.percentage === 100) return "Barcha vazifalar bajarildi! Chempionsiz! 🏆";
     if (dayStats.percentage >= 50) return "Ajoyib davom etyapsiz, oz qoldi!";
     if (dayStats.completed > 0) return "Birinchi qadam qo'yildi, to'xtamang!";
     return "Kunlik vazifalar boshlanmoqda";
-  }, [dayStats]);
+  }, [dayStats, habits]);
 
   return (
     <section className="stats-grid">

@@ -9,6 +9,7 @@ export function PWAProvider({ children }) {
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
 
   useEffect(() => {
     // 1. Detect platform
@@ -107,6 +108,16 @@ export function PWAProvider({ children }) {
     return { status: 'manual-guide' };
   }, [deferredPrompt, isStandalone, isIOS]);
 
+  const openInstallPrompt = useCallback(() => {
+    if (!isStandalone) {
+      setShowInstallModal(true);
+    }
+  }, [isStandalone]);
+
+  const closeInstallPrompt = useCallback(() => {
+    setShowInstallModal(false);
+  }, []);
+
   return (
     <PWAContext.Provider
       value={{
@@ -117,6 +128,10 @@ export function PWAProvider({ children }) {
         isAndroid,
         showIOSPrompt,
         setShowIOSPrompt,
+        showInstallModal,
+        setShowInstallModal,
+        openInstallPrompt,
+        closeInstallPrompt,
         triggerInstall
       }}
     >

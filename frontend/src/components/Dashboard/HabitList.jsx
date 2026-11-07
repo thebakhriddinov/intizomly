@@ -11,19 +11,24 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
 
   const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'completed', 'pending'
 
-  // Identify which habit is currently scheduled for now or pinned
+  // 1. Get habits scheduled for this specific date (or completed on this date)
+  const scheduledHabits = useMemo(() => {
+    return habits.filter(h => storage.isHabitScheduledForDate(h, dateKey) || storage.isHabitCompleted(dateKey, h.id));
+  }, [habits, dateKey, history]);
+
+  // 2. Identify which habit is currently scheduled for now or pinned among scheduled habits
   const activeHabitId = useMemo(() => {
     return typeof storage.getActiveCurrentHabitId === 'function'
-      ? storage.getActiveCurrentHabitId(habits, history, dateKey)
+      ? storage.getActiveCurrentHabitId(scheduledHabits, history, dateKey)
       : null;
-  }, [habits, history, dateKey]);
+  }, [scheduledHabits, history, dateKey]);
 
-  // Calculate counts for filters and pin the current active habit to the top
+  // 3. Calculate counts for filters and pin the current active habit to the top
   const { filteredHabits, countAll, countPending, countCompleted } = useMemo(() => {
     let pending = 0;
     let completed = 0;
 
-    const list = habits.filter(h => {
+    const list = scheduledHabits.filter(h => {
       const isDone = storage.isHabitCompleted(dateKey, h.id);
       if (isDone) completed++;
       else pending++;
@@ -57,11 +62,11 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
 
     return {
       filteredHabits: list,
-      countAll: habits.length,
+      countAll: scheduledHabits.length,
       countPending: pending,
       countCompleted: completed
     };
-  }, [habits, dateKey, history, activeFilter, activeHabitId]);
+  }, [scheduledHabits, dateKey, history, activeFilter, activeHabitId]);
 
   const handleDelete = React.useCallback((id) => {
     const h = storage.habits.find(item => item.id === id) || storage.getHabitById(id);
@@ -145,7 +150,24 @@ function HabitListComponent({ onOpenAddHabit, onEditHabit }) {
             />
           ))}
         </div>
+      ) : habits.length > 0 && scheduledHabits.length === 0 ? (
+        /* Bugungi kunga rejalashtirilmagan odatlar: Dam olish kuni */
+        <div className="empty-state-view">
+          <div className="empty-icon-box" style={{ background: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.25)' }}>
+            <span style={{ fontSize: '32px' }}>☕</span>
+          </div>
+          <h4 className="empty-title">Bugun dam olish kuni! ✨</h4>
+          <p className="empty-text">Ushbu kunga hech qanday odat rejalashtirilmagan. Dam oling yoki yangi odat qo'shing.</p>
+          <button
+            type="button"
+            className="primary-btn"
+            onClick={onOpenAddHabit}
+          >
+            <span>{t('addHabitBtn')}</span>
+          </button>
+        </div>
       ) : (
+        /* Odatlar ro'yxati umuman bo'sh bo'lganda */
         <div className="empty-state-view">
           <div className="empty-icon-box">
             <IconTarget size={36} color="var(--accent-primary, #B6F36B)" />

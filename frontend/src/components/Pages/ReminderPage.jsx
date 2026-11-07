@@ -59,7 +59,7 @@ function FocusSubjectIcon({ type, size = 15 }) {
 }
 
 function ReminderPageComponent() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { triggerBanner } = useHabits();
 
   // Active sub-tab: 'focus' (Default for study timer), 'reminders' (vaqtli eslatmalar), or 'notes' (shaxsiy qaydlar)
@@ -353,7 +353,7 @@ function ReminderPageComponent() {
               onClick={() => setActiveSubTab('focus')}
             >
               <IconFocus size={16} />
-              <span>Focus Taymer</span>
+              <span>{lang === 'ru' ? "Фокус-таймер" : lang === 'en' ? "Focus Timer" : "Focus Taymer"}</span>
             </button>
             <button
               type="button"
@@ -361,7 +361,7 @@ function ReminderPageComponent() {
               onClick={() => setActiveSubTab('reminders')}
             >
               <IconAlarm size={16} />
-              <span>Eslatmalar ({reminders.length})</span>
+              <span>{lang === 'ru' ? `Напоминания (${reminders.length})` : lang === 'en' ? `Reminders (${reminders.length})` : `Eslatmalar (${reminders.length})`}</span>
             </button>
             <button
               type="button"
@@ -369,7 +369,7 @@ function ReminderPageComponent() {
               onClick={() => setActiveSubTab('notes')}
             >
               <IconSilent size={16} />
-              <span>Sokin Qaydlar ({notes.length})</span>
+              <span>{lang === 'ru' ? `Заметки (${notes.length})` : lang === 'en' ? `Notes (${notes.length})` : `Sokin Qaydlar (${notes.length})`}</span>
             </button>
           </div>
         </div>

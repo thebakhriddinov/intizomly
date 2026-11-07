@@ -73,7 +73,7 @@ function ProfilePageComponent({ onOpenSettings }) {
   const [suggestedUsers, setSuggestedUsers] = useState([]);
 
   const streak = storage.getGlobalStreak();
-  const badges = storage.getBadgesStatus(streak);
+  const badges = storage.getBadgesStatus(streak, lang);
 
   const loadData = useCallback(async () => {
     const extras = storage.getProfileExtras();
@@ -543,7 +543,7 @@ const handleAvatarFileChange = (e) => {
               <span className="net-stat-num">
                 {badges.filter(b => b.unlocked).length} / {badges.length}
               </span>
-              <span className="net-stat-lbl">Ochilgan Badgelar</span>
+              <span className="net-stat-lbl">{t('unlockedBadges')}</span>
             </div>
           </div>
         </div>
@@ -552,29 +552,32 @@ const handleAvatarFileChange = (e) => {
         <div className="badges-section">
           <div className="section-info-row">
             <div>
-              <h3 className="subtab-heading">Intizom Mukofotlari va Badgelar</h3>
+              <h3 className="subtab-heading">{t('rewardsAndLevelsTitle')}</h3>
+              <p className="subtab-subheading" style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-muted)' }}>
+                {t('rewardsAndLevelsSubtitle')}
+              </p>
             </div>
             <div className="streak-current-badge">
               <IconFlame size={16} />
-              <span>Hozirgi Streak: <strong>{streak} kun</strong></span>
+              <span>{t('currentStreakLabel')} <strong>{streak} {t('daysCount')}</strong></span>
             </div>
           </div>
 
-          {/* Badge Filter row: Mendagi bor badgelar vs Barcha badgelar */}
+          {/* Badge Filter row: Mendagi bor badgelar vs Sizning levelingiz */}
           <div className="badge-filter-row" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
             <button
               type="button"
               className={`filter-chip ${badgeFilter === 'unlocked' ? 'active' : ''}`}
               onClick={() => setBadgeFilter('unlocked')}
             >
-              Mendagi bor badgelar ({badges.filter(b => b.unlocked).length})
+              {t('myBadges')} ({badges.filter(b => b.unlocked).length})
             </button>
             <button
               type="button"
               className={`filter-chip ${badgeFilter === 'all' ? 'active' : ''}`}
               onClick={() => setBadgeFilter('all')}
             >
-              Barcha badgelar ({badges.length})
+              {t('yourLevel')} ({badges.length})
             </button>
           </div>
 
@@ -583,10 +586,10 @@ const handleAvatarFileChange = (e) => {
                 badgeFilter === 'unlocked' && badges.filter(b => b.unlocked).length === 0 ? (
                   <div style={{ gridColumn: '1 / -1', padding: '36px 20px', textAlign: 'center', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '16px', border: '1px dashed rgba(255, 255, 255, 0.15)' }}>
                     <p style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '15px', marginBottom: '6px' }}>
-                      Hali badgelar ochilmagan
+                      {t('noBadgesYet')}
                     </p>
                     <p style={{ color: 'var(--text-muted)', fontSize: '13px', margin: 0 }}>
-                      10 kunlik to'xtovsiz intizomga yetganingizda birinchi "Temir Iroda" nishoniga ega bo'lasiz!
+                      {t('noBadgesDesc')}
                     </p>
                   </div>
                 ) : (
@@ -609,12 +612,12 @@ const handleAvatarFileChange = (e) => {
                           {badge.unlocked ? (
                             <>
                               <IconCheck size={12} color="#10B981" />
-                              <span>OCHILDI</span>
+                              <span>{t('unlockedStatus')}</span>
                             </>
                           ) : (
                             <>
                               <IconLock size={12} color="#94A3B8" />
-                              <span>{badge.streakReq} kun</span>
+                              <span>{badge.streakReq} {t('daysCount')}</span>
                             </>
                           )}
                         </span>
@@ -640,9 +643,11 @@ const handleAvatarFileChange = (e) => {
                         </div>
                         <span className="badge-progress-text">
                           {badge.unlocked ? (
-                            <span style={{ color: badge.color, fontWeight: 700 }}>Erishildi!</span>
+                            <span style={{ color: badge.color, fontWeight: 700 }}>{t('achievedStatus')}</span>
                           ) : (
-                            <span>{streak} / {badge.streakReq} kun (yana {remainingDays} kun)</span>
+                            <span>
+                              {streak} / {badge.streakReq} {t('daysCount')} ({lang === 'ru' ? `еще ${remainingDays} дн.` : lang === 'en' ? `${remainingDays} days left` : `yana ${remainingDays} kun`})
+                            </span>
                           )}
                         </span>
                       </div>
