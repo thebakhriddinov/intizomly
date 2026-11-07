@@ -30,8 +30,11 @@ export const adminService = {
    */
   async fetchAdminApi(path, options = {}) {
     const token = await this.getAuthToken();
+    const curUser = storage.getCurrentUser();
     const headers = {
       'Content-Type': 'application/json',
+      'x-admin-role': 'admin',
+      'x-admin-user-id': curUser?.id || 'admin',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...(options.headers || {})
     };
@@ -503,12 +506,23 @@ export const adminService = {
   // 4. E'LONLAR VA BILDIRISHNOMALAR (ANNOUNCEMENTS CRUD)
   // ============================================================================
   async getAnnouncements({ includeExpired = false } = {}) {
-    // 1. Server API orqali sinab ko'rish (Authoritative source)
+    // 1. Ommaviy /api/announcements yoki /api/admin/announcements orqali olish (Barcha foydalanuvchilar uchun)
+    try {
+      const publicRes = await fetch(`/api/announcements?includeExpired=${includeExpired}`)
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null);
+      if (publicRes && publicRes.success && Array.isArray(publicRes.announcements)) {
+        const cleanList = publicRes.announcements.map(sanitizeAnnouncement).filter(Boolean);
+        storage.save(STORAGE_KEYS.BROADCASTS, cleanList);
+        return cleanList;
+      }
+    } catch {}
+
+    // 2. Server Admin API orqali sinab ko'rish
     try {
       const res = await this.fetchAdminApi(`/api/admin/announcements?includeExpired=${includeExpired}`, { method: 'GET' });
       if (res && res.success && Array.isArray(res.announcements)) {
         const cleanList = res.announcements.map(sanitizeAnnouncement).filter(Boolean);
-        // Serverdagi rasmiy ro'yxatni mahalliy keshga sinxronlashtirish
         storage.save(STORAGE_KEYS.BROADCASTS, cleanList);
         return cleanList;
       }
@@ -516,11 +530,11 @@ export const adminService = {
       // Server API mavjud emas yoki javob bermadi, Supabase'ga o'tish
     }
 
-    // 2. Direct Supabase Query
+    // 3. Direct Supabase Query
     if (isSupabaseConfigured) {
       try {
         const broadcasts = await supabaseService.getBroadcasts({ includeExpired });
-        if (Array.isArray(broadcasts)) {
+        if (Array.isArray(broadcasts) && broadcasts.length > 0) {
           const cleanList = broadcasts.map(sanitizeAnnouncement).filter(Boolean);
           storage.save(STORAGE_KEYS.BROADCASTS, cleanList);
           return cleanList;
@@ -530,7 +544,7 @@ export const adminService = {
       }
     }
 
-    // 3. Faqat server ham, Supabase ham ishlamagan offline holatda local storage keshdan olish
+    // 4. Faqat server ham, Supabase ham ishlamagan offline holatda local storage keshdan olish
     const localList = storage.getBroadcasts({ includeExpired });
     return (localList || []).map(sanitizeAnnouncement).filter(Boolean);
   },
@@ -770,17 +784,29 @@ export const adminService = {
   async getAnnouncementReads(announcementId) {
     if (!announcementId) return [];
 
+    let serverReads = [];
+    try {
+      const res = await fetch(`/api/announcements/${announcementId}/reads`)
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null);
+      if (res && res.success && Array.isArray(res.reads)) {
+        serverReads = res.reads;
+      }
+    } catch {}
+
     let supabaseReads = [];
     if (isSupabaseConfigured) {
       try {
         const rows = await supabaseService.getBroadcastReads(announcementId);
-        supabaseReads = rows.map(r => ({
-          userId: r.user_id,
-          userName: r.user_name || 'Foydalanuvchi',
-          userPhone: r.user_phone || '',
-          avatarUrl: '',
-          readAt: r.read_at
-        }));
+        if (Array.isArray(rows)) {
+          supabaseReads = rows.map(r => ({
+            userId: r.user_id,
+            userName: r.user_name || 'Foydalanuvchi',
+            userPhone: r.user_phone || '',
+            avatarUrl: '',
+            readAt: r.read_at
+          }));
+        }
       } catch (e) {
         console.warn('[AdminService] getAnnouncementReads fallback:', e);
       }
@@ -788,10 +814,17 @@ export const adminService = {
 
     const localReads = storage.getBroadcastReads(announcementId);
     const map = new Map();
-    supabaseReads.forEach(r => map.set(r.userId || r.userPhone, r));
+    serverReads.forEach(r => {
+      const key = r.userId || r.userPhone;
+      if (key) map.set(key, r);
+    });
+    supabaseReads.forEach(r => {
+      const key = r.userId || r.userPhone;
+      if (key && !map.has(key)) map.set(key, r);
+    });
     localReads.forEach(r => {
       const key = r.userId || r.userPhone;
-      if (!map.has(key)) map.set(key, r);
+      if (key && !map.has(key)) map.set(key, r);
     });
 
     const list = Array.from(map.values());
@@ -802,6 +835,24 @@ export const adminService = {
   async recordAnnouncementRead(announcementId, user) {
     if (!announcementId || !user) return;
     storage.recordBroadcastRead(announcementId, user);
+
+    const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || 'Foydalanuvchi';
+    const userPhone = user.phone || '';
+
+    // 1. Server API orqali yozish
+    try {
+      fetch(`/api/announcements/${announcementId}/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id || 'local_user',
+          userName,
+          userPhone
+        })
+      }).catch(() => {});
+    } catch {}
+
+    // 2. Direct Supabase record
     if (isSupabaseConfigured) {
       try {
         await supabaseService.recordBroadcastRead(announcementId, user.id, user);

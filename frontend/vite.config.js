@@ -6,7 +6,7 @@ function adminApiPlugin() {
     name: 'admin-api-plugin',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if (req.url && req.url.startsWith('/api/admin')) {
+        if (req.url && (req.url.startsWith('/api/admin') || req.url.startsWith('/api/announcements'))) {
           try {
             const { handleAdminApi } = await import('../backend/adminHandler.js');
             const handled = await handleAdminApi(req, res);

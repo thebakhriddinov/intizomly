@@ -1947,9 +1947,18 @@ class StorageManager {
         // ============================================================================
         getCleanBroadcastText(msg) {
           if (!msg) return '';
-          if (typeof msg === 'object') return msg.text || msg.message || '';
+          if (typeof msg === 'object') return String(msg.text || msg.message || '').trim();
           if (typeof msg === 'string') {
             let current = msg.trim();
+            if ((current.startsWith('"') && current.endsWith('"')) || (current.startsWith("'") && current.endsWith("'"))) {
+              try {
+                const unquoted = JSON.parse(current);
+                if (typeof unquoted === 'string') current = unquoted.trim();
+                else if (typeof unquoted === 'object' && unquoted !== null) {
+                  return String(unquoted.text || unquoted.message || '').trim();
+                }
+              } catch {}
+            }
             while (current.startsWith('{') && current.endsWith('}')) {
               try {
                 const parsed = JSON.parse(current);
@@ -1958,9 +1967,9 @@ class StorageManager {
                 } else break;
               } catch { break; }
             }
-            if (current.includes('"text":')) {
-              const match = current.match(/"text"\s*:\s*"([^"]+)"/);
-              if (match && match[1]) return match[1];
+            if (current.includes('text') && (current.includes('{') || current.includes(':'))) {
+              const match = current.match(/\\?["']?text\\?["']?\s*:\s*\\?["']([^\\"']+)\\?["']/i);
+              if (match && match[1]) return match[1].trim();
             }
             return current;
           }

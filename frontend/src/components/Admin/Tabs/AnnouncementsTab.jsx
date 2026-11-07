@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { adminService } from '../../../services/adminService';
 import { useNotifications } from '../../../context/NotificationContext';
 import { audioManager } from '../../../utils/audio';
@@ -299,6 +300,7 @@ export function AnnouncementsTab({ onShowToast }) {
     try {
       const list = await adminService.getAnnouncementReads(ann.id);
       setReadsList(list);
+      setReadsCountMap(prev => ({ ...prev, [ann.id]: list.length }));
     } catch (err) {
       console.error('Failed to load reads:', err);
       setReadsList([]);
@@ -684,13 +686,42 @@ export function AnnouncementsTab({ onShowToast }) {
         )}
       </div>
 
-      {/* 3. Duration Edit Modal */}
-      {editingDurationAnn && (
-        <div className="modal-backdrop" onClick={() => setEditingDurationAnn(null)}>
+      {/* 3. Duration Edit Modal (Portal to body for exact screen centering) */}
+      {editingDurationAnn && typeof document !== 'undefined' && createPortal(
+        <div
+          className="modal-backdrop"
+          onClick={() => setEditingDurationAnn(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 999999,
+            background: 'rgba(3, 7, 18, 0.82)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            boxSizing: 'border-box'
+          }}
+        >
           <div
             className="modal-card"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '440px', width: '100%', padding: '24px' }}
+            style={{
+              maxWidth: '440px',
+              width: '100%',
+              background: 'var(--bg-card, #0f172a)',
+              border: '1px solid var(--border, rgba(255, 255, 255, 0.12))',
+              borderRadius: '24px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.6)',
+              padding: '24px'
+            }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
               <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
@@ -771,16 +802,51 @@ export function AnnouncementsTab({ onShowToast }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* 4. Read Receipts Inspection Modal */}
-      {selectedAnnForReads && (
-        <div className="modal-backdrop" onClick={() => setSelectedAnnForReads(null)}>
+      {/* 4. Read Receipts Inspection Modal (Portal to body for exact screen centering) */}
+      {selectedAnnForReads && typeof document !== 'undefined' && createPortal(
+        <div
+          className="modal-backdrop"
+          onClick={() => setSelectedAnnForReads(null)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            zIndex: 999999,
+            background: 'rgba(3, 7, 18, 0.82)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            boxSizing: 'border-box'
+          }}
+        >
           <div
             className="modal-card"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: '500px', width: '100%', padding: '24px' }}
+            style={{
+              maxWidth: '520px',
+              width: '100%',
+              maxHeight: '85vh',
+              background: 'var(--bg-card, #0f172a)',
+              border: '1px solid var(--border, rgba(255, 255, 255, 0.12))',
+              borderRadius: '24px',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(16, 185, 129, 0.12)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              position: 'relative'
+            }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -789,7 +855,7 @@ export function AnnouncementsTab({ onShowToast }) {
                 </div>
                 <div>
                   <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    Xabarni O'qiganlar
+                    Xabarni O'qiganlar ({readsList.length})
                   </h4>
                   <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                     "{selectedAnnForReads.title}"
@@ -800,22 +866,23 @@ export function AnnouncementsTab({ onShowToast }) {
                 type="button"
                 className="icon-action-btn"
                 onClick={() => setSelectedAnnForReads(null)}
-                style={{ width: '32px', height: '32px' }}
+                style={{ width: '32px', height: '32px', fontSize: '18px', cursor: 'pointer' }}
               >
                 &times;
               </button>
             </div>
 
             {loadingReads ? (
-              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                O'qilganlik ma'lumotlari yuklanmoqda...
+              <div style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <div className="loading-spinner" style={{ margin: '0 auto 10px' }}></div>
+                <span>O'qilganlik ma'lumotlari yuklanmoqda...</span>
               </div>
             ) : readsList.length === 0 ? (
               <div style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
                 Ushbu xabarni hali hech bir foydalanuvchi ochib o'qimagan.
               </div>
             ) : (
-              <div style={{ maxHeight: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ maxHeight: '360px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
                 {readsList.map((reader, idx) => (
                   <div
                     key={reader.userId || idx}
@@ -825,7 +892,7 @@ export function AnnouncementsTab({ onShowToast }) {
                       justifyContent: 'space-between',
                       padding: '10px 14px',
                       borderRadius: '12px',
-                      background: 'rgba(255, 255, 255, 0.03)',
+                      background: 'rgba(255, 255, 255, 0.04)',
                       border: '1px solid rgba(255, 255, 255, 0.06)'
                     }}
                   >
@@ -841,7 +908,8 @@ export function AnnouncementsTab({ onShowToast }) {
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontWeight: 700,
-                          fontSize: '13px'
+                          fontSize: '13px',
+                          flexShrink: 0
                         }}
                       >
                         {(reader.userName || 'F')[0].toUpperCase()}
@@ -858,7 +926,7 @@ export function AnnouncementsTab({ onShowToast }) {
                       </div>
                     </div>
 
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                       {reader.readAt ? new Date(reader.readAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Hozirgina'}
                     </span>
                   </div>
@@ -866,7 +934,8 @@ export function AnnouncementsTab({ onShowToast }) {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

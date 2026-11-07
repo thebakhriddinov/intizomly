@@ -98,6 +98,11 @@ export function NotificationProvider({ children }) {
         if (a.id) knownIdsRef.current.add(a.id);
       });
 
+      // Agar o'chirilgan bo'lsa, pop-upni ham yopish
+      if (popupAnnouncement && !list.some(a => a.id === popupAnnouncement.id)) {
+        dismissPopup();
+      }
+
       setAnnouncements(list);
     } catch (err) {
       console.warn('[NotificationContext] Failed to load announcements:', err);
@@ -105,7 +110,7 @@ export function NotificationProvider({ children }) {
       if (!isBackground) setLoading(false);
       isInitialLoadRef.current = false;
     }
-  }, [triggerPopup]);
+  }, [triggerPopup, popupAnnouncement, dismissPopup]);
 
   // 2. Initial mount and realtime listener
   useEffect(() => {
@@ -130,6 +135,7 @@ export function NotificationProvider({ children }) {
       const { id } = e.detail || {};
       if (id) {
         setAnnouncements(prev => prev.filter(a => a.id !== id));
+        storage.deleteBroadcast(id);
         if (popupAnnouncement?.id === id) {
           dismissPopup();
         }
@@ -138,6 +144,9 @@ export function NotificationProvider({ children }) {
 
     const handleAllDeleted = () => {
       setAnnouncements([]);
+      // Mahalliy keshdan barcha broadcastlarni tozalash
+      const allBroadcasts = storage.getBroadcasts({ includeExpired: true });
+      allBroadcasts.forEach(b => storage.deleteBroadcast(b.id));
       dismissPopup();
     };
 
@@ -174,8 +183,12 @@ export function NotificationProvider({ children }) {
               if (payload.eventType === 'DELETE') {
                 const deletedId = payload.old?.id;
                 if (deletedId) {
+                  // React state'dan olib tashlash
                   setAnnouncements(prev => prev.filter(a => a.id !== deletedId));
+                  // localStorage'dan ham tozalash (boshqa qurilmalarda ham o'chsin)
+                  storage.deleteBroadcast(deletedId);
                 } else {
+                  // Agar id aniqlanmasa, to'liq yangilash
                   loadAnnouncements(true);
                 }
               } else if (payload.eventType === 'INSERT') {
@@ -191,10 +204,17 @@ export function NotificationProvider({ children }) {
       }
     }
 
-    // 25-second fallback poll
+    // 8-second fast poll for instant sync across devices
     const pollTimer = setInterval(() => {
       loadAnnouncements(true);
-    }, 25000);
+    }, 8000);
+
+    const handleWindowFocus = () => {
+      loadAnnouncements(true);
+    };
+
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('visibilitychange', handleWindowFocus);
 
     return () => {
       window.removeEventListener('intizomly:new_broadcast', handleNewBroadcast);
@@ -202,6 +222,8 @@ export function NotificationProvider({ children }) {
       window.removeEventListener('intizomly:all_broadcasts_deleted', handleAllDeleted);
       window.removeEventListener('intizomly:broadcast_updated', handleUpdatedBroadcast);
       window.removeEventListener('intizomly:push_to_screen', handlePushToScreen);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('visibilitychange', handleWindowFocus);
       clearInterval(pollTimer);
       if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
       if (channel && supabase) {
