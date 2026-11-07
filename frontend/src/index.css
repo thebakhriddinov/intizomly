@@ -791,7 +791,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   position: sticky;
   top: 0;
   z-index: 90;
-  height: var(--header-height);
+  height: calc(var(--header-height, 64px) + env(safe-area-inset-top, 0px));
   background-color: var(--bg-glass);
   backdrop-filter: blur(28px) saturate(210%);
   -webkit-backdrop-filter: blur(28px) saturate(210%);
@@ -799,9 +799,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--space-8);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-right: max(var(--space-8), env(safe-area-inset-right, 0px));
+  padding-bottom: 0;
+  padding-left: max(var(--space-8), env(safe-area-inset-left, 0px));
   gap: var(--space-4);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
 }
 
 .header-left {
@@ -2046,6 +2050,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   bottom: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   background: var(--bg-overlay, rgba(3, 7, 18, 0.82));
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -2053,9 +2058,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  padding: var(--space-4);
+  padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) max(var(--space-4), env(safe-area-inset-right, 0px)) calc(var(--space-4) + env(safe-area-inset-bottom, 0px)) max(var(--space-4), env(safe-area-inset-left, 0px));
   animation: fadeIn 0.2s ease;
   overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.is-ios-pwa .modal-overlay,
+.is-ios-pwa .modal-backdrop {
+  padding-top: calc(var(--space-4) + max(env(safe-area-inset-top, 0px), 48px));
 }
 
 @keyframes fadeIn {
@@ -2757,7 +2768,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
    -------------------------------------------------------------------------- */
 .ios-notification-container {
   position: fixed;
-  top: 12px;
+  top: calc(12px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
@@ -2767,6 +2778,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+.is-ios-pwa .ios-notification-container {
+  top: calc(12px + max(env(safe-area-inset-top, 0px), 48px));
 }
 
 .ios-notif-banner {
@@ -2995,18 +3010,40 @@ button:focus-visible, input:focus-visible, select:focus-visible, [tabindex="0"]:
 }
 
 @media (max-width: 768px) {
-  /* 1. Phone Header: ONLY Logo and Streak */
+  /* 1. Phone Header: ONLY Logo and Streak with Safe Area Support */
   .app-header {
-    padding: 0 var(--space-4);
-    height: 58px;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: max(var(--space-4), env(safe-area-inset-right, 0px));
+    padding-bottom: 0;
+    padding-left: max(var(--space-4), env(safe-area-inset-left, 0px));
+    height: calc(58px + env(safe-area-inset-top, 0px));
+    box-sizing: border-box;
   }
 
   .header-left {
     width: 100%;
+    height: 58px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
+  }
+
+  /* iOS PWA Standalone Mode — Dynamic Island & Notch Safe Area
+     Applied specifically on iOS PWA to avoid unnecessary gaps on Android */
+  .is-ios-pwa .app-header,
+  .is-ios.is-standalone .app-header {
+    padding-top: max(env(safe-area-inset-top, 0px), 48px) !important;
+    height: calc(58px + max(env(safe-area-inset-top, 0px), 48px)) !important;
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    @media all and (display-mode: standalone) {
+      .app-header {
+        padding-top: max(env(safe-area-inset-top, 0px), 48px);
+        height: calc(58px + max(env(safe-area-inset-top, 0px), 48px));
+      }
+    }
   }
 
   .mobile-only-brand {

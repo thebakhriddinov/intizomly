@@ -75,13 +75,16 @@ export function App() {
   if (authLoading) {
     return (
       <div style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         background: '#080B11',
-        gap: '16px'
+        gap: '16px',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        boxSizing: 'border-box'
       }}>
         <BrandLogo size="lg" showText={true} />
         <span style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '13px', letterSpacing: '0.3px' }}>Intizomly yuklanmoqda...</span>
