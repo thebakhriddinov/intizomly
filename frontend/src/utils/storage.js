@@ -20,7 +20,8 @@ export const STORAGE_KEYS = {
   APP_LIMITS: 'intizomly_app_limits_v2',
   SCREEN_TIME: 'intizomly_screen_time_v2',
   BROADCASTS: 'intizomly_broadcasts_v2',
-  READ_ANNOUNCEMENTS: 'intizomly_read_announcements_v2'
+  READ_ANNOUNCEMENTS: 'intizomly_read_announcements_v2',
+  BROADCAST_READS: 'intizomly_broadcast_reads_v2'
 };
 
 export const DEFAULT_APP_LIMITS = [
@@ -1944,13 +1945,19 @@ class StorageManager {
         // ============================================================================
         // ADMIN BROADCASTS & SMS NOTIFICATIONS
         // ============================================================================
-        getBroadcasts() {
-          return this.load(STORAGE_KEYS.BROADCASTS, []) || [];
+        getBroadcasts({ includeExpired = false } = {}) {
+          const list = this.load(STORAGE_KEYS.BROADCASTS, []) || [];
+          if (includeExpired) return list;
+          const now = Date.now();
+          return list.filter(b => {
+            if (!b.expires_at) return true;
+            return new Date(b.expires_at).getTime() > now;
+          });
         }
 
         saveBroadcast(broadcast) {
           if (!broadcast) return [];
-          const current = this.getBroadcasts();
+          const current = this.load(STORAGE_KEYS.BROADCASTS, []) || [];
           const exists = current.some(b => b.id === broadcast.id);
           const updated = exists
             ? current.map(b => b.id === broadcast.id ? { ...b, ...broadcast } : b)
@@ -1961,9 +1968,15 @@ class StorageManager {
 
         deleteBroadcast(broadcastId) {
           if (!broadcastId) return [];
-          const current = this.getBroadcasts();
+          const current = this.load(STORAGE_KEYS.BROADCASTS, []) || [];
           const updated = current.filter(b => b.id !== broadcastId);
           this.save(STORAGE_KEYS.BROADCASTS, updated);
+          // Also clean up read receipts
+          const allReads = this.load(STORAGE_KEYS.BROADCAST_READS, {}) || {};
+          if (allReads[broadcastId]) {
+            delete allReads[broadcastId];
+            this.save(STORAGE_KEYS.BROADCAST_READS, allReads);
+          }
           return updated;
         }
 
@@ -1971,6 +1984,34 @@ class StorageManager {
           const user = this.getCurrentUser();
           const userKey = user?.id ? `${STORAGE_KEYS.READ_ANNOUNCEMENTS}_${user.id}` : STORAGE_KEYS.READ_ANNOUNCEMENTS;
           return this.load(userKey, []) || [];
+        }
+
+        recordBroadcastRead(broadcastId, user) {
+          if (!broadcastId || !user) return;
+          const allReads = this.load(STORAGE_KEYS.BROADCAST_READS, {}) || {};
+          const list = allReads[broadcastId] || [];
+          const userId = user.id || 'local_user';
+          const already = list.some(r => r.userId === userId);
+          if (!already) {
+            const userName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || 'Foydalanuvchi';
+            const userPhone = user.phone || '';
+            const avatarUrl = user.avatarUrl || '';
+            list.push({
+              userId,
+              userName,
+              userPhone,
+              avatarUrl,
+              readAt: new Date().toISOString()
+            });
+            allReads[broadcastId] = list;
+            this.save(STORAGE_KEYS.BROADCAST_READS, allReads);
+          }
+        }
+
+        getBroadcastReads(broadcastId) {
+          if (!broadcastId) return [];
+          const allReads = this.load(STORAGE_KEYS.BROADCAST_READS, {}) || {};
+          return allReads[broadcastId] || [];
         }
 
         markAnnouncementAsRead(id) {
@@ -1982,6 +2023,9 @@ class StorageManager {
             current.push(id);
             this.save(userKey, current);
           }
+          if (user) {
+            this.recordBroadcastRead(id, user);
+          }
           return current;
         }
 
@@ -1991,6 +2035,9 @@ class StorageManager {
           const current = this.load(userKey, []) || [];
           const merged = Array.from(new Set([...current, ...allIds]));
           this.save(userKey, merged);
+          if (user) {
+            allIds.forEach(id => this.recordBroadcastRead(id, user));
+          }
           return merged;
         }
       }

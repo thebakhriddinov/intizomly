@@ -12,6 +12,7 @@ import { StatsOverview } from './components/Dashboard/StatsOverview';
 import { Heatmap } from './components/Dashboard/Heatmap';
 import { HabitList } from './components/Dashboard/HabitList';
 import { DynamicIslandBanner } from './components/Feedback/DynamicIslandBanner';
+import { FloatingSMSPopUp } from './components/Feedback/FloatingSMSPopUp';
 import { ToastContainer } from './components/Feedback/ToastContainer';
 import { EnvWarningBanner } from './components/Feedback/EnvWarningBanner';
 import { BrandLogo } from './components/Common/BrandLogo';
@@ -304,6 +305,7 @@ export function App() {
 
       {/* 7. Feedback Elements */}
       <DynamicIslandBanner />
+      <FloatingSMSPopUp />
       <ToastContainer />
     </>
   );

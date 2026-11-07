@@ -501,7 +501,7 @@ export const adminService = {
   // ============================================================================
   // 4. E'LONLAR VA BILDIRISHNOMALAR (ANNOUNCEMENTS CRUD)
   // ============================================================================
-  async getAnnouncements() {
+  async getAnnouncements({ includeExpired = false } = {}) {
     let list = [];
 
     // 1. Try server API if available
@@ -517,7 +517,7 @@ export const adminService = {
     // 2. Fetch from Supabase
     if (list.length === 0 && isSupabaseConfigured) {
       try {
-        const broadcasts = await supabaseService.getBroadcasts();
+        const broadcasts = await supabaseService.getBroadcasts({ includeExpired });
         if (Array.isArray(broadcasts) && broadcasts.length > 0) {
           list = broadcasts.map(b => ({
             id: b.id,
@@ -526,6 +526,8 @@ export const adminService = {
             target: b.target || 'all',
             status: 'active',
             priority: b.priority || 'normal',
+            duration_days: b.duration_days || null,
+            expires_at: b.expires_at || null,
             created_at: b.created_at
           }));
         }
@@ -535,7 +537,7 @@ export const adminService = {
     }
 
     // 3. Fallback / merge with local storage
-    const localBroadcasts = storage.getBroadcasts();
+    const localBroadcasts = storage.getBroadcasts({ includeExpired });
     const mergedMap = new Map();
     list.forEach(item => mergedMap.set(item.id, item));
     localBroadcasts.forEach(item => {
@@ -549,24 +551,29 @@ export const adminService = {
     return result;
   },
 
-  async createAnnouncement({ title, message, target = 'all', priority = 'normal', status = 'active' }) {
+  async createAnnouncement({ title, message, target = 'all', priority = 'normal', status = 'active', durationDays = 7 }) {
     // 1. Try server API if configured
     try {
       const res = await this.fetchAdminApi('/api/admin/announcements', {
         method: 'POST',
-        body: JSON.stringify({ title, message, target, priority, status })
+        body: JSON.stringify({ title, message, target, priority, status, durationDays })
       });
       if (res && res.success) return res;
     } catch {
       // Fallback
     }
 
+    const daysNum = Number(durationDays);
+    const expiresAt = (daysNum > 0)
+      ? new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
     // 2. Direct Supabase insert
     let created = null;
     if (isSupabaseConfigured) {
       try {
         const curUser = storage.getCurrentUser();
-        created = await supabaseService.createBroadcast(curUser?.id, title, message, priority, target);
+        created = await supabaseService.createBroadcast(curUser?.id, title, message, priority, target, daysNum);
       } catch (e) {
         console.warn('[AdminService] Supabase createBroadcast fallback:', e);
       }
@@ -580,6 +587,8 @@ export const adminService = {
       target,
       priority,
       status,
+      duration_days: daysNum > 0 ? daysNum : null,
+      expires_at: expiresAt,
       created_at: created?.created_at || new Date().toISOString()
     };
     storage.saveBroadcast(newBroadcast);
@@ -620,6 +629,50 @@ export const adminService = {
     }
 
     return { success: true };
+  },
+
+  async getAnnouncementReads(announcementId) {
+    if (!announcementId) return [];
+
+    let supabaseReads = [];
+    if (isSupabaseConfigured) {
+      try {
+        const rows = await supabaseService.getBroadcastReads(announcementId);
+        supabaseReads = rows.map(r => ({
+          userId: r.user_id,
+          userName: r.user_name || 'Foydalanuvchi',
+          userPhone: r.user_phone || '',
+          avatarUrl: '',
+          readAt: r.read_at
+        }));
+      } catch (e) {
+        console.warn('[AdminService] getAnnouncementReads fallback:', e);
+      }
+    }
+
+    const localReads = storage.getBroadcastReads(announcementId);
+    const map = new Map();
+    supabaseReads.forEach(r => map.set(r.userId || r.userPhone, r));
+    localReads.forEach(r => {
+      const key = r.userId || r.userPhone;
+      if (!map.has(key)) map.set(key, r);
+    });
+
+    const list = Array.from(map.values());
+    list.sort((a, b) => new Date(b.readAt || 0) - new Date(a.readAt || 0));
+    return list;
+  },
+
+  async recordAnnouncementRead(announcementId, user) {
+    if (!announcementId || !user) return;
+    storage.recordBroadcastRead(announcementId, user);
+    if (isSupabaseConfigured) {
+      try {
+        await supabaseService.recordBroadcastRead(announcementId, user.id, user);
+      } catch (e) {
+        console.warn('[AdminService] recordAnnouncementRead notice:', e);
+      }
+    }
   },
 
   // ============================================================================

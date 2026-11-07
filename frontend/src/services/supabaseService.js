@@ -771,38 +771,54 @@ export const supabaseService = {
   // ============================================================================
   // BROADCASTS (ADMIN & SMS NOTIFICATIONS)
   // ============================================================================
-  async getBroadcasts() {
+  async getBroadcasts({ includeExpired = false } = {}) {
     if (!this.isConfigured()) return [];
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('broadcasts')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
+      const { data, error } = await query;
+
       if (error) {
         console.warn('[Supabase] getBroadcasts error:', error.message);
         return [];
       }
-      return data || [];
+
+      const list = data || [];
+      if (includeExpired) return list;
+
+      const now = Date.now();
+      return list.filter(b => {
+        if (!b.expires_at) return true;
+        return new Date(b.expires_at).getTime() > now;
+      });
     } catch (err) {
       console.warn('[Supabase] getBroadcasts exception:', err);
       return [];
     }
   },
 
-  async createBroadcast(authorId, title, message, priority = 'normal', target = 'all') {
+  async createBroadcast(authorId, title, message, priority = 'normal', target = 'all', durationDays = 7) {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
     const cleanTitle = (title || '').trim();
     const cleanMessage = (message || '').trim();
 
+    // Calculate expiration timestamp
+    const daysNum = Number(durationDays);
+    const expiresAt = (daysNum > 0)
+      ? new Date(Date.now() + daysNum * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
     // Verify if authorId is a valid UUID, otherwise pass null to avoid Postgres UUID cast errors
     const isUuid = typeof authorId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(authorId);
     const validAuthorId = isUuid ? authorId : null;
 
-    // 1. Try full insert with priority and target
+    // 1. Try full insert with priority, target, durationDays and expires_at
     try {
       const { data, error } = await supabase
         .from('broadcasts')
@@ -811,7 +827,9 @@ export const supabaseService = {
           title: cleanTitle,
           message: cleanMessage,
           priority: priority || 'normal',
-          target: target || 'all'
+          target: target || 'all',
+          duration_days: daysNum > 0 ? daysNum : null,
+          expires_at: expiresAt
         })
         .select()
         .single();
@@ -827,7 +845,9 @@ export const supabaseService = {
             title: cleanTitle,
             message: cleanMessage,
             priority: priority || 'normal',
-            target: target || 'all'
+            target: target || 'all',
+            duration_days: daysNum > 0 ? daysNum : null,
+            expires_at: expiresAt
           })
           .select()
           .single();
@@ -850,7 +870,13 @@ export const supabaseService = {
         .single();
 
       if (error) throw error;
-      return data;
+      return {
+        ...data,
+        priority,
+        target,
+        duration_days: daysNum > 0 ? daysNum : null,
+        expires_at: expiresAt
+      };
     } catch (err) {
       console.error('[Supabase] createBroadcast baseline error:', err);
       throw err;
@@ -860,6 +886,11 @@ export const supabaseService = {
   async deleteBroadcast(broadcastId) {
     if (!this.isConfigured() || !broadcastId) return false;
     try {
+      // Also delete from broadcast_reads if table exists
+      try {
+        await supabase.from('broadcast_reads').delete().eq('broadcast_id', broadcastId);
+      } catch {}
+
       const { error } = await supabase
         .from('broadcasts')
         .delete()
@@ -872,6 +903,61 @@ export const supabaseService = {
     } catch (err) {
       console.warn('[Supabase] deleteBroadcast exception:', err);
       return false;
+    }
+  },
+
+  async recordBroadcastRead(broadcastId, userId, userProfile = null) {
+    if (!this.isConfigured() || !broadcastId) return false;
+    try {
+      const isUuid = typeof userId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+      const validUserId = isUuid ? userId : null;
+
+      const userName = userProfile
+        ? (`${userProfile.firstName || ''} ${userProfile.lastName || ''}`.trim() || userProfile.name || 'Foydalanuvchi')
+        : 'Foydalanuvchi';
+      const userPhone = userProfile?.phone || '';
+
+      const { error } = await supabase
+        .from('broadcast_reads')
+        .upsert(
+          {
+            broadcast_id: broadcastId,
+            user_id: validUserId,
+            user_name: userName,
+            user_phone: userPhone,
+            read_at: new Date().toISOString()
+          },
+          { onConflict: 'broadcast_id,user_id' }
+        );
+
+      if (error) {
+        console.warn('[Supabase] recordBroadcastRead notice:', error.message);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn('[Supabase] recordBroadcastRead exception:', e);
+      return false;
+    }
+  },
+
+  async getBroadcastReads(broadcastId) {
+    if (!this.isConfigured() || !broadcastId) return [];
+    try {
+      const { data, error } = await supabase
+        .from('broadcast_reads')
+        .select('*')
+        .eq('broadcast_id', broadcastId)
+        .order('read_at', { ascending: false });
+
+      if (error) {
+        console.warn('[Supabase] getBroadcastReads notice:', error.message);
+        return [];
+      }
+      return data || [];
+    } catch (e) {
+      console.warn('[Supabase] getBroadcastReads exception:', e);
+      return [];
     }
   },
 

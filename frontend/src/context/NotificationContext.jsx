@@ -10,6 +10,7 @@ export function NotificationProvider({ children }) {
   const [announcements, setAnnouncements] = useState([]);
   const [readIds, setReadIds] = useState(() => storage.getReadAnnouncementIds());
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [popupAnnouncement, setPopupAnnouncement] = useState(null);
   const [loading, setLoading] = useState(true);
   const [browserPermission, setBrowserPermission] = useState(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -20,6 +21,25 @@ export function NotificationProvider({ children }) {
 
   const knownIdsRef = useRef(new Set());
   const isInitialLoadRef = useRef(true);
+  const popupTimerRef = useRef(null);
+
+  const dismissPopup = useCallback(() => {
+    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+    setPopupAnnouncement(null);
+  }, []);
+
+  const triggerPopup = useCallback((ann) => {
+    if (!ann) return;
+    if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
+
+    setPopupAnnouncement(ann);
+    audioManager.playNotification();
+
+    // Auto-dismiss floating popup after 7 seconds
+    popupTimerRef.current = setTimeout(() => {
+      setPopupAnnouncement(null);
+    }, 7000);
+  }, []);
 
   // 1. Load announcements
   const loadAnnouncements = useCallback(async (isBackground = false) => {
@@ -29,13 +49,28 @@ export function NotificationProvider({ children }) {
       const currentRead = storage.getReadAnnouncementIds();
       setReadIds(currentRead);
 
-      // Check for incoming new announcements to trigger SMS notification chime
+      // A. Initial Entry: Check if there's an unread message to show as auto pop-up
+      if (isInitialLoadRef.current && list.length > 0) {
+        const unreadList = list.filter(a => !currentRead.includes(a.id));
+        if (unreadList.length > 0) {
+          const newest = unreadList[0];
+          const hasShownInSession = sessionStorage.getItem('intizomly_popup_shown_' + newest.id) === 'true';
+          if (!hasShownInSession) {
+            sessionStorage.setItem('intizomly_popup_shown_' + newest.id, 'true');
+            // Small delay to let initial UI render smoothly
+            setTimeout(() => {
+              triggerPopup(newest);
+            }, 800);
+          }
+        }
+      }
+
+      // B. Realtime Incoming: Check for new announcements arriving while on page
       if (!isInitialLoadRef.current && list.length > 0) {
         const incoming = list.filter(a => a.id && !knownIdsRef.current.has(a.id));
         if (incoming.length > 0) {
           const newest = incoming[0];
-          // SMS notification sound
-          audioManager.playNotification();
+          triggerPopup(newest);
 
           // Native browser notification if granted
           if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
@@ -65,7 +100,7 @@ export function NotificationProvider({ children }) {
       if (!isBackground) setLoading(false);
       isInitialLoadRef.current = false;
     }
-  }, []);
+  }, [triggerPopup]);
 
   // 2. Initial mount and realtime listener
   useEffect(() => {
@@ -81,6 +116,7 @@ export function NotificationProvider({ children }) {
           return [newAnn, ...prev];
         });
         if (newAnn.id) knownIdsRef.current.add(newAnn.id);
+        triggerPopup(newAnn);
       }
     };
 
@@ -88,6 +124,9 @@ export function NotificationProvider({ children }) {
       const { id } = e.detail || {};
       if (id) {
         setAnnouncements(prev => prev.filter(a => a.id !== id));
+        if (popupAnnouncement?.id === id) {
+          dismissPopup();
+        }
       }
     };
 
@@ -122,17 +161,23 @@ export function NotificationProvider({ children }) {
       window.removeEventListener('intizomly:new_broadcast', handleNewBroadcast);
       window.removeEventListener('intizomly:broadcast_deleted', handleDeletedBroadcast);
       clearInterval(pollTimer);
+      if (popupTimerRef.current) clearTimeout(popupTimerRef.current);
       if (channel && supabase) {
         supabase.removeChannel(channel).catch(() => {});
       }
     };
-  }, [loadAnnouncements]);
+  }, [loadAnnouncements, triggerPopup, popupAnnouncement, dismissPopup]);
 
   // 3. Mark single announcement as read
   const markAsRead = useCallback((id) => {
     if (!id) return;
     const updated = storage.markAnnouncementAsRead(id);
     setReadIds([...updated]);
+
+    const curUser = storage.getCurrentUser();
+    if (curUser) {
+      adminService.recordAnnouncementRead(id, curUser);
+    }
   }, []);
 
   // 4. Mark all as read
@@ -140,6 +185,11 @@ export function NotificationProvider({ children }) {
     const allIds = announcements.map(a => a.id).filter(Boolean);
     const updated = storage.markAllAnnouncementsAsRead(allIds);
     setReadIds([...updated]);
+
+    const curUser = storage.getCurrentUser();
+    if (curUser) {
+      allIds.forEach(id => adminService.recordAnnouncementRead(id, curUser));
+    }
   }, [announcements]);
 
   // 5. Delete announcement (Admin)
@@ -147,8 +197,11 @@ export function NotificationProvider({ children }) {
     if (!id) return false;
     await adminService.deleteAnnouncement(id);
     setAnnouncements(prev => prev.filter(a => a.id !== id));
+    if (popupAnnouncement?.id === id) {
+      dismissPopup();
+    }
     return true;
-  }, []);
+  }, [popupAnnouncement, dismissPopup]);
 
   // 6. Request native browser notification permission
   const requestBrowserPermission = useCallback(async () => {
@@ -185,7 +238,10 @@ export function NotificationProvider({ children }) {
     deleteAnnouncement,
     refreshAnnouncements: loadAnnouncements,
     browserPermission,
-    requestBrowserPermission
+    requestBrowserPermission,
+    popupAnnouncement,
+    dismissPopup,
+    triggerPopup
   };
 
   return (
@@ -202,4 +258,3 @@ export function useNotifications() {
   }
   return ctx;
 }
-
