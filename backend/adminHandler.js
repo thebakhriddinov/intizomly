@@ -590,52 +590,43 @@ export async function handleAdminApi(req, res) {
     // DELETE /api/admin/announcements/:id
     // POST /api/admin/announcements/:id/broadcast
     // --------------------------------------------------------------------------
-    const parseBroadcastRow = (b) => {
-      let bodyText = b.message || '';
-      let priority = b.priority || 'normal';
-      let target = b.target || 'all';
-      let duration_days = b.duration_days || null;
-      let expires_at = b.expires_at || null;
-      let pushed_at = b.pushed_at || null;
-
-      if (typeof b.message === 'string' && b.message.trim().startsWith('{')) {
-        try {
-          const parsed = JSON.parse(b.message);
-          if (parsed && typeof parsed === 'object') {
-            if (parsed.text !== undefined) bodyText = parsed.text;
-            if (parsed.priority) priority = parsed.priority;
-            if (parsed.target) target = parsed.target;
-            if (parsed.duration_days !== undefined) duration_days = parsed.duration_days;
-            if (parsed.expires_at !== undefined) expires_at = parsed.expires_at;
-            if (parsed.pushed_at !== undefined) pushed_at = parsed.pushed_at;
+    const extractCleanText = (msg) => {
+      if (!msg) return '';
+      if (typeof msg === 'object') return msg.text || msg.message || '';
+      if (typeof msg === 'string') {
+        let current = msg.trim();
+        while (current.startsWith('{') && current.endsWith('}')) {
+          try {
+            const parsed = JSON.parse(current);
+            if (parsed && typeof parsed === 'object') {
+              current = (parsed.text !== undefined ? parsed.text : (parsed.message || '')).trim();
+            } else {
+              break;
+            }
+          } catch {
+            break;
           }
-        } catch {}
+        }
+        return current;
       }
+      return String(msg);
+    };
 
+    const parseBroadcastRow = (b) => {
+      const cleanBody = extractCleanText(b.message);
       return {
         id: b.id,
         author_id: b.author_id,
         title: b.title || '',
-        message: bodyText,
-        target,
+        message: cleanBody,
+        target: b.target || 'all',
         status: 'active',
-        priority,
-        duration_days,
-        expires_at,
-        pushed_at,
+        priority: b.priority || 'normal',
+        duration_days: b.duration_days || null,
+        expires_at: b.expires_at || null,
+        pushed_at: b.pushed_at || null,
         created_at: b.created_at
       };
-    };
-
-    const buildBroadcastMessage = (text, priority, target, durationDays, expiresAt, pushedAt) => {
-      return JSON.stringify({
-        text: (text || '').trim(),
-        priority: priority || 'normal',
-        target: target || 'all',
-        duration_days: durationDays || null,
-        expires_at: expiresAt || null,
-        pushed_at: pushedAt || null
-      });
     };
 
     // 8.1 GET /api/admin/announcements
@@ -703,14 +694,7 @@ export async function handleAdminApi(req, res) {
       }
 
       const pushedAt = broadcastToScreen ? new Date().toISOString() : null;
-      const jsonMessage = buildBroadcastMessage(
-        message,
-        priority,
-        target,
-        durationDays > 0 ? durationDays : null,
-        calculatedExpiresAt,
-        pushedAt
-      );
+      const cleanMessage = extractCleanText(message);
 
       const isUuid = typeof adminUser?.id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(adminUser.id);
       const validAuthorId = isUuid ? adminUser.id : null;
@@ -722,7 +706,7 @@ export async function handleAdminApi(req, res) {
           .insert({
             author_id: validAuthorId,
             title: title.trim(),
-            message: jsonMessage
+            message: cleanMessage
           })
           .select()
           .single();
@@ -740,7 +724,7 @@ export async function handleAdminApi(req, res) {
         id: 'broadcast_' + Date.now(),
         author_id: validAuthorId,
         title: title.trim(),
-        message: message.trim(),
+        message: cleanMessage,
         target,
         status,
         priority,
@@ -853,21 +837,13 @@ export async function handleAdminApi(req, res) {
         const updatedTarget = body.target !== undefined ? body.target : currentParsed.target;
         const updatedDuration = body.durationDays !== undefined ? body.durationDays : currentParsed.duration_days;
         const updatedExpiresAt = body.expiresAt !== undefined ? body.expiresAt : currentParsed.expires_at;
-
-        const newJsonMessage = buildBroadcastMessage(
-          updatedMessage,
-          updatedPriority,
-          updatedTarget,
-          updatedDuration,
-          updatedExpiresAt,
-          currentParsed.pushed_at
-        );
+        const cleanUpdatedMessage = extractCleanText(updatedMessage);
 
         const { data: updatedData, error } = await supabaseAdmin
           .from('broadcasts')
           .update({
             title: updatedTitle,
-            message: newJsonMessage
+            message: cleanUpdatedMessage
           })
           .eq('id', id)
           .select()
@@ -908,26 +884,7 @@ export async function handleAdminApi(req, res) {
 
         const currentParsed = parseBroadcastRow(existing);
         const nowIso = new Date().toISOString();
-        const newJsonMessage = buildBroadcastMessage(
-          currentParsed.message,
-          currentParsed.priority,
-          currentParsed.target,
-          currentParsed.duration_days,
-          currentParsed.expires_at,
-          nowIso
-        );
-
-        const { data: updatedData } = await supabaseAdmin
-          .from('broadcasts')
-          .update({
-            message: newJsonMessage
-          })
-          .eq('id', id)
-          .select()
-          .single();
-
-        const resultItem = parseBroadcastRow(updatedData || existing);
-        resultItem.pushed_at = nowIso;
+        const resultItem = { ...currentParsed, pushed_at: nowIso };
 
         await recordAuditLog({
           adminId: adminUser.id,

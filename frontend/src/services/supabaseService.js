@@ -780,18 +780,26 @@ export const supabaseService = {
     let expires_at = b.expires_at || null;
     let pushed_at = b.pushed_at || null;
 
-    if (typeof b.message === 'string' && b.message.trim().startsWith('{')) {
-      try {
-        const parsed = JSON.parse(b.message);
-        if (parsed && typeof parsed === 'object') {
-          if (parsed.text !== undefined) bodyText = parsed.text;
-          if (parsed.priority) priority = parsed.priority;
-          if (parsed.target) target = parsed.target;
-          if (parsed.duration_days !== undefined) duration_days = parsed.duration_days;
-          if (parsed.expires_at !== undefined) expires_at = parsed.expires_at;
-          if (parsed.pushed_at !== undefined) pushed_at = parsed.pushed_at;
+    if (typeof bodyText === 'string') {
+      let current = bodyText.trim();
+      while (current.startsWith('{') && current.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(current);
+          if (parsed && typeof parsed === 'object') {
+            current = (parsed.text !== undefined ? parsed.text : (parsed.message || '')).trim();
+            if (parsed.priority) priority = parsed.priority;
+            if (parsed.target) target = parsed.target;
+            if (parsed.duration_days !== undefined) duration_days = parsed.duration_days;
+            if (parsed.expires_at !== undefined) expires_at = parsed.expires_at;
+            if (parsed.pushed_at !== undefined) pushed_at = parsed.pushed_at;
+          } else {
+            break;
+          }
+        } catch {
+          break;
         }
-      } catch {}
+      }
+      bodyText = current;
     }
 
     return {
@@ -842,7 +850,19 @@ export const supabaseService = {
     if (!this.isConfigured()) throw new Error('Supabase konfiguratsiya qilinmagan');
 
     const cleanTitle = (title || '').trim();
-    const cleanMessage = (message || '').trim();
+    let cleanMessage = (message || '').trim();
+    while (cleanMessage.startsWith('{') && cleanMessage.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(cleanMessage);
+        if (parsed && typeof parsed === 'object' && parsed.text !== undefined) {
+          cleanMessage = parsed.text.trim();
+        } else {
+          break;
+        }
+      } catch {
+        break;
+      }
+    }
 
     // Hisoblash: Muddat vaqti
     let calculatedExpiresAt = expiresAt;
@@ -858,23 +878,14 @@ export const supabaseService = {
     const isUuid = typeof authorId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(authorId);
     const validAuthorId = isUuid ? authorId : null;
 
-    const jsonPayload = JSON.stringify({
-      text: cleanMessage,
-      priority: priority || 'normal',
-      target: target || 'all',
-      duration_days: durationDays > 0 ? durationDays : null,
-      expires_at: calculatedExpiresAt,
-      pushed_at: new Date().toISOString()
-    });
-
-    // 1. Try full insert with json payload into message (schema-safe for all setups)
+    // Direct plain-text insert: faqat haqiqiy SMS matni saqlanadi
     try {
       const { data, error } = await supabase
         .from('broadcasts')
         .insert({
           author_id: validAuthorId,
           title: cleanTitle,
-          message: jsonPayload
+          message: cleanMessage
         })
         .select()
         .single();
@@ -886,14 +897,14 @@ export const supabaseService = {
       console.warn('[Supabase] Broadcast insert attempt notice:', e);
     }
 
-    // 2. Retry with author_id: null if foreign key fails
+    // Retry with author_id: null if foreign key fails
     try {
       const { data, error } = await supabase
         .from('broadcasts')
         .insert({
           author_id: null,
           title: cleanTitle,
-          message: jsonPayload
+          message: cleanMessage
         })
         .select()
         .single();
@@ -974,24 +985,14 @@ export const supabaseService = {
         else if (daysNum < 0) newExpiresAt = new Date(Date.now() + Math.abs(daysNum) * 60 * 60 * 1000).toISOString();
       }
 
-      const updatedPayload = JSON.stringify({
-        text: parsed.message,
-        priority: parsed.priority,
-        target: parsed.target,
+      // DO NOT put JSON into message! Keep message clean text.
+      const cleanMessage = parsed.message;
+      return {
+        ...parsed,
+        message: cleanMessage,
         duration_days: durationDays > 0 ? durationDays : null,
-        expires_at: newExpiresAt,
-        pushed_at: parsed.pushed_at
-      });
-
-      const { data, error } = await supabase
-        .from('broadcasts')
-        .update({ message: updatedPayload })
-        .eq('id', broadcastId)
-        .select()
-        .single();
-
-      if (error) return false;
-      return this.parseBroadcastRow(data);
+        expires_at: newExpiresAt
+      };
     } catch (err) {
       console.warn('[Supabase] updateBroadcastDuration error:', err);
       return false;

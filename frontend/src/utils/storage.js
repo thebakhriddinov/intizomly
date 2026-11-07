@@ -1945,8 +1945,33 @@ class StorageManager {
         // ============================================================================
         // ADMIN BROADCASTS & SMS NOTIFICATIONS
         // ============================================================================
+        getCleanBroadcastText(msg) {
+          if (!msg) return '';
+          if (typeof msg === 'object') return msg.text || msg.message || '';
+          if (typeof msg === 'string') {
+            let current = msg.trim();
+            while (current.startsWith('{') && current.endsWith('}')) {
+              try {
+                const parsed = JSON.parse(current);
+                if (parsed && typeof parsed === 'object') {
+                  current = (parsed.text !== undefined ? String(parsed.text) : String(parsed.message || '')).trim();
+                } else break;
+              } catch { break; }
+            }
+            if (current.includes('"text":')) {
+              const match = current.match(/"text"\s*:\s*"([^"]+)"/);
+              if (match && match[1]) return match[1];
+            }
+            return current;
+          }
+          return String(msg);
+        }
+
         getBroadcasts({ includeExpired = false } = {}) {
-          const list = this.load(STORAGE_KEYS.BROADCASTS, []) || [];
+          const list = (this.load(STORAGE_KEYS.BROADCASTS, []) || []).map(b => ({
+            ...b,
+            message: this.getCleanBroadcastText(b.message)
+          }));
           if (includeExpired) return list;
           const now = Date.now();
           return list.filter(b => {
@@ -1957,11 +1982,15 @@ class StorageManager {
 
         saveBroadcast(broadcast) {
           if (!broadcast) return [];
+          const cleanItem = {
+            ...broadcast,
+            message: this.getCleanBroadcastText(broadcast.message)
+          };
           const current = this.load(STORAGE_KEYS.BROADCASTS, []) || [];
-          const exists = current.some(b => b.id === broadcast.id);
+          const exists = current.some(b => b.id === cleanItem.id);
           const updated = exists
-            ? current.map(b => b.id === broadcast.id ? { ...b, ...broadcast } : b)
-            : [broadcast, ...current];
+            ? current.map(b => b.id === cleanItem.id ? { ...b, ...cleanItem } : b)
+            : [cleanItem, ...current];
           this.save(STORAGE_KEYS.BROADCASTS, updated);
           return updated;
         }
